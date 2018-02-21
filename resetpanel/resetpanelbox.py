@@ -9,15 +9,12 @@ The class was modified and was introduced new methods.
 S. Tomin, 2017
 """
 
-from ocelot.optimizer.resetpanel.resetpanel import ResetpanelWindow
-from PyQt5.QtWidgets import QApplication, QFrame, QPushButton, QTableWidget
+import os
+from resetpanel import ResetpanelWindow
+from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget
 from PyQt5 import QtGui, QtCore, Qt, uic
 from PyQt5.QtGui import QClipboard
-import sys
-import time
-#from ocelot.optimizer.mint.opt_objects import *
-from ocelot.optimizer.mint import opt_objects as obj
-from ocelot.optimizer.mint.lcls_interface import *
+from mint.lcls_interface import *
 
 
 class customTW(QTableWidget):
@@ -393,7 +390,8 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         Rewrote to change the warning string to say "checkbox selected" instead of "all" to avoid confusion with number of devices being reset.
         """
         #self.ui_check = uic.loadUi("/home/physics/tcope/python/tools/resetpanel/UIareyousure.ui")
-        self.ui_check = uic.loadUi("../optimizer/resetpanel/UIareyousure.ui")
+        path = os.path.dirname(os.path.realpath(__file__))
+        self.ui_check = uic.loadUi(os.path.join(path, "UIareyousure.ui"))
         self.ui_check.exit.clicked.connect(self.ui_check.close)
         self.ui_check.reset.clicked.connect(self.resetAll)
         self.ui_check.reset.clicked.connect(self.ui_check.close)

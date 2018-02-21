@@ -1,4 +1,3 @@
-#!/usr/local/lcls/package/python/current/bin/python
 """
 PYQT interface for running OCELOT simplex optimization.
 Created as a QT widget for use in other applications as well.
@@ -11,9 +10,9 @@ import sys
 
 from PyQt5.QtWidgets import QApplication, QFrame
 from PyQt5 import QtGui, QtCore, uic
-from ocelot.optimizer.mint.opt_objects import *
+from mint.opt_objects import *
 
-from ocelot.optimizer.resetpanel.UIresetpanel import Ui_Form
+from UIresetpanel import Ui_Form
 
 sys.path.append("..")
 

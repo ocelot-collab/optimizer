@@ -3,18 +3,14 @@ Most of GUI logic is placed here.
 S.Tomin, 2017
 """
 
-from ocelot.optimizer.UIOcelotInterface_gen import *
+from UIOcelotInterface_gen import *
 import json
 import scipy
-from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QWidget
-from PIL import Image
 import subprocess
 import base64
-from datetime import datetime
 import numpy as np
 import sys
-import os
 import webbrowser
 from shutil import copy
 
@@ -381,8 +377,6 @@ class MainWindow(Ui_Form):
         s = str(filename) + "." + str(filetype)
         p = QWidget.grab(self.Form)
         p.save(s, 'png')
-        # im = Image.open(s)
-        # im.save(s[:-4]+".ps")
         p = p.scaled(465, 400)
         # save again a small image to use for the logbook thumbnail
         p.save(str(s[:-4]) + "_sm.png", 'png')

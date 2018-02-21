@@ -7,7 +7,6 @@ import numpy as np
 import time
 
 
-
 class Device(object):
     def __init__(self, eid=None):
         self.eid = eid

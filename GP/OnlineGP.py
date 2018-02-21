@@ -71,7 +71,7 @@ class OGP(object):
             self.covar_params = hyperparams[:2]
         else:
             print ('Unknown covariance function')
-            raise
+            raise Exception('Unknown covariance function')
             
         self.noise_var = np.exp(hyperparams[2])
         
