@@ -9,7 +9,6 @@ The resetpanel widget is also contained in a separate module, resetpanel
 Tyler Cope, 2016
 """
 from __future__ import absolute_import, print_function
-import json
 import sys
 import os
 import sklearn
@@ -40,14 +39,14 @@ else:
     from importlib import reload
 
 
-from ocelot.optimizer.gui_main import *
+from gui_main import *
 
-from ocelot.optimizer.mint.opt_objects import *
-from ocelot.optimizer.mint import mint
-from ocelot.optimizer.mint import opt_objects as obj
+from mint.opt_objects import *
+from mint import mint
+from mint import opt_objects as obj
 
-from ocelot.utils import db
-from ocelot.optimizer.mint.xfel_interface import *
+from utils import db
+from mint.xfel_interface import *
 
 
 class OcelotInterfaceWindow(QFrame):
@@ -62,10 +61,9 @@ class OcelotInterfaceWindow(QFrame):
         """
         # PATHS
         path = os.path.realpath(__file__)
-        indx = path.find("ocelot" + os.sep + "optimizer")
-        self.path2ocelot = path[:indx]
-        self.optimizer_path = self.path2ocelot + "ocelot" + os.sep + "optimizer" + os.sep
-        self.config_dir = self.path2ocelot + "config_optim" +os.sep
+        self.path2ocelot = os.path.dirname(path)
+        self.optimizer_path = self.path2ocelot
+        self.config_dir = self.path2ocelot + os.sep + "parameters" + os.sep
         self.set_file = self.config_dir + "default.json" # ./parameters/default.json"
         self.obj_func_path = self.optimizer_path + "mint" + os.sep + "obj_function.py"
         self.obj_save_path = self.config_dir +  "obj_funcs" + os.sep

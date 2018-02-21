@@ -12,16 +12,17 @@ from time import sleep
 from scipy.optimize import OptimizeResult
 import scipy
 import numpy as np
-from ocelot.optimizer.mint.opt_objects import *
+from mint.opt_objects import *
 from scipy import optimize
-from ocelot.optimizer.GP.bayes_optimization import *
-from ocelot.optimizer.GP.OnlineGP import OGP
+from GP.bayes_optimization import *
+from GP.OnlineGP import OGP
 import pandas as pd
 from threading import Thread
 import sklearn
 sklearn_version = sklearn.__version__
 if sklearn_version >= "0.18":
-    from ocelot.optimizer.GP import gaussian_process as gp_sklearn
+    from GP import gaussian_process as gp_sklearn
+
 
 class Logger(object):
     def __init__(self, log_file):

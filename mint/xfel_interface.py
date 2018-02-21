@@ -9,10 +9,10 @@ try:
 except:
     print ('error importing doocs library')
 
-#import re
 import numpy as np
-from threading import Thread, Lock
-from ocelot.optimizer.mint.opt_objects import Device
+from threading import Lock
+from opt_objects import Device
+
 
 class AlarmDevice(Device):
     """
