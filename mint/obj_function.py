@@ -4,7 +4,7 @@ Objective Function
 S.Tomin, 2017
 """
 
-from mint.opt_objects import Target
+from opt_objects import Target
 import numpy as np
 import time
 
