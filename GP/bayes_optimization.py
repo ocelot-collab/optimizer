@@ -47,7 +47,6 @@ import operator as op
 import numpy as np
 from scipy.stats import norm
 from scipy.optimize import minimize
-import time
 from copy import deepcopy
 
 class BayesOpt:

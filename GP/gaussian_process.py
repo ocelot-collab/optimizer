@@ -4,7 +4,6 @@ from matplotlib import pyplot as plt
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 from scipy import optimize
-from copy import deepcopy
 import time
 import matplotlib.cm as cm
 

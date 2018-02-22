@@ -3,8 +3,9 @@ Objective Function
 
 S.Tomin, 2017
 """
+from __future__ import absolute_import, print_function
 
-from opt_objects import Target
+from mint.opt_objects import Target
 import numpy as np
 import time
 

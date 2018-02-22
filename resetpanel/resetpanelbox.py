@@ -9,8 +9,9 @@ The class was modified and was introduced new methods.
 S. Tomin, 2017
 """
 
+from __future__ import absolute_import, print_function
 import os
-from resetpanel import ResetpanelWindow
+from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget
 from PyQt5 import QtGui, QtCore, Qt, uic
 from PyQt5.QtGui import QClipboard
