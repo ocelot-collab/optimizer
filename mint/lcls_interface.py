@@ -5,7 +5,6 @@ Tyler Cope, 2016
 """
 
 import time
-import sys
 
 import numpy as np
 try:
@@ -17,11 +16,6 @@ from re import sub
 from xml.etree import ElementTree
 
 from datetime import datetime
-
-#sys.path.append("..")
-#from ocelot.optimizer.taperThread import Taper
-#import matlog
-
 
 class MatLog:
     def __init__(self):

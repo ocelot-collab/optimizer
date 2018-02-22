@@ -22,16 +22,8 @@ sys.path.append(path[:indx])
 # for pyqtgraph import
 #sys.path.append(path[:indx]+"ocelot")
 
-
-
-from PyQt5.QtGui import QPixmap
-from PyQt5 import QtGui, QtCore
-from PyQt5.QtWidgets import QApplication, QFrame, QMessageBox, QMainWindow, QDialog
-#normal imports
-import numpy as np
-import subprocess
+from PyQt5.QtWidgets import QApplication, QFrame
 import platform
-import time
 import pyqtgraph as pg
 if sys.version_info[0] == 2:
     from imp import reload
@@ -62,7 +54,7 @@ class OcelotInterfaceWindow(QFrame):
         # PATHS
         path = os.path.realpath(__file__)
         self.path2ocelot = os.path.dirname(path)
-        self.optimizer_path = self.path2ocelot
+        self.optimizer_path = self.path2ocelot + os.sep
         self.config_dir = self.path2ocelot + os.sep + "parameters" + os.sep
         self.set_file = self.config_dir + "default.json" # ./parameters/default.json"
         self.obj_func_path = self.optimizer_path + "mint" + os.sep + "obj_function.py"
@@ -70,7 +62,6 @@ class OcelotInterfaceWindow(QFrame):
         # initialize
         QFrame.__init__(self)
 
-        self.logbook = "xfellog"
         self.dev_mode = False
 
         self.ui = MainWindow(self)
@@ -424,13 +415,13 @@ class OcelotInterfaceWindow(QFrame):
         :return: None
         """
         try:
-            from ocelot.optimizer.mint import obj_function
+            from mint import obj_function
             reload(obj_function)
             self.ui.pb_edit_obj_func.setStyleSheet("background: #4e4e4e")
-        except:
+        except Exception as ex:
             self.ui.pb_edit_obj_func.setStyleSheet("background: red")
             self.ui.cb_use_predef.setCheckState(False)
-            print("ERROR set objective function")
+            print("ERROR set objective function. Exception was: ", ex)
 
         self.ui.use_predef_fun()
 

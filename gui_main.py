@@ -15,58 +15,6 @@ import webbrowser
 from shutil import copy
 
 
-def send_to_desy_elog(author, title, severity, text, elog, image=None):
-    """
-    Send information to a supplied electronic logbook.
-    Author: Christopher Behrens (DESY)
-    """
-
-    # The DOOCS elog expects an XML string in a particular format. This string
-    # is beeing generated in the following as an initial list of strings.
-    succeded = True  # indicator for a completely successful job
-    # list beginning
-    elogXMLStringList = ['<?xml version="1.0" encoding="ISO-8859-1"?>', '<entry>']
-
-    # author information
-    elogXMLStringList.append('<author>')
-    elogXMLStringList.append(author)
-    elogXMLStringList.append('</author>')
-    # title information
-    elogXMLStringList.append('<title>')
-    elogXMLStringList.append(title)
-    elogXMLStringList.append('</title>')
-    # severity information
-    elogXMLStringList.append('<severity>')
-    elogXMLStringList.append(severity)
-    elogXMLStringList.append('</severity>')
-    # text information
-    elogXMLStringList.append('<text>')
-    elogXMLStringList.append(text)
-    elogXMLStringList.append('</text>')
-    # image information
-    if image:
-        try:
-            encodedImage = base64.b64encode(image)
-            elogXMLStringList.append('<image>')
-            elogXMLStringList.append(encodedImage.decode())
-            elogXMLStringList.append('</image>')
-        except:  # make elog entry anyway, but return error (succeded = False)
-            succeded = False
-    # list end
-    elogXMLStringList.append('</entry>')
-    # join list to the final string
-    elogXMLString = '\n'.join(elogXMLStringList)
-    # open printer process
-    try:
-        lpr = subprocess.Popen(['/usr/bin/lp', '-o', 'raw', '-d', elog],
-                               stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        # send printer job
-        lpr.communicate(elogXMLString.encode('utf-8'))
-    except:
-        succeded = False
-    return succeded
-
-
 class MainWindow(Ui_Form):
     def __init__(self, Form):
         Ui_Form.__init__(self)
@@ -96,20 +44,11 @@ class MainWindow(Ui_Form):
         self.read_alarm = QtCore.QTimer()
         self.read_alarm.timeout.connect(self.alarm_value)
         self.read_alarm.start(1000)
-        path2preset= self.Form.config_dir + "standard/"
+        path2preset = self.Form.config_dir + "standard/"
         self.pb_sase1_1.clicked.connect(lambda: self.load_settings(filename=path2preset + "sase1_1.json"))
         self.pb_sase1_2.clicked.connect(lambda: self.load_settings(filename=path2preset + "sase1_2.json"))
         self.pb_disp_1.clicked.connect(lambda: self.load_settings(filename=path2preset + "disp_1.json"))
         self.pb_disp_2.clicked.connect(lambda: self.load_settings(filename=path2preset + "disp_2.json"))
-        # self.horizontalLayout_2.setStyleSheet("color: red")
-
-        # font = self.pb_hyper_file.font()
-        # font.setPointSize(16)
-        # self.pb_hyper_file.setFont(font)
-        # self.pb_hyper_file.setText("test")
-        # self.pb_hyper_file.setStyleSheet("font: 16px, color: red")
-
-        # self.window = window
 
     def alarm_value(self):
         """
@@ -355,12 +294,15 @@ class MainWindow(Ui_Form):
             text += "delay         : " + str(self.Form.total_delay) + "\n"
             text += "START-->STOP  : " + str(table["sase"][0]) + " --> " + str(table["sase"][1]) + "\n"
             text += "Method        : " + str(table["method"]) + "\n"
-        #print("table", table)
-        #print(text)
-        screenshot = open(self.Form.optimizer_path + filename + "." + filetype, 'rb')
-        #print(screenshot)
-        res = send_to_desy_elog(author="", title="OCELOT Optimization", severity="INFO", text=text, elog=self.Form.logbook,
-                          image=screenshot.read())
+        screenshot_data = None
+        try:
+            with open(self.Form.optimizer_path + filename + "." + filetype, 'rb') as screenshot:
+                 screenshot_data = screenshot.read()
+        except IOError as ioe:
+            print("Could not find screenshot to read. Exception was: ", ioe)
+        if self.Form is not None and self.Form.mi is not None:
+            res = self.Form.mi.send_to_logbook(author="", title="OCELOT Optimization", severity="INFO", text=text,
+                                               image=screenshot_data)
 
         if not res:
             self.Form.error_box("error during eLogBook sending")
@@ -437,7 +379,6 @@ class MainWindow(Ui_Form):
             #self.cb_use_isim.setCheckState(True)
             self.cb_use_isim.setEnabled(False)
             self.sb_isim_rel_step.setValue(5)
-
 
     def use_predef_fun(self):
         if self.cb_use_predef.checkState():
