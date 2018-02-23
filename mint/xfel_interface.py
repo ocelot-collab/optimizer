@@ -11,6 +11,7 @@ try:
 except:
     pass # Show message on Constructor if we try to use it.
 
+import sys
 import numpy as np
 import subprocess
 import base64
