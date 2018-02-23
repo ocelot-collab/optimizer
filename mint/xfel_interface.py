@@ -9,8 +9,9 @@ try:
     #  $ export PYTHONPATH=/home/ttflinac/user/python-2.7/Debian/
     import pydoocs
 except:
-    print ('error importing doocs library')
+    pass # Show message on Constructor if we try to use it.
 
+import sys
 import numpy as np
 import subprocess
 import base64
@@ -31,6 +32,8 @@ class XFELMachineInterface():
     Machine Interface for European XFEL
     """
     def __init__(self):
+        if 'pydoocs' not in sys.modules:
+            print('error importing doocs library')
         self.logbook = "xfellog"
         self.debug = False
 
