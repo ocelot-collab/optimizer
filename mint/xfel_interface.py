@@ -2,6 +2,8 @@
 XFEL machine interface
 S.Tomin, 2017
 """
+from __future__ import absolute_import, print_function
+
 try:
     # in server "doocsdev12" set environment
     #  $ export PYTHONPATH=/home/ttflinac/user/python-2.7/Debian/
@@ -13,7 +15,7 @@ import numpy as np
 import subprocess
 import base64
 from threading import Lock
-from opt_objects import Device
+from mint.opt_objects import Device
 
 
 class AlarmDevice(Device):

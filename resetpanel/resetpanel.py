@@ -6,13 +6,14 @@ The class was modified and was introduced new methods.
 S. Tomin, 2017
 """
 
+from __future__ import absolute_import, print_function
 import sys
 
 from PyQt5.QtWidgets import QApplication, QFrame
 from PyQt5 import QtGui, QtCore, uic
 from mint.opt_objects import *
 
-from UIresetpanel import Ui_Form
+from resetpanel.UIresetpanel import Ui_Form
 
 sys.path.append("..")
 

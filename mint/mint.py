@@ -44,7 +44,6 @@ class Logger(object):
         self.f.close()
 
 
-
 class Minimizer(object):
     def __init__(self):
         self.max_iter = 100
