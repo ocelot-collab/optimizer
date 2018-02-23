@@ -284,7 +284,7 @@ class MainWindow(Ui_Form):
             text += "obj func: expr: " + str(self.le_obf.text()) + "\n"
         else:
             text += "obj func: A   : predefined  " + self.Form.objective_func.eid + "\n"
-        if table != None:
+        if table is not None:
             for i, dev in enumerate(table["devs"]):
                 # print(dev.split("/"))
                 text += "dev           : " + dev.split("/")[-2] + "/" + dev.split("/")[-1] + "   " + str(table["currents"][i][0]) + " --> " + str(

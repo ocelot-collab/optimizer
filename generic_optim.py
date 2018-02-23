@@ -11,6 +11,7 @@ Tyler Cope, 2016
 from __future__ import absolute_import, print_function
 import sys
 import os
+import argparse
 import sklearn
 sklearn_version = sklearn.__version__
 
@@ -39,6 +40,7 @@ from mint import opt_objects as obj
 
 from utils import db
 from mint.xfel_interface import *
+from mint.lcls_interface import *
 
 
 class OcelotInterfaceWindow(QFrame):
@@ -59,10 +61,12 @@ class OcelotInterfaceWindow(QFrame):
         self.set_file = self.config_dir + "default.json" # ./parameters/default.json"
         self.obj_func_path = self.optimizer_path + "mint" + os.sep + "obj_function.py"
         self.obj_save_path = self.config_dir +  "obj_funcs" + os.sep
+
         # initialize
         QFrame.__init__(self)
-
-        self.dev_mode = False
+        self.optimizer_args = None
+        self.parse_arguments()
+        self.dev_mode = self.optimizer_args.devmode
 
         self.ui = MainWindow(self)
 
@@ -87,7 +91,14 @@ class OcelotInterfaceWindow(QFrame):
         if self.dev_mode:
             self.mi = TestMachineInterface()
         else:
-            self.mi = XFELMachineInterface()
+            class_name = self.optimizer_args.mi
+            if class_name not in globals():
+                print("Could not find Machine Interface with name: {}. Loading XFELMachineInterface instead.".format(class_name))
+                self.mi = XFELMachineInterface()
+            else:
+                self.mi = globals()[class_name]()
+
+        # TODO: Check with Sergey if this is right in here...
         self.dp = TestDeviceProperties(ui=self.ui.widget)
 
         self.total_delay = self.ui.sb_tdelay.value()
@@ -132,6 +143,12 @@ class OcelotInterfaceWindow(QFrame):
         self.multiPvTimer = QtCore.QTimer()
         self.multiPvTimer.timeout.connect(self.getPlotData)
 
+    def parse_arguments(self):
+        parser = argparse.ArgumentParser(description="Ocelot Optimizer")
+        parser.add_argument('--devmode', action='store_true',
+                            help='Enable development mode.', default=False)
+        parser.add_argument('--mi', help="Which Machine Interface to use. Defaults to XFELMachineInterface.", default="XFELMachineInterface")
+        self.optimizer_args = parser.parse_args()
 
     def scan_method_select(self):
         """
