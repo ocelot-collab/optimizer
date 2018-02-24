@@ -344,7 +344,6 @@ class OptControl:
             n = -1
         return self.dev_sets[-n]
 
-
     def save_step(self, pen, x):
         self.penalty.append(pen)
         self.dev_sets.append(x)
@@ -363,7 +362,7 @@ class Optimizer(Thread):
         self.debug = False
         self.minimizer = Simplex()
         self.logging = False
-        #self.kill = False #intructed by tmc to terminate thread of this class
+        # self.kill = False #intructed by tmc to terminate thread of this class
         self.log_file = "log.txt"
         self.logger = Logger(self.log_file)
         self.devices = []
@@ -379,7 +378,7 @@ class Optimizer(Thread):
         """
         Run the sequence of tuning events
         """
-        if seq != None:
+        if seq is not None:
             self.seq = seq
         for s in self.seq:
             s.apply()
@@ -394,6 +393,16 @@ class Optimizer(Thread):
         for i in range(len(self.devices)):
             print('setting', self.devices[i].id, '->', x[i])
             self.devices[i].set_value(x[i])
+
+    def set_triggers(self):
+        for i in range(len(self.devices)):
+            print('triggering ', self.devices[i].id)
+            self.devices[i].trigger()
+
+    def do_wait(self):
+        for i in range(len(self.devices)):
+            print('waiting ', self.devices[i].id)
+            self.devices[i].wait()
 
     def calc_scales(self):
         """
@@ -429,6 +438,8 @@ class Optimizer(Thread):
             return self.target.pen_max
         # set values
         self.set_values(x)
+        self.set_triggers()
+        self.do_wait()
 
         print('sleeping ' + str(self.timeout))
         sleep(self.timeout)

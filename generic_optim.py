@@ -314,6 +314,7 @@ class OcelotInterfaceWindow(QFrame):
         # TODO: add new method for creation of devices
         devices = []
         for pv in pvs:
+            dev = self.mi.device_factory(pv=pv)
             if self.dev_mode:
                 dev = obj.TestDevice(eid=pv)
             else:

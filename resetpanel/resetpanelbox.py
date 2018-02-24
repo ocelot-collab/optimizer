@@ -11,6 +11,8 @@ S. Tomin, 2017
 
 from __future__ import absolute_import, print_function
 import os
+import functools
+
 from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget
 from PyQt5 import QtGui, QtCore, Qt, uic
@@ -161,9 +163,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
             print ("PV already in list")
             return
         try:
-            #print("try to create dev")
-            dev = self.parent.create_devices(pvs=[pv])[0]#obj.TestDevice(eid=pv)
-
+            dev = self.parent.create_devices(pvs=[pv])[0]
         except:
             print ("bad string")
             return
@@ -173,15 +173,12 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         if state:
             self.pvs.append(pv)
             self.devices.append(dev)
-            #self.pv_objects[pv].add_callback(callback=self.PvGetCallBack)
             self.getStartValues()
         table = self.get_state()
         self.initTable()
         self.addCheckBoxes()
         self.uncheckBoxes()
         self.set_state(table)
-
-
 
     def get_devices(self, pvs):
         d_pvs = [dev.eid for dev in self.devices]
@@ -275,7 +272,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
 
     def addCheckBoxes(self):
         """
-        Creats additional column in UI table for check box.
+        Creates additional column in UI table for check box.
 
         Must be called again if the user adds another PV with middle click function.
         """
@@ -288,13 +285,9 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         header.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
         header.setResizeMode(3, QtGui.QHeaderView.ResizeToContents)
         header.setResizeMode(4, QtGui.QHeaderView.ResizeToContents)
-        #header.setResizeMode(5, QtGui.QHeaderView.ResizeToContents)
         header.setResizeMode(5, QtGui.QHeaderView.Fixed)
-        #self.ui.tableWidget.horizontalHeader().resizeSection(5, 80)
-        #self.ui.tableWidget.horizontalHeader().resizeSection(3, 80)
-        for row in range(len(self.pvs)+1):
+        for row in range(len(self.pvs)):
             eng = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates)
-            #spin_box = QtGui.QSpinBox()
             for i in range(2):
                 spin_box = QtGui.QDoubleSpinBox()
                 if i == 0:
@@ -307,32 +300,38 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 spin_box.setMinimum(-999)
                 spin_box.setSingleStep(0.1)
                 spin_box.setAccelerated(True)
-                #spin_box.setFixedWidth(50)
+                if i == 0:  # Running for low limit spin box
+                    spin_box.valueChanged.connect(functools.partial(self.spinbox_changed, high_limit=False, row=row))
+                else: # Running for the high limit spin box
+                    spin_box.valueChanged.connect(functools.partial(self.spinbox_changed, high_limit=True, row=row))
                 self.ui.tableWidget.setCellWidget(row, 3+i, spin_box)
                 self.ui.tableWidget.resizeColumnsToContents()
-                #self.ui.tableWidget.setItem(row, 3 + i, spin_box)
-
-            #checkBoxItem = QtGui.QCheckBox()
-            #checkBoxItem.setStyleSheet("background-color:#595959;")
-            #self.ui.tableWidget.setCellWidget(row, 5, checkBoxItem)
 
             #spin_box
             checkBoxItem = QtGui.QTableWidgetItem()
-            #checkBoxItem.setBackgroundColor(QtGui.QColor(100,100,150))
             checkBoxItem.setCheckState(QtCore.Qt.Checked)
             flags = checkBoxItem.flags()
-            #print("FLAG", flags)
-            #flags != flags
             checkBoxItem.setFlags(flags)
             self.ui.tableWidget.setItem(row, 5, checkBoxItem)
-            #self.ui.tableWidget.setItem(row, 4, spin_box)
 
+    def spinbox_changed(self, val, high_limit, row):
+        """
+        Callback for when a spinbox is changed on the table so we can hook it up with the device limits.
+
+        :param val: (float) The new limit value
+        :param high_limit: (bool) Wether or not this is the high limit value
+        :param row: (int) The row number
+        """
+        device = self.devices[row]
+        if high_limit:
+            device.set_high_limit(val)
+        else:
+            device.set_low_limit(val)
 
     def uncheckBoxes(self):
         """ Method to unchecked all active boxes """
         for row in range(len(self.pvs)):
-            item=self.ui.tableWidget.item(row, 5)
-            #item = self.ui.tableWidget.cellWidget(row, 5)
+            item = self.ui.tableWidget.item(row, 5)
             item.setCheckState(False)
 
     def resetAll(self):
@@ -352,23 +351,18 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         """
         Update reference values for selected rows.
 
-        Rewrote this function to only update slected rows, not all.
+        Rewrote this function to only update selected rows, not all.
         """
         self.ui.updateReference.setText("Getting vals...")
         for row, dev in enumerate(self.devices):
             pv = self.pvs[row]
             state = self.ui.tableWidget.item(row, 5).checkState()
-            print("STATE")
             if state == 2:
                 self.startValues[pv] = dev.get_value()
                 self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
-                #self.pv_objects[pv] = epics.PV(pv)
-                #self.pv_objects[pv].add_callback(callback=self.PvGetCallBack)
         self.ui.updateReference.setText("Update Reference")
 
-
     def getPvsFromCbState(self):
-
         """
         Gets list of all pvs that have checked boxes.
 
@@ -382,13 +376,13 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 pvs.append(str(self.ui.tableWidget.item(row, 0).text()))
         return pvs
 
-
-    #switch string from to SLECTED
+    #switch string from to SELECTED
     def launchPopupAll(self):
         """
         Launches the ARE YOU SURE popup for pv reset value function.
 
-        Rewrote to change the warning string to say "checkbox selected" instead of "all" to avoid confusion with number of devices being reset.
+        Rewrote to change the warning string to say "checkbox selected" instead of "all" to avoid confusion with number
+        of devices being reset.
         """
         #self.ui_check = uic.loadUi("/home/physics/tcope/python/tools/resetpanel/UIareyousure.ui")
         path = os.path.dirname(os.path.realpath(__file__))
