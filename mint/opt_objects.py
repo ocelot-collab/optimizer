@@ -7,6 +7,53 @@ import numpy as np
 import time
 
 
+class MachineInterface(object):
+    def __init__(self):
+        self.debug = False
+
+    def get_value(self, channel):
+        """
+        Getter function for a given Machine.
+
+        :param channel: (str) String of the devices name used
+        :return: Data from the read on the Control System, variable data type depending on channel
+        """
+        raise NotImplementedError
+
+    def set_value(self, channel, val):
+        """
+        Method to set value to a channel
+
+        :param channel: (str) String of the devices name used
+        :param val: value
+        :return: None
+        """
+        raise NotImplementedError
+
+    def send_to_logbook(self, *args, **kwargs):
+        """
+        Send information to the electronic logbook.
+
+        :param args:
+            Values sent to the method without keywork
+        :param kwargs:
+            Dictionary with key value pairs representing all the metadata
+            that is available for the entry.
+        :return: bool
+            True when the entry was successfully generated, False otherwise.
+        """
+        pass
+
+    def device_factory(self, pv):
+        """
+        Create a device for the given PV using the proper Device Class.
+
+        :param pv: (str) The process variable for which to create the device.
+        :return: (Device) The device instance for the given PV.
+        """
+        return Device(eid=pv)
+
+
 class Device(object):
     def __init__(self, eid=None):
         self.eid = eid
@@ -16,15 +63,40 @@ class Device(object):
         self.simplex_step = 0
         self.mi = None
         self.dp = None
+        self.tol = 0.001
+        self.timeout = 5  # seconds
+        self.target = None
+        self.low_limit = None
+        self.high_limit = None
 
     def set_value(self, val):
         self.values.append(val)
         self.times.append(time.time())
+        self.target = val
         self.mi.set_value(self.eid, val)
+
+    def set_low_limit(self, val):
+        self.low_limit = val
+
+    def set_high_limit(self, val):
+        self.high_limit = val
 
     def get_value(self):
         val = self.mi.get_value(self.eid)
         return val
+
+    def trigger(self):
+        pass
+
+    def wait(self):
+        if self.target is None:
+            return
+
+        start_time = time.time()
+        while start_time + self.timeout <= time.time():
+            if np.abs(self.get_value()-self.target) < self.tol:
+                return
+            time.sleep(0.05)
 
     def state(self):
         """
@@ -46,12 +118,12 @@ class Device(object):
     def check_limits(self, value):
         limits = self.get_limits()
         if value < limits[0] or value > limits[1]:
-            print('limits exceeded', value, limits[0], value, limits[1])
+            print('limits exceeded for ', self.id, " - ", value, limits[0], value, limits[1])
             return True
         return False
 
     def get_limits(self):
-        return self.dp.get_limits(self.eid)
+        return [self.low_limit, self.high_limit]
 
 
 # for testing
@@ -77,7 +149,7 @@ class TestDevice(Device):
 
 
 class Target(object):
-    def __init__(self,  eid=None):
+    def __init__(self, eid=None):
         """
 
         :param mi: Machine interface
@@ -188,40 +260,15 @@ class Target_test(Target):
 class SLACTarget(Target):
     def __init__(self, mi=None, dp=None, eid=None):
         """
-
         :param mi: Machine interface
         :param dp: Device property
         :param eid: ID
         """
         super(SLACTarget, self).__init__(eid=eid)
-        self.secs_to_ave = 2
-        self.debug = False
-        self.kill = False
-        self.pen_max = 100
-        self.niter = 0
-        self.y = []
-        self.x = []
+        self.mi = mi
+        self.dp = dp
 
-    def get_penalty(self):
-        sase = self.get_value()
-        alarm = self.get_alarm()
-        if self.debug: print('alarm:', alarm)
-        if self.debug: print('sase:', sase)
-        pen = 0.0
-        if alarm > 1.0:
-            return self.pen_max
-        if alarm > 0.7:
-            return alarm * 50.0
-        pen += alarm
-        pen -= sase
-        if self.debug: print('penalty:', pen)
-        self.niter += 1
-        print("niter = ", self.niter)
-        self.y.append(pen)
-        self.x.append(self.niter)
-        return pen
-
-    def get_value(self, seconds=None):
+    def get_value(self, datain, points=120):
         """
         Returns data for the ojective function (sase) from the selected detector PV.
 
@@ -234,42 +281,38 @@ class SLACTarget(Target):
         Returns:
                 Float of SASE or other detecor measurment
         """
-        datain = mi.get_value(self.eid)
-        try: #try to average over and array input
-            if seconds == None: #if a resquested seconds is passed
-                dataout = np.mean(datain[-(self.secs_to_ave*120):])
-                sigma   = np.std( datain[-(self.secs_to_ave*120):])
-            else:
-                dataout = np.mean(datain[-(seconds*120):])
-                sigma   = np.std( datain[-(seconds*120):])
-        except: #if average fails use the scaler input
-            print ("Detector is not a waveform PV, using scalar value")
-            dataout = datain
-            sigma   = -1
-        return dataout
 
-    def get_stat_params(self):
-        #get the current mean and std of the chosen detector
-        obj_func = mi.get_value(self.eid)
+        # standard run:
         try:
-            std = np.std(  obj_func[(2599-5*120):-1])
-            ave = np.mean( obj_func[(2599-5*120):-1])
-        except:
-            print ("Detector is not a waveform, Using scalar for hyperparameter calc")
-            ave = obj_func
-            # Hard code in the std when obj func is a scalar
-            # Not a great way to deal with this, should probably be fixed
-            std = 0.1
+            if self.stat_name == 'Median':
+                statistic = np.median(datain[-int(points):])
+            elif self.stat_name == 'Standard deviation':
+                statistic = np.std(datain[-int(points):])
+            elif self.stat_name == 'Median deviation':
+                median = np.median(datain[-int(points):])
+                statistic = np.median(np.abs(datain[-int(points):]-median))
+            elif self.stat_name == 'Max':
+                statistic = np.max(datain[-int(points):])
+            elif self.stat_name == 'Min':
+                statistic = np.min(datain[-int(points):])
+            elif self.stat_name == '80th percentile':
+                statistic = np.percentile(datain[-int(points):],80)
+            elif self.stat_name == 'average of points > mean':
+                dat_last = datain[-int(points):]
+                percentile = np.percentile(datain[-int(points):],50)
+                statistic = np.mean(dat_last[dat_last>percentile])
+            elif self.stat_name == '20th percentile':
+                statistic = np.percentile(datain[-int(points):],20)
+            else:
+                self.stat_name = 'Mean'
+                statistic = np.mean(datain[-int(points):])
+            # check if this is even used:
+            sigma = np.std( datain[-int(points):])
+        except: #if average fails use the scalar input
+            print "Detector is not a waveform PV, using scalar value"
+            statistic = datain
+            sigma = -1
 
-        print ("DETECTOR AVE", ave)
-        print ("DETECTOR STD", std)
+        print(self.stat_name, ' of ', datain[-int(points):].size, ' points is ', statistic, ' and standard deviation is ', sigma)
 
-        return ave, std
-
-    def get_alarm(self):
-        return 0
-
-    def get_energy(self):
-        return mi.get_energy()
-
-
+        return statistic

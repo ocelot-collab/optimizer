@@ -3,6 +3,7 @@ Machine interface file for the LCLS to ocelot optimizer
 
 
 """
+from __future__ import absolute_import, print_function
 try:
     import epics
 except ImportError:
@@ -10,13 +11,16 @@ except ImportError:
     pass
 
 import sys
-import time
+from mint.opt_objects import MachineInterface
 
 
-class LCLSMachineInterface():
+class LCLSMachineInterface(MachineInterface):
     def __init__(self):
+        super(LCLSMachineInterface, self).__init__()
+
         if 'epics' not in sys.modules:
             raise Exception('No module named epics. LCLSMachineInterface will not work. Try simulation mode instead.')
+
         # Interface Name
         self.name = 'LCLSMachineInterface'
         self.logbook = 'lclslogbook'  # TODO: Check the proper name with Joe Duris

@@ -16,7 +16,7 @@ import numpy as np
 import subprocess
 import base64
 from threading import Lock
-from mint.opt_objects import Device
+from mint.opt_objects import MachineInterface, Device
 
 
 class AlarmDevice(Device):
@@ -27,15 +27,15 @@ class AlarmDevice(Device):
         super(AlarmDevice, self).__init__(eid=eid)
 
 
-class XFELMachineInterface():
+class XFELMachineInterface(MachineInterface):
     """
     Machine Interface for European XFEL
     """
     def __init__(self):
+        super(XFELMachineInterface, self).__init__()
         if 'pydoocs' not in sys.modules:
             print('error importing doocs library')
         self.logbook = "xfellog"
-        self.debug = False
 
         self.blm_names = ['BLM.23.I1', 'BLM.25L.I1',
                           'BLM.25R.I1', 'BLM.48.I1',
@@ -204,11 +204,12 @@ class XFELDeviceProperties:
 # test interface
 
 
-class TestMachineInterface:
+class TestMachineInterface(MachineInterface):
     """
     Machine interface for testing
     """
     def __init__(self):
+        super(TestMachineInterface, self).__init__()
         self.data = 1.
         pass
     def get_alarms(self):
