@@ -240,12 +240,6 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 self.ui.tableWidget.cellWidget(row, 4).setValue(table["lims"][indx][1])
 
 
-        #for row, dev in enumerate(table["id"]):
-        #    #put PV in the table
-        #    self.ui.tableWidget.item(row, 0).setText(dev)
-        #    self.ui.tableWidget.cellWidget(row, 3).setValue(table["lims"][row][0])
-        #    self.ui.tableWidget.cellWidget(row, 4).setValue(table["lims"][row][1])
-
     def getRows(self, state):
         """
         Method to set the UI checkbox state from slected rows.
