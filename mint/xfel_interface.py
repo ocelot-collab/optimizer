@@ -171,36 +171,6 @@ class XFELMachineInterface(MachineInterface):
             succeded = False
         return succeded
 
-
-class XFELDeviceProperties:
-    """
-    Class for getting device properties
-    """
-
-    def __init__(self, ui=None):
-        """
-
-        :param ui:  ui=None, user interface
-        """
-        self.limits = {}
-        self.ui = ui
-
-    def get_limits(self, dev_name):
-        """
-        Method for getting limits of the devices from the GUI
-
-        :param dev_name: str. Device name as in the GUI
-        :return: [min, max]
-        """
-        if self.ui != None:
-            lims = self.ui.get_limits(dev_name)
-            if lims == None:
-                return [0., 0.]
-        else:
-            return [-100., 100.]
-        return lims
-
-
 # test interface
 
 
@@ -275,32 +245,3 @@ class TestMachineInterface(MachineInterface):
         # TODO: @sergey.tomin Figure out what to do for logbook at the TestMachineInterface
         print('Send to Logbook not implemented for TestMachineInterface.')
         return True
-
-
-class TestDeviceProperties:
-    def __init__(self, ui=None):
-        """
-        For testing.
-        Class for getting device properties
-
-        :param ui:  ui=None, user interface
-        """
-        self.patterns = {}
-        self.limits = {}
-        self.ui = ui
-
-    def get_limits(self, dev_name):
-        """
-        Testing method for getting limits of the devices from the GUI
-
-        :param dev_name: str. Device name as in the GUI
-        :return: [min, max]
-        """
-        if self.ui != None:
-            lims = self.ui.get_limits(dev_name)
-            if lims == None:
-                return [0., 0.]
-        else:
-            return [-100., 100.]
-        return lims
-

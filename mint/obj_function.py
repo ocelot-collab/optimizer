@@ -15,7 +15,6 @@ class XFELTarget(Target):
     Objective function
 
     :param mi: Machine interface
-    :param dp: Device property
     :param pen_max: 100, maximum penalty
     :param niter: 0, calls number get_penalty()
     :param penalties: [], appending penalty
@@ -23,11 +22,10 @@ class XFELTarget(Target):
     :param nreadings: 1, number of objective function readings
     :param interval: 0 (secunds), interval between readings
     """
-    def __init__(self, mi=None, dp=None, eid="x57**2 + y57**2 + x59**2 + y59"):
+    def __init__(self, mi=None, eid="x57**2 + y57**2 + x59**2 + y59"):
         super(XFELTarget, self).__init__(eid=eid)
 
         self.mi = mi
-        self.dp = dp
         self.debug = False
         self.kill = False
         self.pen_max = 100
