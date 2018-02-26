@@ -98,9 +98,6 @@ class OcelotInterfaceWindow(QFrame):
             else:
                 self.mi = globals()[class_name]()
 
-        # TODO: Check with Sergey if this is right in here...
-        self.dp = TestDeviceProperties(ui=self.ui.widget)
-
         self.total_delay = self.ui.sb_tdelay.value()
         self.opt_control = mint.OptControl()
         self.opt_control.alarm_timeout = self.ui.sb_alarm_timeout.value()
@@ -320,7 +317,6 @@ class OcelotInterfaceWindow(QFrame):
             else:
                 dev = obj.Device(eid=pv)
             dev.mi = self.mi
-            dev.dp = self.dp
             devices.append(dev)
         return devices
 
@@ -445,7 +441,7 @@ class OcelotInterfaceWindow(QFrame):
 
         if self.ui.cb_use_predef.checkState():
             print("RELOAD Module Objective Function")
-            self.objective_func = obj_function.XFELTarget(mi=self.mi, dp=self.dp)
+            self.objective_func = obj_function.XFELTarget(mi=self.mi)
             self.objective_func.devices = []
         else:
             # disable button "Edit Objective Function"

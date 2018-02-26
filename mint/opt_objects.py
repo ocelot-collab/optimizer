@@ -62,7 +62,6 @@ class Device(object):
         self.times = []
         self.simplex_step = 0
         self.mi = None
-        self.dp = None
         self.tol = 0.001
         self.timeout = 5  # seconds
         self.target = None
@@ -135,8 +134,6 @@ class TestDevice(Device):
         self.times = []
         self.nsets = 0
         self.mi = None
-        self.dp = None
-        pass
 
     def get_value(self):
         return self.test_value
@@ -152,8 +149,6 @@ class Target(object):
     def __init__(self, eid=None):
         """
 
-        :param mi: Machine interface
-        :param dp: Device property
         :param eid: ID
         """
         self.eid = eid
@@ -195,15 +190,13 @@ class Target(object):
         self.values = []
 
 class Target_test(Target):
-    def __init__(self, mi=None, dp=None, eid=None):
+    def __init__(self, mi=None, eid=None):
         super(Target_test, self).__init__(eid=eid)
         """
         :param mi: Machine interface
-        :param dp: Device property
         :param eid: ID
         """
         self.mi = mi
-        self.dp = dp
         self.debug = False
         self.kill = False
         self.pen_max = 100
@@ -258,15 +251,13 @@ class Target_test(Target):
 
 
 class SLACTarget(Target):
-    def __init__(self, mi=None, dp=None, eid=None):
+    def __init__(self, mi=None, eid=None):
         """
         :param mi: Machine interface
-        :param dp: Device property
         :param eid: ID
         """
         super(SLACTarget, self).__init__(eid=eid)
         self.mi = mi
-        self.dp = dp
 
     def get_value(self, datain, points=120):
         """

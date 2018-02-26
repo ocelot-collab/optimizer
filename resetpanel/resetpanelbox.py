@@ -121,7 +121,6 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.check.clicked.connect(lambda: self.getRows(2))
         self.uncheck.clicked.connect(lambda: self.getRows(0))
         self.mi = None
-        self.dp = None
 
         #make button text bigger
         #self.check.setStyleSheet('font-size: 18pt; font-family: Courier;')
@@ -185,9 +184,8 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         inxs = [d_pvs.index(pv) for pv in pvs]
         return [self.devices[inx] for inx in inxs]
 
-    def set_machine_interface(self, mi, dp):
+    def set_machine_interface(self, mi):
         self.mi = mi
-        self.dp = dp
         self.getPvList(self.pvs)
 
     def getPvList(self, pvs_in=None):

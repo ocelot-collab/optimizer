@@ -157,7 +157,7 @@ class MainWindow(Ui_Form):
 
         # Build the PV list from dev PVs or selected source
         pvs = table["id"]
-        self.widget.set_machine_interface(self.Form.mi, self.Form.dp)
+        self.widget.set_machine_interface(self.Form.mi)
         self.widget.getPvList(pvs)
         # set checkbot status
         self.widget.uncheckBoxes()
