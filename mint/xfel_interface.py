@@ -37,16 +37,6 @@ class XFELMachineInterface(MachineInterface):
             print('error importing doocs library')
         self.logbook = "xfellog"
 
-        self.blm_names = ['BLM.23.I1', 'BLM.25L.I1',
-                          'BLM.25R.I1', 'BLM.48.I1',
-                          'BLM.49.1.I1', 'BLM.49.2.I1',
-                          'BLM.51.1.I1', 'BLM.51.2.I1',
-                          'BLM.55.I1', 'BLM.56.I1',
-                          'BLM.60.I1', 'BLM.63.I1',
-                          'BLM.65U.I1','BLM.65D.I1',
-                          "BLM.65L.I1", 'BLM.65R.I1',
-                          #'BLM.66.I1'
-                          ]
         self.mutex = Lock()
 
     def get_value(self, channel):
@@ -71,38 +61,6 @@ class XFELMachineInterface(MachineInterface):
         pydoocs.write(channel, val)
         return
 
-    def get_bpms_xy(self, bpms):
-        """
-        Method for getting bmps data
-
-        :param bpms: list of string. BPMs names
-        :return: X, Y - two arrays in [m]
-        """
-        X = [0.0]*len(bpms)
-        Y = [0.0]*len(bpms)
-        for i in range(len(bpms)):
-            ch = 'XFEL.DIAG/ORBIT/' + bpms[i]
-            X[i] = pydoocs.read(ch + "/X.SA1")['data']*0.001 # mm -> m
-            Y[i] = pydoocs.read(ch + "/Y.SA1")['data']*0.001 # mm -> m
-        return X, Y
-
-
-    def get_alarms(self):
-        """
-        Method for getting BLMs level. BLMs are predefined
-
-        :return: arrays of the BLMs level
-        """
-        alarm_vals = np.zeros(len(self.blm_names))
-        for i in range(len(self.blm_names)):
-            blm_channel = 'XFEL.DIAG/BLM/'+self.blm_names[i]+'/SIGNAL.SA1'
-            blm_alarm_ch  = 'XFEL.DIAG/BLM/'+self.blm_names[i] + '/SINGLE_ALARM_THRESHOLD'
-            if (self.debug): print('reading alarm channel', blm_alarm_ch)
-            alarm_val = pydoocs.read(blm_alarm_ch)['data']
-            if (self.debug): print ('alarm:', alarm_val)
-            val = pydoocs.read(blm_channel)['data']
-            alarm_vals[i] = val/alarm_val
-        return alarm_vals
 
     def get_charge(self):
         return self.get_value("XFEL.DIAG/CHARGE.ML/TORA.25.I1/CHARGE.SA1")

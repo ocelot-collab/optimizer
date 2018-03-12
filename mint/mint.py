@@ -207,6 +207,7 @@ class GaussProcessSKLearn(Minimizer):
         self.y_sigma_obs = np.zeros(len(self.y_obs))
 
     def load_seed(self, x_sets, penalty, sigma_pen=None):
+
         self.x_obs = np.vstack(x_sets)
         self.y_obs = np.array(penalty)
         if sigma_pen == None:
@@ -308,6 +309,14 @@ class MachineStatus:
 
 
 class OptControl:
+    """
+    Optimization control
+
+    :param m_status: MachineStatus (Device class), indicator of the machine state (beam on/off)
+    :param timeot: 0.1, timeout between machine status (m_status) readings
+    :param alarm_timeout: timeout between Machine status is again OK and optimization continuation
+
+    """
     def __init__(self):
         self.penalty = []
         self.dev_sets = []
@@ -318,17 +327,26 @@ class OptControl:
         self.kill = False
         self.is_ok = True
         self.timeout = 0.1
-        self.alarm_timeout = 0
+        self.alarm_timeout = 0.
 
     def wait(self):
-        while 1:
-            if self.m_status.is_ok():
-                self.is_ok = True
-                time.sleep(self.alarm_timeout)
-                return 1
-            time.sleep(self.timeout)
-            self.is_ok = False
-            print(".",)
+        """
+        check if the machine is OK. If it is not the infinite loop is launched with checking of the machine state
+
+        :return:
+        """
+
+        if self.m_status.is_ok():
+            return 1
+        else:
+            while 1:
+                if self.m_status.is_ok():
+                    self.is_ok = True
+                    time.sleep(self.alarm_timeout)
+                    return 1
+                time.sleep(self.timeout)
+                self.is_ok = False
+                print(".",)
 
     def stop(self):
         self.kill = True
@@ -373,6 +391,7 @@ class Optimizer(Thread):
         self.set_best_solution = True
         self.normalization = False
         self.norm_coef = 0.05
+        self.maximization = True
 
     def eval(self, seq=None, logging=False, log_file=None):
         """
@@ -443,9 +462,12 @@ class Optimizer(Thread):
 
         print('sleeping ' + str(self.timeout))
         sleep(self.timeout)
-        #print ('done sleeping')
 
-        pen = self.target.get_penalty()
+        coef = 1
+        if self.maximization:
+            coef = -1
+
+        pen = coef*self.target.get_penalty()
         print('penalty:', pen)
         if self.debug: print('penalty:', pen)
 

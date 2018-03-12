@@ -174,7 +174,7 @@ class Target(object):
 
         :return: penalty
         """
-        sase = 0.
+        sase = self.get_value()
         for i in range(self.nreadings):
             sase += self.get_value()
             time.sleep(self.interval)
