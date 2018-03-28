@@ -52,6 +52,14 @@ class Minimizer(object):
     def minimize(self, error_func, x):
         pass
 
+#class ESMin(Minimizer):
+#    def __init__(self):
+#        super(ESMin, self).__init__()
+#
+#    def minimize(self, error_func, x):
+#        es.ES_min.minimize(error_func, x, optional_options)
+#        return
+
 
 class Simplex(Minimizer):
     def __init__(self):
@@ -192,6 +200,7 @@ class GaussProcessSKLearn(Minimizer):
     def seed_simplex(self):
         opt_smx = Optimizer()
         opt_smx.normalization = True
+        opt_smx.maximization = self.maximize
         opt_smx.norm_coef = self.norm_coef
         opt_smx.timeout = self.seed_timeout
         opt_smx.opt_ctrl = self.opt_ctrl
@@ -373,6 +382,11 @@ class OptControl:
         x = self.dev_sets[np.argmin(self.penalty)]
         return x
 
+    def clean(self):
+        self.penalty = []
+        self.dev_sets = []
+        self.nsteps = 0
+
 
 class Optimizer(Thread):
     def __init__(self, normalize=False):
@@ -485,6 +499,7 @@ class Optimizer(Thread):
         self.devices = devices
         # testing
         self.minimizer.devices = devices
+        self.minimizer.maximize = self.maximization
         self.minimizer.target = target
         self.minimizer.opt_ctrl = self.opt_ctrl
         self.target.devices = self.devices

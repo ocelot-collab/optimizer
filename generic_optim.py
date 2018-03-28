@@ -163,6 +163,7 @@ class OcelotInterfaceWindow(QFrame):
 
         elif current_method == self.name_gauss_sklearn:
             minimizer = mint.GaussProcessSKLearn()
+            minimizer.seed_iter = self.ui.sb_seed_iter.value()
         # Custom Minimizer
         elif current_method == self.name_custom:
             minimizer = mint.CustomMinimizer()
@@ -281,6 +282,7 @@ class OcelotInterfaceWindow(QFrame):
 
         self.set_m_status()
         self.opt_control.m_status = self.m_status
+        self.opt_control.clean()
         self.opt.opt_ctrl = self.opt_control
         self.opt.timeout = self.total_delay
 

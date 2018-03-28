@@ -14,7 +14,7 @@ import os
 import functools
 
 from resetpanel.resetpanel import ResetpanelWindow
-from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget
+from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialog
 from PyQt5 import QtGui, QtCore, Qt, uic
 from PyQt5.QtGui import QClipboard
 from mint.lcls_interface import *
@@ -67,13 +67,15 @@ class customTW(QTableWidget):
             QTableWidget.mouseReleaseEvent(self, evt)
 
     def contextMenuEvent(self, event):
+        self.menu = QtGui.QMenu(self)
         if self.selectionModel().selection().indexes():
             rows = []
             for i in self.selectionModel().selection().indexes():
                 row, column = i.row(), i.column()
                 rows.append(row)
-            self.menu = QtGui.QMenu(self)
+            #self.menu = QtGui.QMenu(self)
             deleteAction = QtGui.QAction('Delete', self)
+
             deleteAction.triggered.connect(lambda: self.deleteSlot(rows))
 
             self.menu.addAction(deleteAction)
@@ -81,8 +83,12 @@ class customTW(QTableWidget):
             #editAction = QtGui.QAction('Edit', self)
             #self.menu.addAction(editAction)
             # add other required actions
-            self.menu.popup(QtGui.QCursor.pos())
+            #self.menu.popup(QtGui.QCursor.pos())
 
+        addChannel = QtGui.QAction('Add Channel', self)
+        addChannel.triggered.connect(self.addRow)
+        self.menu.addAction(addChannel)
+        self.menu.popup(QtGui.QCursor.pos())
 
     def deleteSlot(self, rows):
         print ("delete rows called", rows)
@@ -95,6 +101,17 @@ class customTW(QTableWidget):
         self.parent.uncheckBoxes()
         self.parent.set_state(table)
 
+    def addRow(self):
+        dlg =  QInputDialog(self)
+        dlg.setInputMode(QInputDialog.TextInput)
+        dlg.setLabelText("Chanel:")
+        dlg.resize(500,100)
+        ok = dlg.exec_()
+        pv = dlg.textValue()
+        #pv, ok = QInputDialog.getText(self, "Input", "Enter channel")
+        if ok:
+            print(pv)
+            self.parent.addPv(pv)
 
 class ResetpanelBoxWindow(ResetpanelWindow):
     """
