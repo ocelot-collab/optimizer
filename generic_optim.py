@@ -99,8 +99,6 @@ class OcelotInterfaceWindow(QFrame):
                 self.mi = globals()[class_name]()
 
         self.total_delay = self.ui.sb_tdelay.value()
-        self.opt_control = mint.OptControl()
-        self.opt_control.alarm_timeout = self.ui.sb_alarm_timeout.value()
 
         #self.objective_func = obj_function.XFELTarget()
         self.objective_func_pv = "test_obj"
@@ -132,13 +130,16 @@ class OcelotInterfaceWindow(QFrame):
         self.set_obj_fun()
         self.m_status = mint.MachineStatus()
         self.set_m_status()
+
         self.opt_control = mint.OptControl()
+        self.opt_control.alarm_timeout = self.ui.sb_alarm_timeout.value()
         self.opt_control.m_status = self.m_status
 
 
         #timer for plots, starts when scan starts
         self.multiPvTimer = QtCore.QTimer()
         self.multiPvTimer.timeout.connect(self.getPlotData)
+
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser(description="Ocelot Optimizer")
@@ -162,6 +163,7 @@ class OcelotInterfaceWindow(QFrame):
 
         elif current_method == self.name_gauss_sklearn:
             minimizer = mint.GaussProcessSKLearn()
+            minimizer.seed_iter = self.ui.sb_seed_iter.value()
         # Custom Minimizer
         elif current_method == self.name_custom:
             minimizer = mint.CustomMinimizer()
@@ -194,6 +196,7 @@ class OcelotInterfaceWindow(QFrame):
         Method to start/stop the Optimizer.
         """
         self.scanStartTime = time.time()
+
 
         if self.ui.pb_start_scan.text() == "Stop optimization":
             # stop the optimization
@@ -267,6 +270,9 @@ class OcelotInterfaceWindow(QFrame):
         # Optimizer initialization
         self.opt = mint.Optimizer()
 
+        # solving minimization or maximization problem
+        self.opt.maximization = self.ui.rb_maximize.isChecked()
+
         if self.ui.cb_select_alg.currentText() == self.name_simplex_norm:
             self.opt.normalization = True
             self.opt.norm_coef = self.ui.sb_isim_rel_step.value()*0.01
@@ -276,6 +282,7 @@ class OcelotInterfaceWindow(QFrame):
 
         self.set_m_status()
         self.opt_control.m_status = self.m_status
+        self.opt_control.clean()
         self.opt.opt_ctrl = self.opt_control
         self.opt.timeout = self.total_delay
 
@@ -408,7 +415,7 @@ class OcelotInterfaceWindow(QFrame):
         dump2json["dev_times"] = self.devices[0].times
         dump2json["obj_values"] = self.objective_func.values
         dump2json["obj_times"] = self.objective_func.times
-
+        dump2json["maximization"] = self.ui.rb_maximize.isChecked()
         #path = os.getcwd()
         #indx = path.find("ocelot")
         #path = path[:indx]
@@ -496,7 +503,6 @@ class OcelotInterfaceWindow(QFrame):
         if self.dev_mode:
             def get_value_dev_mode():
                 values = np.array([dev.get_value() for dev in self.devices])
-                print("I am here!")
                 return np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
 
             self.objective_func.get_value = get_value_dev_mode
@@ -546,7 +552,9 @@ class OcelotInterfaceWindow(QFrame):
         #get times, penalties obj func data from the machine interface
         if len(self.objective_func.times) == 0:
             return
-        y = self.objective_func.penalties
+
+
+        y = np.array(self.objective_func.penalties)
 
         x = np.array(self.objective_func.times) - self.objective_func.times[0]
 

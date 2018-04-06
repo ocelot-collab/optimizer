@@ -61,7 +61,7 @@ class GP:
         if self.sigma_y != 0:
             self.alpha = (self.y_sigma_obs / self.y_obs) ** 2
         else:
-            self.alpha = 1e-10
+            self.alpha = 1e-5
         self.gp = GaussianProcessRegressor(kernel=kernel, alpha=self.alpha,
                                            n_restarts_optimizer=self.n_restarts_optimizer)
 

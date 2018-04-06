@@ -143,7 +143,7 @@ class MainWindow(Ui_Form):
         table["set_best_sol"] = self.cb_set_best_sol.checkState()
 
         table["algorithm"] = str(self.cb_select_alg.currentText())
-
+        table["maximization"] = self.rb_maximize.isChecked()
         with open(filename, 'w') as f:
             json.dump(table, f)
         # pickle.dump(table, filename)
@@ -203,7 +203,11 @@ class MainWindow(Ui_Form):
             self.pb_hyper_file.setText(self.Form.hyper_file)
 
             self.cb_set_best_sol.setCheckState(table["set_best_sol"])
-
+            if "maximization" in table.keys():
+                print("MAX 232323", table["maximization"], table["maximization"] == True)
+                #if table["maximization"] == True:
+                self.rb_maximize.setChecked(table["maximization"])
+                self.rb_minimize.setChecked(not table["maximization"])
             if "algorithm" in table.keys():
                 index = self.cb_select_alg.findText(table["algorithm"], QtCore.Qt.MatchFixedString)
 
