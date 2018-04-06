@@ -102,9 +102,9 @@ class customTW(QTableWidget):
         self.parent.set_state(table)
 
     def addRow(self):
-        dlg =  QInputDialog(self)
+        dlg = QInputDialog(self)
         dlg.setInputMode(QInputDialog.TextInput)
-        dlg.setLabelText("Chanel:")
+        dlg.setLabelText("Channel:")
         dlg.resize(500,100)
         ok = dlg.exec_()
         pv = dlg.textValue()
