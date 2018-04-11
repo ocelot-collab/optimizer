@@ -65,8 +65,8 @@ class Device(object):
         self.tol = 0.001
         self.timeout = 5  # seconds
         self.target = None
-        self.low_limit = 0
-        self.high_limit = 0
+        self.low_limit = 0.
+        self.high_limit = 0.
 
     def set_value(self, val):
         self.values.append(val)
@@ -116,6 +116,9 @@ class Device(object):
 
     def check_limits(self, value):
         limits = self.get_limits()
+        # Disable Limits when both are 0.
+        if limits[0] == limits[1] and limits[0] == 0.:
+            return False
         if value < limits[0] or value > limits[1]:
             print('limits exceeded for ', self.id, " - ", value, limits[0], value, limits[1])
             return True
