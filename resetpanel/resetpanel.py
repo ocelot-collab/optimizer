@@ -15,6 +15,8 @@ from mint.opt_objects import *
 
 from resetpanel.UIresetpanel import Ui_Form
 
+import os
+
 sys.path.append("..")
 
 
@@ -51,9 +53,12 @@ class ResetpanelWindow(QFrame):
     def loadStyleSheet(self):
         """ Load in the dark theme style sheet. """
         try:
-            self.cssfile = "style.css"
+            self.cssfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),"style.css")
+            print("CSS File: ", self.cssfile)
             with open(self.cssfile, "r") as f:
-                self.setStyleSheet(f.read())
+                style = f.read()
+                self.setStyleSheet(style)
+                QApplication.instance().setStyleSheet(style)
         except IOError:
             print('No style sheet found!')
 

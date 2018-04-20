@@ -23,7 +23,7 @@
    <string>Ocelot Interface</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: white</string>
+   <string notr="true"/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
@@ -930,7 +930,7 @@
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>350</height>
+           <height>400</height>
           </size>
          </property>
          <property name="title">
@@ -949,7 +949,7 @@
             </property>
            </widget>
           </item>
-          <item row="8" column="0" colspan="2">
+          <item row="9" column="0" colspan="2">
            <widget class="QPushButton" name="pb_edit_obj_func">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -1218,6 +1218,21 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_38">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Statistical Method:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="cb_statistics"/>
           </item>
          </layout>
         </widget>
@@ -1661,7 +1676,7 @@
          <property name="sizeHint" stdset="0">
           <size>
            <width>20</width>
-           <height>40</height>
+           <height>30</height>
           </size>
          </property>
         </spacer>

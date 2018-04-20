@@ -41,6 +41,7 @@ from mint import opt_objects as obj
 from utils import db
 from mint.xfel_interface import *
 from mint.lcls_interface import *
+from stats import stats
 
 
 class OcelotInterfaceWindow(QFrame):
@@ -128,7 +129,6 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.restore_state(self.set_file)
         self.path_to_obj_func = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'mint/obj_function.py')
 
-
         self.set_obj_fun()
         self.m_status = mint.MachineStatus()
         self.set_m_status()
@@ -137,6 +137,12 @@ class OcelotInterfaceWindow(QFrame):
         self.opt_control.alarm_timeout = self.ui.sb_alarm_timeout.value()
         self.opt_control.m_status = self.m_status
 
+        # fill in statistics methods
+        self.ui.cb_statistics.clear()
+        for st in stats.all_stats:
+            self.ui.cb_statistics.addItem(st.display_name, st)
+
+        self.ui.cb_statistics.setCurrentIndex(0)
 
         #timer for plots, starts when scan starts
         self.multiPvTimer = QtCore.QTimer()
