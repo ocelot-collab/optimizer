@@ -12,6 +12,7 @@ S. Tomin, 2017
 from __future__ import absolute_import, print_function
 import os
 import functools
+import numpy as np
 
 from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialog

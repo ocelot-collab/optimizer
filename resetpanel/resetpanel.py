@@ -197,22 +197,22 @@ class ResetpanelWindow(QFrame):
                 # print("ERROR getting value. Device:", dev.eid)
                 value = None
 
-            if self.startValues[dev.eid] == None and value != None:
+            if self.startValues[dev.eid] is None and value is not None:
                 self.startValues[dev.eid] = value
 
-            if self.startValues[dev.eid] == None or value == None:
+            if self.startValues[dev.eid] is None or value is None:
                 self.ui.tableWidget.item(row, 5).setFlags(QtCore.Qt.NoItemFlags)
                 for col in [0, 5]:
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(255, 0, 0))  # red
 
-                if self.startValues[dev.eid] == None:
+                if self.startValues[dev.eid] is None:
                     self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str("None")))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(255, 0, 0))  # red
                 else:
                     self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(value, 4))))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(89, 89, 89))  # grey
 
-                if value == None:
+                if value is None:
                     self.ui.tableWidget.setItem(row, 2, QtGui.QTableWidgetItem(str("None")))
                     self.ui.tableWidget.item(row, 2).setBackground(QtGui.QColor(255, 0, 0))  # red
                 else:
