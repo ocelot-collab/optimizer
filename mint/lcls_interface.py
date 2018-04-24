@@ -60,6 +60,25 @@ class LCLSMachineInterface(MachineInterface):
             else:
                 return pv.put(val)
 
+    def get_charge(self):
+        """
+        Returns the charge.
+
+        :return: (float)
+        """
+        charge = self.get_value('SIOC:SYS0:ML00:CALC252')
+        return charge
+
+    def get_charge_current(self):
+        """
+        Returns the current charge and current tuple.
+
+        :return: (tuple) Charge, Current
+        """
+        charge = self.get_charge()
+        current = self.get_value('BLEN:LI24:886:BIMAX')
+        return charge, current
+
     def send_to_logbook(self, *args, **kwargs):
         """
         Send information to the electronic logbook.
@@ -82,9 +101,24 @@ class LCLSMachineInterface(MachineInterface):
         format:
             {"display": "Text of the PushButton", "filename": "my_file.json"}
         """
-        presets = {
-            "QUADS Optimization": [
-                {"display": "1. Launch QUADS", "filename": "sase1_1.json"},
-            ]
-        }
+        # presets = {
+        #     "QUADS Optimization": [
+        #         {"display": "1. Launch QUADS", "filename": "sase1_1.json"},
+        #     ]
+        # }
+        presets = dict()
         return presets
+
+    def get_quick_add_devices(self):
+        """
+        Return a dictionary with:
+        {
+        "QUADS1" : ["...", "..."],
+        "QUADS2": ["...", "..."]
+        }
+
+        That is converted into a combobox which allow users to easily populate the devices list
+
+        :return: dict
+        """
+        return dict()

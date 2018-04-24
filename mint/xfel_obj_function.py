@@ -113,5 +113,3 @@ class XFELTarget(Target):
         self.times = []
         self.alarms = []
         self.values = []
-
-target_class = XFELTarget

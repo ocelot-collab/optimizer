@@ -67,7 +67,7 @@ class SLACTarget(Target):
             statistic = data
             sigma = -1
 
-        charge, current = 0.0, 1.0  # self.mi.get_charge_current()
+        charge, current = self.mi.get_charge_current()
 
         print(self.stats.display_name, ' of ', data_size, ' points is ', statistic, ' and standard deviation is ', sigma)
 
@@ -78,5 +78,3 @@ class SLACTarget(Target):
         self.std_dev = []
         self.charge = []
         self.current = []
-
-target_class = SLACTarget
