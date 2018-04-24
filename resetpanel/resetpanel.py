@@ -54,7 +54,6 @@ class ResetpanelWindow(QFrame):
         """ Load in the dark theme style sheet. """
         try:
             self.cssfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),"style.css")
-            print("CSS File: ", self.cssfile)
             with open(self.cssfile, "r") as f:
                 style = f.read()
                 self.setStyleSheet(style)

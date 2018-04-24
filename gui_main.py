@@ -4,8 +4,11 @@ S.Tomin, 2017
 """
 
 from UIOcelotInterface_gen import *
+import os
 import json
 import scipy
+from PyQt5.QtGui import QCursor
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
 import subprocess
 import base64
@@ -44,11 +47,6 @@ class MainWindow(Ui_Form):
         self.read_alarm = QtCore.QTimer()
         self.read_alarm.timeout.connect(self.alarm_value)
         self.read_alarm.start(1000)
-        path2preset = self.Form.config_dir + "standard/"
-        self.pb_sase1_1.clicked.connect(lambda: self.load_settings(filename=path2preset + "sase1_1.json"))
-        self.pb_sase1_2.clicked.connect(lambda: self.load_settings(filename=path2preset + "sase1_2.json"))
-        self.pb_disp_1.clicked.connect(lambda: self.load_settings(filename=path2preset + "disp_1.json"))
-        self.pb_disp_2.clicked.connect(lambda: self.load_settings(filename=path2preset + "disp_2.json"))
 
     def alarm_value(self):
         """
@@ -98,6 +96,7 @@ class MainWindow(Ui_Form):
         table = self.widget.get_state()
 
         table["use_predef"] = self.cb_use_predef.checkState()
+        table["statistics"] = self.cb_statistics.currentIndex()
 
         max_pen = self.sb_max_pen.value()
         timeout = self.sb_tdelay.value()
@@ -174,6 +173,7 @@ class MainWindow(Ui_Form):
             obj_fun = table["obj_fun"]
 
             if "use_predef" in table.keys(): self.cb_use_predef.setCheckState(table["use_predef"])
+            if "statistics" in table.keys(): self.cb_statistics.setCurrentIndex(table["statistics"])
             self.sb_max_pen.setValue(max_pen)
             self.sb_tdelay.setValue(timeout)
             self.sb_nreadings.setValue(table["nreadings"])
@@ -333,7 +333,7 @@ class MainWindow(Ui_Form):
         :return:
         """
         try:
-            self.cssfile = "style.css"
+            self.cssfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "style.css")
             with open(self.cssfile, "r") as f:
                 self.Form.setStyleSheet(f.read())
         except IOError:
@@ -399,6 +399,10 @@ class MainWindow(Ui_Form):
             self.label_21.setEnabled(False)
             self.label_28.setEnabled(False)
             self.label_29.setEnabled(False)
+
+            self.cb_statistics.setEnabled(True)
+            self.pb_edit_obj_func.setEnabled(True)
+            self.pb_edit_obj_func.setCursor(QCursor(Qt.PointingHandCursor))
         else:
             self.le_a.setEnabled(True)
             self.le_b.setEnabled(True)
@@ -413,6 +417,10 @@ class MainWindow(Ui_Form):
             self.label_21.setEnabled(True)
             self.label_28.setEnabled(True)
             self.label_29.setEnabled(True)
+
+            self.cb_statistics.setEnabled(False)
+            self.pb_edit_obj_func.setEnabled(False)
+            self.pb_edit_obj_func.setCursor(QCursor(Qt.ForbiddenCursor))
 
     def open_help(self):
         """

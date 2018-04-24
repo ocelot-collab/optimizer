@@ -36,7 +36,7 @@ class LCLSMachineInterface(MachineInterface):
         pv = self.pvs.get(device_name, None)
         if pv is None:
             self.pvs[device_name] = epics.PV(device_name)
-            return None
+            return self.pvs[device_name].get()
         else:
             if not pv.connected:
                 return None
@@ -69,3 +69,22 @@ class LCLSMachineInterface(MachineInterface):
         :return: (bool) True when the entry was successfully generated, False otherwise.
         """
         print("Called send to Logbook with: \nArgs: {}\nand\nKwargs: {}".format(args, kwargs))
+
+    def get_obj_function_module(self):
+        from mint import lcls_obj_function
+        return lcls_obj_function
+
+    def get_preset_settings(self):
+        """
+        Return the preset settings to be assembled as Push Buttons at the user interface for quick load of settings.
+
+        :return: (dict) Dictionary with Key being the group name and as value an array of dictionaries following the
+        format:
+            {"display": "Text of the PushButton", "filename": "my_file.json"}
+        """
+        presets = {
+            "QUADS Optimization": [
+                {"display": "1. Launch QUADS", "filename": "sase1_1.json"},
+            ]
+        }
+        return presets

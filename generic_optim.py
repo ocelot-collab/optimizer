@@ -13,17 +13,19 @@ import sys
 import os
 import argparse
 import sklearn
+from datetime import datetime
 sklearn_version = sklearn.__version__
 
 path = os.path.realpath(__file__)
-indx = path.find("ocelot/optimizer")
+#indx = path.find("ocelot/optimizer")
 print("PATH", os.path.realpath(__file__))
-sys.path.append(path[:indx])
+#sys.path.append(path[:indx])
 
 # for pyqtgraph import
 #sys.path.append(path[:indx]+"ocelot")
 
-from PyQt5.QtWidgets import QApplication, QFrame
+from PyQt5.QtWidgets import QApplication, QFrame, QGroupBox, QPushButton, QSpacerItem, QVBoxLayout
+import PyQt5.QtGui
 import platform
 import pyqtgraph as pg
 if sys.version_info[0] == 2:
@@ -58,10 +60,9 @@ class OcelotInterfaceWindow(QFrame):
         path = os.path.realpath(__file__)
         self.path2ocelot = os.path.dirname(path)
         self.optimizer_path = self.path2ocelot + os.sep
-        self.config_dir = self.path2ocelot + os.sep + "parameters" + os.sep
-        self.set_file = self.config_dir + "default.json" # ./parameters/default.json"
-        self.obj_func_path = self.optimizer_path + "mint" + os.sep + "obj_function.py"
-        self.obj_save_path = self.config_dir +  "obj_funcs" + os.sep
+        self.config_dir = os.path.join(self.path2ocelot, "parameters")
+        self.set_file = os.path.join(self.config_dir, "default.json")  # ./parameters/default.json"
+        self.obj_save_path = os.path.join(self.config_dir, "obj_funcs")
 
         # initialize
         QFrame.__init__(self)
@@ -101,16 +102,17 @@ class OcelotInterfaceWindow(QFrame):
             else:
                 self.mi = globals()[class_name]()
 
+        self.assemble_preset_box()
+
         self.total_delay = self.ui.sb_tdelay.value()
 
-        #self.objective_func = obj_function.XFELTarget()
         self.objective_func_pv = "test_obj"
 
         self.show_obj_value = False
         self.addPlots()
 
         # database
-        self.dbname =  self.config_dir + "test.db" #"./parameters/test.db"
+        self.dbname =  os.path.join(self.config_dir, "test.db")  #"./parameters/test.db"
         # db.create_db(self.dbname)
         print(self.optimizer_path, self.set_file, self.dbname)
         try:
@@ -126,8 +128,18 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.pb_edit_obj_func.clicked.connect(self.run_editor)
         self.ui.cb_use_predef.stateChanged.connect(self.set_obj_fun)
 
+        # fill in statistics methods
+        self.ui.cb_statistics.clear()
+        for st in stats.all_stats:
+            self.ui.cb_statistics.addItem(st.display_name, st)
+
+        self.ui.cb_statistics.currentIndexChanged.connect(self.statistics_select)
+        self.ui.cb_statistics.setCurrentIndex(0)
+
         self.ui.restore_state(self.set_file)
-        self.path_to_obj_func = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'mint/obj_function.py')
+
+        obj_func_file = self.mi.get_obj_function_module().__file__
+        self.path_to_obj_func = obj_func_file if not obj_func_file.endswith("pyc") else obj_func_file[:-1]
 
         self.set_obj_fun()
         self.m_status = mint.MachineStatus()
@@ -136,13 +148,6 @@ class OcelotInterfaceWindow(QFrame):
         self.opt_control = mint.OptControl()
         self.opt_control.alarm_timeout = self.ui.sb_alarm_timeout.value()
         self.opt_control.m_status = self.m_status
-
-        # fill in statistics methods
-        self.ui.cb_statistics.clear()
-        for st in stats.all_stats:
-            self.ui.cb_statistics.addItem(st.display_name, st)
-
-        self.ui.cb_statistics.setCurrentIndex(0)
 
         #timer for plots, starts when scan starts
         self.multiPvTimer = QtCore.QTimer()
@@ -155,6 +160,10 @@ class OcelotInterfaceWindow(QFrame):
                             help='Enable development mode.', default=False)
         parser.add_argument('--mi', help="Which Machine Interface to use. Defaults to XFELMachineInterface.", default="XFELMachineInterface")
         self.optimizer_args = parser.parse_args()
+
+    def statistics_select(self, value):
+        if self.objective_func is not None:
+            self.objective_func.stats = self.ui.cb_statistics.currentData()
 
     def scan_method_select(self):
         """
@@ -187,7 +196,6 @@ class OcelotInterfaceWindow(QFrame):
         self.method_name = minimizer.__class__.__name__
 
         return minimizer
-
 
     def closeEvent(self, event):
         self.ui.save_state(self.set_file)
@@ -314,8 +322,8 @@ class OcelotInterfaceWindow(QFrame):
                 self.ui.pb_start_scan.setText("Start optimization")
                 self.save2db()
                 print("scan_finished: OK")
-        except:
-            print("scan_finished: ERROR")
+        except Exception as ex:
+            print("scan_finished: ERROR. Exception was: ", ex)
 
     def create_devices(self, pvs):
         """
@@ -335,7 +343,6 @@ class OcelotInterfaceWindow(QFrame):
             dev.mi = self.mi
             devices.append(dev)
         return devices
-
 
     def indicate_machine_state(self):
         """
@@ -445,8 +452,8 @@ class OcelotInterfaceWindow(QFrame):
         :return: None
         """
         try:
-            from mint import obj_function
-            reload(obj_function)
+            obj_function_module = self.mi.get_obj_function_module()
+            reload(obj_function_module)
             self.ui.pb_edit_obj_func.setStyleSheet("background: #4e4e4e")
         except Exception as ex:
             self.ui.pb_edit_obj_func.setStyleSheet("background: red")
@@ -457,8 +464,10 @@ class OcelotInterfaceWindow(QFrame):
 
         if self.ui.cb_use_predef.checkState():
             print("RELOAD Module Objective Function")
-            self.objective_func = obj_function.XFELTarget(mi=self.mi)
+            obj_function_module = self.mi.get_obj_function_module()
+            self.objective_func = obj_function_module.target_class(mi=self.mi)
             self.objective_func.devices = []
+            self.objective_func.stats = self.ui.cb_statistics.currentData()
         else:
             # disable button "Edit Objective Function"
             # self.ui.pb_edit_obj_func.setEnabled(False)
@@ -521,7 +530,6 @@ class OcelotInterfaceWindow(QFrame):
         Method to set the MachineStatus method self.is_ok using GUI Alarm channel and limits
         :return: None
         """
-
         alarm_dev = str(self.ui.le_alarm.text()).replace(" ", "")
         print("set_m_status: alarm_dev", alarm_dev)
         if alarm_dev == "":
@@ -678,6 +686,23 @@ class OcelotInterfaceWindow(QFrame):
     def error_box(self, message):
         QtGui.QMessageBox.about(self, "Error box", message)
         #QtGui.QMessageBox.critical(self, "Error box", message)
+
+    def assemble_preset_box(self):
+        print("Assembling Preset Box")
+        presets = self.mi.get_preset_settings()
+        layout = self.ui.preset_layout
+        for display, methods in presets.items():
+            gb = QGroupBox(self)
+            gb.setTitle(display)
+            inner_layout = QVBoxLayout(gb)
+            for m in methods:
+                btn = QPushButton(gb)
+                btn.setText(m["display"])
+                inner_layout.addWidget(btn)
+                #btn.clicked.connect(functools.partial())
+            vert_spacer = QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+            inner_layout.addItem(vert_spacer)
+            layout.addWidget(gb)
 
 class customLegend(pg.LegendItem):
     """

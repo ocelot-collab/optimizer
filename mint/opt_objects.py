@@ -53,6 +53,15 @@ class MachineInterface(object):
         """
         return Device(eid=pv)
 
+    def get_preset_settings(self):
+        """
+        Return the preset settings to be assembled as Push Buttons at the user interface for quick load of settings.
+
+        :return: (dict) Dictionary with Key being the group name and as value an array of dictionaries following the
+        format:
+            {"display": "Text of the PushButton", "filename": "my_file.json"}
+        """
+        return dict()
 
 class Device(object):
     def __init__(self, eid=None):
@@ -164,6 +173,7 @@ class Target(object):
         self.times = []
         self.nreadings = 1
         self.interval = 0.0
+        self.stats = None
 
     def get_value(self):
         return 0
@@ -208,6 +218,7 @@ class Target(object):
         self.times = []
         self.alarms = []
         self.values = []
+
 
 class Target_test(Target):
     def __init__(self, mi=None, eid=None):
@@ -270,60 +281,3 @@ class Target_test(Target):
         return 3
 
 
-class SLACTarget(Target):
-    def __init__(self, mi=None, eid=None):
-        """
-        :param mi: Machine interface
-        :param eid: ID
-        """
-        super(SLACTarget, self).__init__(eid=eid)
-        self.mi = mi
-
-    def get_value(self, datain, points=120):
-        """
-        Returns data for the ojective function (sase) from the selected detector PV.
-
-        At lcls the repetition is  120Hz and the readout buf size is 2800.
-        The last 120 entries correspond to pulse energies over past 1 second.
-
-        Args:
-                seconds (float): Variable input on how many seconds to average data
-
-        Returns:
-                Float of SASE or other detecor measurment
-        """
-
-        # standard run:
-        try:
-            if self.stat_name == 'Median':
-                statistic = np.median(datain[-int(points):])
-            elif self.stat_name == 'Standard deviation':
-                statistic = np.std(datain[-int(points):])
-            elif self.stat_name == 'Median deviation':
-                median = np.median(datain[-int(points):])
-                statistic = np.median(np.abs(datain[-int(points):]-median))
-            elif self.stat_name == 'Max':
-                statistic = np.max(datain[-int(points):])
-            elif self.stat_name == 'Min':
-                statistic = np.min(datain[-int(points):])
-            elif self.stat_name == '80th percentile':
-                statistic = np.percentile(datain[-int(points):],80)
-            elif self.stat_name == 'average of points > mean':
-                dat_last = datain[-int(points):]
-                percentile = np.percentile(datain[-int(points):],50)
-                statistic = np.mean(dat_last[dat_last>percentile])
-            elif self.stat_name == '20th percentile':
-                statistic = np.percentile(datain[-int(points):],20)
-            else:
-                self.stat_name = 'Mean'
-                statistic = np.mean(datain[-int(points):])
-            # check if this is even used:
-            sigma = np.std( datain[-int(points):])
-        except: #if average fails use the scalar input
-            print("Detector is not a waveform PV, using scalar value")
-            statistic = datain
-            sigma = -1
-
-        print(self.stat_name, ' of ', datain[-int(points):].size, ' points is ', statistic, ' and standard deviation is ', sigma)
-
-        return statistic

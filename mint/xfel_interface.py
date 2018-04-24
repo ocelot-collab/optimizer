@@ -11,6 +11,7 @@ try:
 except:
     pass # Show message on Constructor if we try to use it.
 
+import os
 import sys
 import numpy as np
 import subprocess
@@ -129,6 +130,30 @@ class XFELMachineInterface(MachineInterface):
             succeded = False
         return succeded
 
+    def get_obj_function_module(self):
+        from mint import xfel_obj_function
+        return xfel_obj_function
+
+    def get_preset_settings(self):
+        """
+        Return the preset settings to be assembled as Push Buttons at the user interface for quick load of settings.
+
+        :return: (dict) Dictionary with Key being the group name and as value an array of dictionaries following the
+        format:
+            {"display": "Text of the PushButton", "filename": "my_file.json"}
+        """
+        presets = {
+            "SASE Optimization": [
+                {"display": "1. Launch orbit SASE1", "filename": "sase1_1.json"},
+                {"display": "2. Match Quads SASE1", "filename": "sase1_2.json"},
+            ],
+            "Dispersion Minimization": [
+                {"display": "1. I1 Horizontal", "filename": "disp_1.json"},
+                {"display": "2. I1 Vertical", "filename": "disp_2.json"},
+            ]
+        }
+        return presets
+
 # test interface
 
 
@@ -203,3 +228,27 @@ class TestMachineInterface(MachineInterface):
         # TODO: @sergey.tomin Figure out what to do for logbook at the TestMachineInterface
         print('Send to Logbook not implemented for TestMachineInterface.')
         return True
+
+    def get_obj_function_module(self):
+        from mint import xfel_obj_function
+        return xfel_obj_function
+
+    def get_preset_settings(self):
+        """
+        Return the preset settings to be assembled as Push Buttons at the user interface for quick load of settings.
+
+        :return: (dict) Dictionary with Key being the group name and as value an array of dictionaries following the
+        format:
+            {"display": "Text of the PushButton", "filename": "my_file.json"}
+        """
+        presets = {
+            "SASE Optimization": [
+                {"display": "1. Launch orbit SASE1", "filename": "sase1_1.json"},
+                {"display": "2. Match Quads SASE1", "filename": "sase1_2.json"},
+            ],
+            "Dispersion Minimization": [
+                {"display": "1. I1 Horizontal", "filename": "disp_1.json"},
+                {"display": "2. I1 Vertical", "filename": "disp_2.json"},
+            ]
+        }
+        return presets
