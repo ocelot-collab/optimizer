@@ -13,6 +13,8 @@ import sys
 import os
 import argparse
 import sklearn
+import functools
+import inspect
 from datetime import datetime
 sklearn_version = sklearn.__version__
 
@@ -24,8 +26,9 @@ print("PATH", os.path.realpath(__file__))
 # for pyqtgraph import
 #sys.path.append(path[:indx]+"ocelot")
 
-from PyQt5.QtWidgets import QApplication, QFrame, QGroupBox, QPushButton, QSpacerItem, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QFrame, QGroupBox, QLabel, QComboBox, QPushButton, QSpacerItem, QVBoxLayout
 import PyQt5.QtGui
+from PyQt5.QtCore import QSize
 import platform
 import pyqtgraph as pg
 if sys.version_info[0] == 2:
@@ -61,6 +64,7 @@ class OcelotInterfaceWindow(QFrame):
         self.path2ocelot = os.path.dirname(path)
         self.optimizer_path = self.path2ocelot + os.sep
         self.config_dir = os.path.join(self.path2ocelot, "parameters")
+        self.path2preset = os.path.join(self.config_dir, "standard")
         self.set_file = os.path.join(self.config_dir, "default.json")  # ./parameters/default.json"
         self.obj_save_path = os.path.join(self.config_dir, "obj_funcs")
 
@@ -103,6 +107,7 @@ class OcelotInterfaceWindow(QFrame):
                 self.mi = globals()[class_name]()
 
         self.assemble_preset_box()
+        self.assemble_quick_add_box()
 
         self.total_delay = self.ui.sb_tdelay.value()
 
@@ -425,8 +430,8 @@ class OcelotInterfaceWindow(QFrame):
             print('current actions', [(t.id, t.tuning_id, t.sase_start, t.sase_end) for t in self.db.get_actions()])
             print('current action parameters', [(p.tuning_id, p.action_id, p.par_name, p.start_value, p.end_value) for p in
                                                 self.db.get_action_parameters(tune_id, action_id)])
-        except:
-            self.error_box(message="Database error")
+        except Exception as ex:
+            self.error_box(message="Database error. Exception was: " + str(ex))
 
         dump2json["dev_times"] = self.devices[0].times
         dump2json["obj_values"] = self.objective_func.values
@@ -465,7 +470,14 @@ class OcelotInterfaceWindow(QFrame):
         if self.ui.cb_use_predef.checkState():
             print("RELOAD Module Objective Function")
             obj_function_module = self.mi.get_obj_function_module()
-            self.objective_func = obj_function_module.target_class(mi=self.mi)
+            if 'target_class' in dir(obj_function_module):
+                tclass = obj_function_module.target_class
+            else:
+                tclass = [obj for name, obj in inspect.getmembers(obj_function_module) if
+                 inspect.isclass(obj) and issubclass(obj, Target) and obj != Target][0]
+
+            print("Target Class: ", tclass)
+            self.objective_func = tclass(mi=self.mi)
             self.objective_func.devices = []
             self.objective_func.stats = self.ui.cb_statistics.currentData()
         else:
@@ -508,7 +520,7 @@ class OcelotInterfaceWindow(QFrame):
                     E = self.mi.get_value(e_str)
                 return eval(func)
 
-            self.objective_func = obj.Target(eid=a_str)
+            self.objective_func = Target(eid=a_str)
             self.objective_func.devices = []
             self.objective_func.get_value = get_value_exp
 
@@ -687,6 +699,36 @@ class OcelotInterfaceWindow(QFrame):
         QtGui.QMessageBox.about(self, "Error box", message)
         #QtGui.QMessageBox.critical(self, "Error box", message)
 
+    def assemble_quick_add_box(self):
+        devs = self.mi.get_quick_add_devices()
+        if devs is None or len(devs) == 0:
+            return
+
+        resetpanel_box = self.ui.widget
+        layout_quick_add = resetpanel_box.ui.layout_quick_add
+
+        def add_to_list():
+            l = cb_quick_list.currentData()
+            for pv in l:
+                resetpanel_box.addPv(pv)
+
+        pb_add_dev = QPushButton(resetpanel_box)
+        pb_add_dev.setText("Add Devices")
+        pb_add_dev.clicked.connect(add_to_list)
+        pb_add_dev.setMaximumWidth(100)
+        lb_from_list = QLabel()
+        lb_from_list.setText("From List: ")
+        lb_from_list.setMaximumWidth(75)
+        cb_quick_list = QComboBox()
+        cb_quick_list.addItem("", [])
+        cb_quick_list.setMinimumWidth(200)
+        for display, itms in devs.items():
+            cb_quick_list.addItem(display, itms)
+
+        layout_quick_add.addWidget(pb_add_dev)
+        layout_quick_add.addWidget(lb_from_list)
+        layout_quick_add.addWidget(cb_quick_list)
+
     def assemble_preset_box(self):
         print("Assembling Preset Box")
         presets = self.mi.get_preset_settings()
@@ -699,7 +741,8 @@ class OcelotInterfaceWindow(QFrame):
                 btn = QPushButton(gb)
                 btn.setText(m["display"])
                 inner_layout.addWidget(btn)
-                #btn.clicked.connect(functools.partial())
+                part = functools.partial(self.ui.load_settings,os.path.join(self.path2preset, m["filename"]))
+                btn.clicked.connect(part)
             vert_spacer = QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
             inner_layout.addItem(vert_spacer)
             layout.addWidget(gb)

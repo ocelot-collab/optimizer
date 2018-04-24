@@ -63,6 +63,30 @@ class MachineInterface(object):
         """
         return dict()
 
+    def get_obj_function_module(self):
+        """
+        Return the module with the proper Target class.
+
+        :return: module
+        """
+        import opt_objects
+        return opt_objects
+
+    def get_quick_add_devices(self):
+        """
+        Return a dictionary with:
+        {
+        "QUADS1" : ["...", "..."],
+        "QUADS2": ["...", "..."]
+        }
+
+        That is converted into a combobox which allow users to easily populate the devices list
+
+        :return: dict
+        """
+        return dict()
+
+
 class Device(object):
     def __init__(self, eid=None):
         self.eid = eid

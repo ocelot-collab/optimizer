@@ -33,12 +33,12 @@ class MainWindow(Ui_Form):
         self.pb_hyper_file.clicked.connect(self.get_hyper_file)
         self.pb_logbook.clicked.connect(self.logbook)
 
-        self.le_a.textChanged.connect(self.check_address)
-        self.le_b.textChanged.connect(self.check_address)
-        self.le_c.textChanged.connect(self.check_address)
-        self.le_d.textChanged.connect(self.check_address)
-        self.le_e.textChanged.connect(self.check_address)
-        self.le_alarm.textChanged.connect(self.check_address)
+        self.le_a.editingFinished.connect(self.check_address)
+        self.le_b.editingFinished.connect(self.check_address)
+        self.le_c.editingFinished.connect(self.check_address)
+        self.le_d.editingFinished.connect(self.check_address)
+        self.le_e.editingFinished.connect(self.check_address)
+        self.le_alarm.editingFinished.connect(self.check_address)
 
         self.sb_tdelay.valueChanged.connect(self.set_cycle)
         self.sb_ddelay.valueChanged.connect(self.set_cycle)
@@ -53,6 +53,8 @@ class MainWindow(Ui_Form):
         reading alarm value
         :return:
         """
+        if self.le_alarm.hasFocus():
+            return
         dev = str(self.le_alarm.text())
         try:
             value = self.Form.mi.get_value(dev)
@@ -79,16 +81,22 @@ class MainWindow(Ui_Form):
         self.is_le_addr_ok(self.le_alarm)
 
     def is_le_addr_ok(self, line_edit):
+        if not line_edit.isEnabled():
+            return False
         dev = str(line_edit.text())
         state = True
         try:
-            self.Form.mi.get_value(dev)
+            val = self.Form.mi.get_value(dev)
+            if val is None:
+                state = False
         except:
             state = False
+
         if state:
             line_edit.setStyleSheet("color: rgb(85, 255, 0);")
         else:
             line_edit.setStyleSheet("color: red")
+        line_edit.clearFocus()
         return state
 
     def save_state(self, filename):
@@ -217,11 +225,10 @@ class MainWindow(Ui_Form):
         except:
             print("RESTORE STATE: ERROR")
 
-
     def save_state_as(self):
-
         filename = QtGui.QFileDialog.getSaveFileName(self.Form, 'Save State',
-        self.Form.config_dir, "txt (*.json)", None, QtGui.QFileDialog.DontUseNativeDialog)[0]
+                                                     self.Form.config_dir, "txt (*.json)", None,
+                                                     QtGui.QFileDialog.DontUseNativeDialog)[0]
         if filename:
             name = filename.split("/")[-1]
             parts = name.split(".")
@@ -231,26 +238,28 @@ class MainWindow(Ui_Form):
             if len(parts)<2 or parts[1] !="json":
                 part = filename.split(".")[0]
                 filename = part + ".json"
-            copy(self.Form.obj_func_path, self.Form.obj_save_path + body_name +".py")
+            copy(self.Form.path_to_obj_func, self.Form.obj_save_path + body_name +".py")
             #self.Form.set_file = filename
             self.save_state(filename)
 
-
     def load_state_from(self):
         filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load State',
-        self.Form.config_dir, "txt (*.json)", None, QtGui.QFileDialog.DontUseNativeDialog)[0]
+                                                     self.Form.config_dir, "txt (*.json)", None,
+                                                     QtGui.QFileDialog.DontUseNativeDialog)[0]
         if filename:
             self.load_settings(filename)
 
     def load_settings(self, filename):
+        print("Load Settings with: ", filename)
         (body_name, extension) = filename.split("/")[-1].split(".")
-        copy(self.Form.obj_save_path + body_name + ".py", self.Form.obj_func_path)
+        copy(self.Form.obj_save_path + body_name + ".py", self.Form.path_to_obj_func)
         self.restore_state(filename)
 
     def get_hyper_file(self):
         #filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters', filter="txt (*.npy *.)")
         filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters',
-        self.Form.optimizer_path  + "parameters", "txt (*.npy)", QtGui.QFileDialog.DontUseNativeDialog)
+                                                     self.Form.optimizer_path + "parameters", "txt (*.npy)",
+                                                     QtGui.QFileDialog.DontUseNativeDialog)
         if filename:
             self.Form.hyper_file = str(filename)
             self.pb_hyper_file.setText(self.Form.hyper_file)
