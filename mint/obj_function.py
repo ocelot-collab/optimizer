@@ -60,18 +60,6 @@ class XFELTarget(Target):
         # value = self.mi.get_value(self.eid)
 
 
-    def get_value_test(self):
-        """
-        For testing
-
-        :return:
-        """
-        values = np.array([dev.get_value() for dev in self.devices])
-        value = 2*np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
-        value = value * (1. + (np.random.rand(1)[0] - 0.5) * 0.001)
-        return value 
-
-
     def get_penalty(self):
         """
         Method to calculate the penalty on the basis of the value and alarm level.
