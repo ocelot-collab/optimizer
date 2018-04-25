@@ -19,6 +19,8 @@ from GP.OnlineGP import OGP
 import pandas as pd
 from threading import Thread
 import sklearn
+from op_methods.es import ES_min
+
 sklearn_version = sklearn.__version__
 if sklearn_version >= "0.18":
     from GP import gaussian_process as gp_sklearn
@@ -52,13 +54,15 @@ class Minimizer(object):
     def minimize(self, error_func, x):
         pass
 
-#class ESMin(Minimizer):
-#    def __init__(self):
-#        super(ESMin, self).__init__()
-#
-#    def minimize(self, error_func, x):
-#        es.ES_min.minimize(error_func, x, optional_options)
-#        return
+
+class ESMin(Minimizer):
+    def __init__(self):
+        super(ESMin, self).__init__()
+        self.ES = ES_min()
+
+    def minimize(self, error_func, x):
+        self.ES.minimize(error_func, x)
+        return
 
 
 class Simplex(Minimizer):

@@ -75,6 +75,7 @@ class OcelotInterfaceWindow(QFrame):
         self.name_gauss_sklearn = "Gaussian Process sklearn"
         self.name_custom = "Custom Minimizer"
         self.name_simplex_norm = "Simplex Norm."
+        #self.name_es = "Extremum Seeking"
         # self.name4 = "Conjugate Gradient"
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
@@ -82,6 +83,7 @@ class OcelotInterfaceWindow(QFrame):
         #self.ui.cb_select_alg.addItem(self.name_gauss)
         self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
+        self.ui.cb_select_alg.addItem(self.name_es)
         if sklearn_version >= "0.18":
             self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
 
@@ -170,7 +172,8 @@ class OcelotInterfaceWindow(QFrame):
 
         elif current_method == self.name_simplex_norm:
             minimizer = mint.Simplex()
-
+        elif current_method == self.name_es:
+            minimizer = mint.ESMin()
         #simplex Method
         else:
             minimizer = mint.Simplex()
