@@ -117,7 +117,7 @@ class Device(object):
     def check_limits(self, value):
         limits = self.get_limits()
         # Disable Limits when both are 0.
-        if limits[0] == limits[1] and limits[0] == 0.:
+        if np.abs(limits[0]) < 1e-15 and np.abs(limits[1]) < 1e-15:
             return False
         if value < limits[0] or value > limits[1]:
             print('limits exceeded for ', self.id, " - ", value, limits[0], value, limits[1])
