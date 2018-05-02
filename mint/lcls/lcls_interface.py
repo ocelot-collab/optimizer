@@ -93,7 +93,7 @@ class LCLSMachineInterface(MachineInterface):
         print("Called send to Logbook with: \nArgs: {}\nand\nKwargs: {}".format(args, kwargs))
 
     def get_obj_function_module(self):
-        from mint import lcls_obj_function
+        from mint.lcls import lcls_obj_function
         return lcls_obj_function
 
     def get_preset_settings(self):

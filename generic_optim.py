@@ -15,7 +15,7 @@ import argparse
 import sklearn
 import functools
 import inspect
-from datetime import datetime
+
 sklearn_version = sklearn.__version__
 
 path = os.path.realpath(__file__)
@@ -28,8 +28,6 @@ print("PATH", os.path.realpath(__file__))
 
 from PyQt5.QtWidgets import (QApplication, QFrame, QGroupBox, QLabel, QComboBox, QPushButton, QSpacerItem,
                              QVBoxLayout, QDesktopWidget)
-import PyQt5.QtGui
-from PyQt5.QtCore import QSize
 import platform
 import pyqtgraph as pg
 if sys.version_info[0] == 2:
@@ -45,7 +43,7 @@ from mint import mint
 from mint import opt_objects as obj
 
 from mint.xfel_interface import *
-from mint.lcls_interface import *
+from mint.lcls.lcls_interface import *
 from stats import stats
 
 

@@ -16,9 +16,8 @@ import numpy as np
 
 from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialog
-from PyQt5 import QtGui, QtCore, Qt, uic
+from PyQt5 import QtGui, QtCore, uic
 from PyQt5.QtGui import QClipboard
-from mint.lcls_interface import *
 
 
 class customTW(QTableWidget):
@@ -407,6 +406,7 @@ def main():
     """
     Start up the main program if launch from comamnd line.
     """
+    import sys
     try:
         pvs = sys.argv[1]
     except:

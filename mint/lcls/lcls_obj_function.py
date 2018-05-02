@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-from opt_objects import Target
+from mint.opt_objects import Target
 import stats.stats as stats
 
 
