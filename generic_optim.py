@@ -26,7 +26,8 @@ print("PATH", os.path.realpath(__file__))
 # for pyqtgraph import
 #sys.path.append(path[:indx]+"ocelot")
 
-from PyQt5.QtWidgets import QApplication, QFrame, QGroupBox, QLabel, QComboBox, QPushButton, QSpacerItem, QVBoxLayout
+from PyQt5.QtWidgets import (QApplication, QFrame, QGroupBox, QLabel, QComboBox, QPushButton, QSpacerItem,
+                             QVBoxLayout, QDesktopWidget)
 import PyQt5.QtGui
 from PyQt5.QtCore import QSize
 import platform
@@ -712,6 +713,15 @@ class OcelotInterfaceWindow(QFrame):
             for pv in l:
                 resetpanel_box.addPv(pv)
 
+        def clear_list():
+            resetpanel_box.pvs = []
+            resetpanel_box.devices = []
+            resetpanel_box.ui.tableWidget.setRowCount(0)
+
+        pb_clear_dev = QPushButton(resetpanel_box)
+        pb_clear_dev.setText("Clear Devices")
+        pb_clear_dev.setMaximumWidth(100)
+        pb_clear_dev.clicked.connect(clear_list)
         pb_add_dev = QPushButton(resetpanel_box)
         pb_add_dev.setText("Add Devices")
         pb_add_dev.clicked.connect(add_to_list)
@@ -725,6 +735,7 @@ class OcelotInterfaceWindow(QFrame):
         for display, itms in devs.items():
             cb_quick_list.addItem(display, itms)
 
+        layout_quick_add.addWidget(pb_clear_dev)
         layout_quick_add.addWidget(pb_add_dev)
         layout_quick_add.addWidget(lb_from_list)
         layout_quick_add.addWidget(cb_quick_list)
@@ -795,6 +806,11 @@ def main():
     path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'ocelot.png')
     app.setWindowIcon(QtGui.QIcon(path))
     window = OcelotInterfaceWindow()
+
+    frame_gm = window.frameGeometry()
+    center_point = QDesktopWidget().availableGeometry().center()
+    frame_gm.moveCenter(center_point)
+    window.move(frame_gm.topLeft())
     # setting the path variable for icon
     #path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'ocelot.png')
     #window.setWindowIcon(QtGui.QIcon(path))
