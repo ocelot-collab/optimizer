@@ -6,7 +6,7 @@ import stats.stats as stats
 
 
 class SLACTarget(Target):
-    def __init__(self, mi=None, eid=None):
+    def __init__(self, mi=None, eid='GDET:FEE1:241:ENRCHSTBR'):
         """
         :param mi: Machine interface
         :param eid: ID
@@ -47,9 +47,9 @@ class SLACTarget(Target):
         Returns:
                 Float of SASE or other detecor measurment
         """
-        TARGET_PV = 'OPT:Waveform'
+        target_pv = self.eid
         points = 120
-        datain = self.mi.get_value(TARGET_PV)
+        datain = self.mi.get_value(target_pv)
 
         if self.stats is None:
             self.stats = stats.StatNone

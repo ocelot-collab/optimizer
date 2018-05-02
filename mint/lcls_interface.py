@@ -6,6 +6,7 @@ Machine interface file for the LCLS to ocelot optimizer
 from __future__ import absolute_import, print_function
 try:
     import epics
+    epics.ca.DEFAULT_CONNECTION_TIMEOUT = 0.1
 except ImportError:
     # Ignore the error since maybe no one is trying to use it... we will raise on the ctor.
     pass
