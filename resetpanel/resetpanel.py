@@ -201,7 +201,12 @@ class ResetpanelWindow(QFrame):
                 self.startValues[dev.eid] = value
 
             if self.startValues[dev.eid] is None or value is None:
-                self.ui.tableWidget.item(row, 5).setFlags(QtCore.Qt.NoItemFlags)
+                item = self.ui.tableWidget.item(row, 5)
+
+                if item is None:
+                    continue
+
+                item.setFlags(QtCore.Qt.NoItemFlags)
                 for col in [0, 5]:
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(255, 0, 0))  # red
 
