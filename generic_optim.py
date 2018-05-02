@@ -44,7 +44,6 @@ from mint.opt_objects import *
 from mint import mint
 from mint import opt_objects as obj
 
-from utils import db
 from mint.xfel_interface import *
 from mint.lcls_interface import *
 from stats import stats
@@ -118,14 +117,6 @@ class OcelotInterfaceWindow(QFrame):
         self.addPlots()
 
         # database
-        self.dbname =  os.path.join(self.config_dir, "test.db")  #"./parameters/test.db"
-        # db.create_db(self.dbname)
-        print(self.optimizer_path, self.set_file, self.dbname)
-        try:
-            self.db = db.PerfDB(dbname=self.dbname)
-        except:
-            self.db = None
-            self.error_box(message="Database is not available")
 
         self.scan_params = None
         self.hyper_file = "../parameters/hyperparameters.npy"
@@ -228,7 +219,9 @@ class OcelotInterfaceWindow(QFrame):
             self.m_status.is_ok = lambda: True
             # Save the optimization parameters to the database
             try:
-                self.save2db()
+                ret, msg = self.save2db()
+                if not ret:
+                    self.error_box(message=msg)
             except:
                 print("ERROR start_scan: can not save to db")
             del(self.opt)
@@ -326,10 +319,21 @@ class OcelotInterfaceWindow(QFrame):
             if self.ui.pb_start_scan.text() == "Stop optimization" and not (self.opt.isAlive()):
                 self.ui.pb_start_scan.setStyleSheet("color: rgb(85, 255, 127);")
                 self.ui.pb_start_scan.setText("Start optimization")
-                self.save2db()
+                ret, msg = self.save2db()
+                if not ret:
+                    self.error_box(message=msg)
                 print("scan_finished: OK")
         except Exception as ex:
             print("scan_finished: ERROR. Exception was: ", ex)
+
+    def save2db(self):
+        if self.mi is not None:
+            method_name = self.method_name
+            obj_func = self.objective_func
+            devices = self.devices
+            maximization = self.ui.rb_maximize.isChecked()
+            max_iter = self.max_iter
+            self.mi.write_data(self, method_name, obj_func, devices, maximization, max_iter)
 
     def create_devices(self, pvs):
         """
@@ -366,90 +370,6 @@ class OcelotInterfaceWindow(QFrame):
                 return
             self.ui.widget_2.setStyleSheet("background-color:323232;")
             self.ui.widget_3.setStyleSheet("background-color:323232;")
-
-
-    def save2db(self):
-        """
-        Save optimization parameters to the Database
-
-        :return: None
-        """
-        dump2json = {}
-        self.scan_params = {"devs": [], "currents": [], "iter":0, "sase": [0,0],"pen":[0,0], "obj":[]}
-        d_names = []
-        d_start = []
-        d_stop = []
-        for dev in self.devices:
-            self.scan_params["devs"].append(dev.eid)
-            d_names.append(dev.eid + "_val")
-            d_start.append(dev.values[0])
-            d_stop.append(dev.values[-1])
-
-            self.scan_params["currents"].append([dev.values[0], dev.values[-1]])
-
-            d_names.append(dev.eid + "_lim")
-            d_start.append(dev.get_limits()[0])
-            d_stop.append(dev.get_limits()[1])
-            dump2json[dev.eid] = dev.values
-
-        self.scan_params["iter"] = len(self.objective_func.penalties)
-
-        self.scan_params["sase"] = [self.objective_func.values[0], self.objective_func.values[-1]]
-        self.scan_params["pen"] = [self.objective_func.penalties[0], self.objective_func.penalties[-1]]
-        self.scan_params["method"] = self.method_name
-
-        o_names = ["obj_id", "obj_value", "obj_pen", "niter"]
-        o_start = [self.objective_func.eid, self.objective_func.values[0], self.objective_func.penalties[0], self.max_iter]
-        o_stop = [self.objective_func.eid, self.objective_func.values[-1], self.objective_func.penalties[-1],  len(self.objective_func.penalties)]
-
-
-        start_sase = self.objective_func.values[0]
-        stop_sase = self.objective_func.values[-1]
-
-        #print('current actions in tuning', [(t.id, t.tuning_id, t.sase_start, t.sase_end) for t in self.db.get_actions()])
-
-
-        # add new data here START
-        new_data_name =  ["method"]
-        new_data_start = [self.method_name]
-        new_data_end =   [self.method_name]
-        # add new data here END
-
-        param_names = o_names + d_names + new_data_name
-        start_vals = o_start+d_start + new_data_start
-        end_vals = o_stop+d_stop + new_data_end
-
-        try:
-            self.db.new_tuning({'wl': 13.6, 'charge': self.mi.get_charge(), 'comment': 'test tuning'})
-            tune_id = self.db.current_tuning_id()
-            self.db.new_action(tune_id, start_sase=start_sase, end_sase=stop_sase)
-
-            action_id = self.db.current_action_id()
-            self.db.add_action_parameters(tune_id, action_id, param_names=param_names, start_vals=start_vals,
-                                     end_vals=end_vals)
-
-            print('current actions', [(t.id, t.tuning_id, t.sase_start, t.sase_end) for t in self.db.get_actions()])
-            print('current action parameters', [(p.tuning_id, p.action_id, p.par_name, p.start_value, p.end_value) for p in
-                                                self.db.get_action_parameters(tune_id, action_id)])
-        except Exception as ex:
-            self.error_box(message="Database error. Exception was: " + str(ex))
-
-        dump2json["dev_times"] = self.devices[0].times
-        dump2json["obj_values"] = self.objective_func.values
-        dump2json["obj_times"] = self.objective_func.times
-        dump2json["maximization"] = self.ui.rb_maximize.isChecked()
-        #path = os.getcwd()
-        #indx = path.find("ocelot")
-        #path = path[:indx]
-        path = self.path2ocelot
-        print("JSON", path)
-        filename = os.path.join(path, "data", datetime.now().strftime("%Y-%m-%d %H-%M-%S") + ".json")
-        #print(filename)
-        try:
-            with open(filename, 'w+') as f:
-                json.dump(dump2json, f)
-        except:
-            print("ERROR. Could not write history")
 
     def set_obj_fun(self):
         """
