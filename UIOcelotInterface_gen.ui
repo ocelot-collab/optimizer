@@ -1243,10 +1243,10 @@
                    <locale language="English" country="UnitedStates"/>
                   </property>
                   <property name="minimum">
-                   <double>-100.000000000000000</double>
+                   <double>-99999999.989999994635582</double>
                   </property>
                   <property name="maximum">
-                   <double>100.989999999999995</double>
+                   <double>99999999.989999994635582</double>
                   </property>
                   <property name="singleStep">
                    <double>0.100000000000000</double>
@@ -1291,10 +1291,10 @@
                    <locale language="English" country="UnitedStates"/>
                   </property>
                   <property name="minimum">
-                   <double>-100.000000000000000</double>
+                   <double>-99999999.989999994635582</double>
                   </property>
                   <property name="maximum">
-                   <double>100.989999999999995</double>
+                   <double>99999999.989999994635582</double>
                   </property>
                   <property name="singleStep">
                    <double>0.100000000000000</double>
