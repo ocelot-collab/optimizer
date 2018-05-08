@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 import json
 
+from PyQt5.QtWidgets import QWidget
 
 
 class MachineInterface(object):
@@ -34,6 +35,67 @@ class MachineInterface(object):
         """
         raise NotImplementedError
 
+    def logbook(self, gui):
+        """
+        Method invoked when the Logbook button is pressed at the Main Screen.
+
+        :param gui: (MainWindow) The application Main Window
+        :return: None
+        """
+        filename = "screenshot"
+        filetype = "png"
+        self.screenShot(gui, filename, filetype)
+        table = gui.Form.scan_params
+
+        # curr_time = datetime.now()
+        # timeString = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
+        text = ""
+
+        if not gui.cb_use_predef.checkState():
+            text += "obj func: A   : " + str(gui.le_a.text()).split("/")[-2] + "/" + str(gui.le_a.text()).split("/")[
+                -1] + "\n"
+            if str(gui.le_b.text()) != "" and gui.is_le_addr_ok(gui.le_b):
+                text += "obj func: B   : " + str(gui.le_b.text()).split("/")[-2] + "/" + \
+                        str(gui.le_b.text()).split("/")[-1] + "\n"
+            if str(gui.le_c.text()) != "" and gui.is_le_addr_ok(gui.le_c):
+                text += "obj func: C   : " + str(gui.le_c.text()).split("/")[-2] + "/" + \
+                        str(gui.le_c.text()).split("/")[-1] + "\n"
+            if str(gui.le_d.text()) != "" and gui.is_le_addr_ok(gui.le_d):
+                text += "obj func: D   : " + str(gui.le_d.text()).split("/")[-2] + "/" + \
+                        str(gui.le_d.text()).split("/")[-1] + "\n"
+            if str(gui.le_e.text()) != "" and gui.is_le_addr_ok(gui.le_e):
+                text += "obj func: E   : " + str(gui.le_e.text()).split("/")[-2] + "/" + \
+                        str(gui.le_e.text()).split("/")[-1] + "\n"
+            text += "obj func: expr: " + str(gui.le_obf.text()) + "\n"
+        else:
+            try:
+                text += "obj func: A   : predefined  " + gui.Form.objective_func.eid + "\n"
+            except:
+                pass
+        if table is not None:
+            for i, dev in enumerate(table["devs"]):
+                # print(dev.split("/"))
+                text += "dev           : " + dev.split("/")[-2] + "/" + dev.split("/")[-1] + "   " + str(
+                    table["currents"][i][0]) + " --> " + str(
+                    table["currents"][i][1]) + "\n"
+
+            text += "iterations    : " + str(table["iter"]) + "\n"
+            text += "delay         : " + str(gui.Form.total_delay) + "\n"
+            text += "START-->STOP  : " + str(table["sase"][0]) + " --> " + str(table["sase"][1]) + "\n"
+            text += "Method        : " + str(table["method"]) + "\n"
+        screenshot_data = None
+        try:
+            with open(gui.Form.optimizer_path + filename + "." + filetype, 'rb') as screenshot:
+                screenshot_data = screenshot.read()
+        except IOError as ioe:
+            print("Could not find screenshot to read. Exception was: ", ioe)
+        if gui.Form is not None and gui.Form.mi is not None:
+            res = self.send_to_logbook(author="", title="OCELOT Optimization", severity="INFO", text=text,
+                                               image=screenshot_data)
+
+        if not res:
+            gui.Form.error_box("error during eLogBook sending")
+
     def send_to_logbook(self, *args, **kwargs):
         """
         Send information to the electronic logbook.
@@ -47,6 +109,21 @@ class MachineInterface(object):
             True when the entry was successfully generated, False otherwise.
         """
         pass
+
+    def screenShot(self, gui, filename, filetype="png"):
+        """
+        Takes a screenshot of the whole gui window, saves png and ps images to file
+        :param filename: (str) Directory string of where to save the file
+        :param filetype: (str) String of the filetype to save
+        :return:
+        """
+
+        s = str(filename) + "." + str(filetype)
+        p = QWidget.grab(gui.Form)
+        p.save(s, 'png')
+        p = p.scaled(465, 400)
+        # save again a small image to use for the logbook thumbnail
+        p.save(str(s[:-4]) + "_sm.png", 'png')
 
     def device_factory(self, pv):
         """

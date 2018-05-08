@@ -36,7 +36,7 @@ class XFELMachineInterface(MachineInterface):
         super(XFELMachineInterface, self).__init__()
         if 'pydoocs' not in sys.modules:
             print('error importing doocs library')
-        self.logbook = "xfellog"
+        self.logbook_name = "xfellog"
 
         self.mutex = Lock()
 
@@ -83,7 +83,7 @@ class XFELMachineInterface(MachineInterface):
         severity = kwargs.get('severity', '')
         text = kwargs.get('text', '')
         image = kwargs.get('image', None)
-        elog = self.logbook
+        elog = self.logbook_name
 
         # The DOOCS elog expects an XML string in a particular format. This string
         # is beeing generated in the following as an initial list of strings.

@@ -12,13 +12,23 @@ class SLACTarget(Target):
         :param eid: ID
         """
         super(SLACTarget, self).__init__(eid=eid)
+
         self.mi = mi
+        self.kill = False
+        self.objective_acquisition = None
+        self.objective_mean = None
+        self.objective_stdev = None
+
+        self.objective_acquisitions = []  # all the points
+        self.objective_means = []
         self.std_dev = []
         self.charge = []
         self.current = []
+        self.losses = []
+        self.points = None
 
     def get_penalty(self):
-        sase, std, charge, current = self.get_value()
+        sase, std, charge, current, losses = self.get_value()
         alarm = self.get_alarm()
         pen = 0.0
         if alarm > 1.0:
@@ -29,11 +39,14 @@ class SLACTarget(Target):
         pen -= sase
         self.penalties.append(pen)
         self.times.append(time.time())
-        self.values.append(sase)
+        self.values.append(sase)  # statistic
+        self.objective_acquisitions.append(self.objective_acquisition)  # array of points
+        self.objective_means.append(self.objective_mean)
         self.std_dev.append(std)
         self.alarms.append(alarm)
         self.charge.append(charge)
         self.current.append(current)
+        self.losses.append(losses)
         self.niter += 1
         return pen
 
@@ -47,34 +60,37 @@ class SLACTarget(Target):
         Returns:
                 Float of SASE or other detecor measurment
         """
-        target_pv = self.eid
+        datain = self.mi.get_value(self.eid)
         points = 120
-        datain = self.mi.get_value(target_pv)
 
         if self.stats is None:
             self.stats = stats.StatNone
-        
+
         try:
             data = datain[-int(points):]
-            data_size = points
+            self.objective_acquisition = data
+            self.objective_mean = np.mean(self.objective_acquisition)
+            self.objective_stdev = np.std(self.objective_acquisition)
+            self.statistic = self.stats.compute(data)
+        except:  # if average fails use the scalar input
+            print("Detector is not a waveform PV, using scalar value")
+            self.objective_acquisition = datain
+            self.objective_mean = datain
+            self.objective_stdev = -1
+            self.statistic = datain
 
-            statistic = self.stats.compute(data)
-            sigma = np.std(data)
-
-        except:
-            data = datain
-            data_size = 1
-            statistic = data
-            sigma = -1
+        print(self.stats.display_name, ' of ', self.objective_acquisition.size, ' points is ', self.statistic,
+              ' and standard deviation is ', self.objective_stdev)
 
         charge, current = self.mi.get_charge_current()
-
-        print(self.stats.display_name, ' of ', data_size, ' points is ', statistic, ' and standard deviation is ', sigma)
-
-        return statistic, sigma, charge, current
+        losses = self.mi.get_losses()
+        return self.statistic, self.objective_stdev, charge, current, losses
 
     def clean(self):
         Target.clean(self)
+        self.objective_acquisitions = []  # all the points
+        self.objective_means = []
         self.std_dev = []
         self.charge = []
         self.current = []
+        self.losses = []

@@ -58,6 +58,20 @@ class OcelotInterfaceWindow(QFrame):
         Make the timer object that updates GUI on clock cycle during a scan.
         """
         # PATHS
+        self.optimizer_args = None
+        self.parse_arguments()
+        self.dev_mode = self.optimizer_args.devmode
+
+        if self.dev_mode:
+            self.mi = TestMachineInterface()
+        else:
+            class_name = self.optimizer_args.mi
+            if class_name not in globals():
+                print("Could not find Machine Interface with name: {}. Loading XFELMachineInterface instead.".format(class_name))
+                self.mi = XFELMachineInterface()
+            else:
+                self.mi = globals()[class_name]()
+
         path = os.path.realpath(__file__)
         self.path2ocelot = os.path.dirname(path)
         self.optimizer_path = self.path2ocelot + os.sep
@@ -68,9 +82,6 @@ class OcelotInterfaceWindow(QFrame):
 
         # initialize
         QFrame.__init__(self)
-        self.optimizer_args = None
-        self.parse_arguments()
-        self.dev_mode = self.optimizer_args.devmode
 
         self.ui = MainWindow(self)
 
@@ -94,15 +105,6 @@ class OcelotInterfaceWindow(QFrame):
 
         #self.ui.pb_help.clicked.connect(lambda: os.system("firefox file://"+self.optimizer_path+"docs/build/html/index.html"))
         self.ui.pb_help.clicked.connect(self.ui.open_help)
-        if self.dev_mode:
-            self.mi = TestMachineInterface()
-        else:
-            class_name = self.optimizer_args.mi
-            if class_name not in globals():
-                print("Could not find Machine Interface with name: {}. Loading XFELMachineInterface instead.".format(class_name))
-                self.mi = XFELMachineInterface()
-            else:
-                self.mi = globals()[class_name]()
 
         self.assemble_preset_box()
         self.assemble_quick_add_box()
@@ -220,8 +222,8 @@ class OcelotInterfaceWindow(QFrame):
                 ret, msg = self.save2db()
                 if not ret:
                     self.error_box(message=msg)
-            except:
-                print("ERROR start_scan: can not save to db")
+            except Exception as ex:
+                print("ERROR start_scan: can not save to db. Exception was: ", ex)
             del(self.opt)
             # Setting the button
             self.ui.pb_start_scan.setStyleSheet("color: rgb(85, 255, 127);")
@@ -245,6 +247,8 @@ class OcelotInterfaceWindow(QFrame):
         # set the Objective function from GUI or from file mint.obj_function.py (reloading)
         self.set_obj_fun()
 
+        self.objective_func_pv = self.objective_func.eid
+        self.updatePlotLabels()
         # Set minimizer - the optimization method (Simplex, GP, ...)
         minimizer = self.scan_method_select()
 
@@ -325,13 +329,21 @@ class OcelotInterfaceWindow(QFrame):
             print("scan_finished: ERROR. Exception was: ", ex)
 
     def save2db(self):
+        # first try to gather minimizer data
+        try:
+            self.opt.minimizer.saveModel()  # need to save GP model first
+        except:
+            pass
+
         if self.mi is not None:
             method_name = self.method_name
             obj_func = self.objective_func
             devices = self.devices
             maximization = self.ui.rb_maximize.isChecked()
             max_iter = self.max_iter
-            self.mi.write_data(self, method_name, obj_func, devices, maximization, max_iter)
+            return self.mi.write_data(method_name, obj_func, devices, maximization, max_iter)
+        else:
+            return False, "Machine Interface is not defined."
 
     def create_devices(self, pvs):
         """
@@ -501,10 +513,12 @@ class OcelotInterfaceWindow(QFrame):
         if len(self.objective_func.times) == 0:
             return
 
-
         y = np.array(self.objective_func.penalties)
 
         x = np.array(self.objective_func.times) - self.objective_func.times[0]
+
+        if x.size != y.size:
+            return
 
         self.obj_func_line.setData(x=x, y=y)
         if self.show_obj_value:
@@ -519,6 +533,8 @@ class OcelotInterfaceWindow(QFrame):
             line = self.multilines[dev.eid]
             line.setData(x=x, y=y)
 
+    def updatePlotLabels(self):
+        self.plot1.plotItem.setLabels(**{'left': str(self.objective_func_pv), 'bottom': "Time (seconds)"})
 
     def addPlots(self):
         """

@@ -4,7 +4,29 @@ Machine interface file for the LCLS to ocelot optimizer
 
 """
 from __future__ import absolute_import, print_function
+import os
+import sys
 from collections import OrderedDict
+import numpy as np
+import pandas as pd
+
+from re import sub
+from xml.etree import ElementTree
+from shutil import copy
+from datetime import datetime
+
+from PyQt5.QtWidgets import QWidget
+
+try:
+    import Image
+except:
+    try:
+        from Pillow import Image
+    except:
+        try:
+            from PIL import Image
+        except:
+            print('No Module named Image')
 
 try:
     import epics
@@ -13,7 +35,12 @@ except ImportError:
     # Ignore the error since maybe no one is trying to use it... we will raise on the ctor.
     pass
 
-import sys
+try:
+    import matlog
+except ImportError:
+    import mint.lcls.simlog as matlog
+
+
 from mint.opt_objects import MachineInterface
 
 
@@ -26,8 +53,29 @@ class LCLSMachineInterface(MachineInterface):
 
         # Interface Name
         self.name = 'LCLSMachineInterface'
-        self.logbook = 'lclslogbook'  # TODO: Check the proper name with Joe Duris
+
+        self.data = dict()
         self.pvs = dict()
+
+        # grab loss pvs # TODO: Fix this filename...
+        self.losses_filename = os.path.join(self.get_params_folder(), 'lion.pvs')
+        try:
+            self.losspvs = pd.read_csv(self.losses_filename, header=None)  # ionization chamber values
+            self.losspvs = [pv[0] for pv in np.array(self.losspvs)]
+            print(self.name, ' - INFO: Loaded ', len(self.losspvs), ' loss PVs from ', self.losses_filename)
+        except:
+            self.losspvs = []
+            print(self.name, ' - WARNING: Could not read ', self.losses_filename)
+
+    @staticmethod
+    def get_params_folder():
+        """
+        Returns the path to parameters/lcls folder in this tree.
+
+        :return: (str)
+        """
+        this_dir = os.path.dirname(os.path.realpath(__file__))
+        return os.path.realpath(os.path.join(this_dir, '..', '..', 'parameters', 'lcls'))
 
     def get_value(self, device_name):
         """
@@ -63,6 +111,14 @@ class LCLSMachineInterface(MachineInterface):
             else:
                 return pv.put(val)
 
+    def get_energy(self):
+        """
+        Returns the energy.
+
+        :return: (float)
+        """
+        return self.get_value("BEND:DMP1:400:BDES")
+
     def get_charge(self):
         """
         Returns the charge.
@@ -82,15 +138,78 @@ class LCLSMachineInterface(MachineInterface):
         current = self.get_value('BLEN:LI24:886:BIMAX')
         return charge, current
 
-    def send_to_logbook(self, *args, **kwargs):
-        """
-        Send information to the electronic logbook.
+    def get_losses(self):
+        losses = [self.get_value(pv) for pv in self.losspvs]
+        return losses
 
-        :param args: (list) Values sent to the method without keywork
-        :param kwargs: (dict) Dictionary with key value pairs representing all the metadata hat is available for the entry.
-        :return: (bool) True when the entry was successfully generated, False otherwise.
+    def logbook(self, gui):
+        # Put an extra string into the logbook function
+        objective_func = gui.Form.objective_func
+        objective_func_pv = objective_func.eid
+
+        log_text = ""
+        if len(objective_func.values) > 0:
+            log_text = "Gain (" + str(objective_func_pv) + "): " + str(round(objective_func.values[0], 4)) + " > " + str(
+            round(objective_func.values[-1], 4))
+        curr_time = datetime.now()
+        timeString = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
+        log_entry = ElementTree.Element(None)
+        severity = ElementTree.SubElement(log_entry, 'severity')
+        location = ElementTree.SubElement(log_entry, 'location')
+        keywords = ElementTree.SubElement(log_entry, 'keywords')
+        time = ElementTree.SubElement(log_entry, 'time')
+        isodate = ElementTree.SubElement(log_entry, 'isodate')
+        log_user = ElementTree.SubElement(log_entry, 'author')
+        category = ElementTree.SubElement(log_entry, 'category')
+        title = ElementTree.SubElement(log_entry, 'title')
+        metainfo = ElementTree.SubElement(log_entry, 'metainfo')
+        imageFile = ElementTree.SubElement(log_entry, 'link')
+        imageFile.text = timeString + '-00.ps'
+        thumbnail = ElementTree.SubElement(log_entry, 'file')
+        thumbnail.text = timeString + "-00.png"
+        text = ElementTree.SubElement(log_entry, 'text')
+        log_entry.attrib['type'] = "LOGENTRY"
+        category.text = "USERLOG"
+        location.text = "not set"
+        severity.text = "NONE"
+        keywords.text = "none"
+        time.text = curr_time.strftime("%H:%M:%S")
+        isodate.text = curr_time.strftime("%Y-%m-%d")
+        metainfo.text = timeString + "-00.xml"
+        fileName = "/tmp/" + metainfo.text
+        fileName = fileName.rstrip(".xml")
+        log_user.text = " "
+        title.text = unicode("Ocelot Interface")
+        text.text = log_text
+        if text.text == "":
+            text.text = " "  # If field is truly empty, ElementTree leaves off tag entirely which causes logbook parser to fail
+        xmlFile = open(fileName + '.xml', "w")
+        rawString = ElementTree.tostring(log_entry, 'utf-8')
+        parsedString = sub(r'(?=<[^/].*>)', '\n', rawString)
+        xmlString = parsedString[1:]
+        xmlFile.write(xmlString)
+        xmlFile.write("\n")  # Close with newline so cron job parses correctly
+        xmlFile.close()
+        self.screenShot(gui, fileName, 'png')
+        try:
+            path = "/u1/lcls/physics/logbook/data/"
+            copy(fileName + '.ps', path)
+            copy(fileName + '.png', path)
+            copy(fileName + '.xml', path)
+        except:
+            print("Logbook could not copy files {} to {}".format(fileName, path))
+
+    def screenShot(self, gui, filename, filetype):
         """
-        print("Called send to Logbook with: \nArgs: {}\nand\nKwargs: {}".format(args, kwargs))
+        Takes a screenshot of the whole gui window, saves png and ps images to file
+        """
+        s = str(filename)+"."+str(filetype)
+        p = QWidget.grab(gui.Form)
+        p.save(s, 'png')
+        im = Image.open(s)
+        im.save(s[:-4]+".ps")
+        p = p.scaled(465,400)
+        p.save(str(s), 'png')
 
     def get_obj_function_module(self):
         from mint.lcls import lcls_obj_function
@@ -141,3 +260,96 @@ class LCLSMachineInterface(MachineInterface):
             ("DMD PVs", ["DMD:IN20:1:DELAY_1", "DMD:IN20:1:DELAY_2", "DMD:IN20:1:WIDTH_2", "SIOC:SYS0:ML03:AO956"])
         ])
         return devs
+
+    def write_data(self, method_name, objective_func, devices=[], maximization=False, max_iter=0):
+        """
+        Save optimization parameters to the Database
+
+        :param method_name: (str) The used method name.
+        :param objective_func: (Target) The Target class object.
+        :param devices: (list) The list of devices on this run.
+        :param maximization: (bool) Whether or not the data collection was a maximization. Default is False.
+        :param max_iter: (int) Maximum number of Iterations. Default is 0.
+
+        :return: status (bool), error_msg (str)
+        """
+        print(self.name + " - Write Data: ", method_name)
+        try:  # if GP is used, the model is saved via saveModel first
+            self.data
+        except:
+            self.data = {}  # dict of all devices deing scanned
+
+        objective_func_pv = objective_func.eid
+
+        self.data[objective_func_pv] = []  # detector data array
+        self.data['DetectorAll'] = []  # detector acquisition array
+        self.data['DetectorStat'] = []  # detector mean array
+        self.data['DetectorStd'] = []  # detector std array
+        self.data['timestamps'] = []  # timestamp array
+        self.data['charge'] = []
+        self.data['current'] = []
+        self.data['stat_name'] = []
+        # end try/except
+        self.data['pv_list'] = [dev.eid for dev in devices]  # device names
+        for dev in devices:
+            self.data[dev.eid] = []
+        for dev in devices:
+            vals = len(dev.values)
+            self.data[dev.eid].append(dev.values)
+        if vals < len(objective_func.values):  # first point is duplicated for some reason so dropping
+            objective_func.values = objective_func.values[1:]
+            objective_func.objective_means = objective_func.objective_means[1:]
+            objective_func.objective_acquisitions = objective_func.objective_acquisitions[1:]
+            objective_func.times = objective_func.times[1:]
+            objective_func.std_dev = objective_func.std_dev[1:]
+            objective_func.charge = objective_func.charge[1:]
+            objective_func.current = objective_func.current[1:]
+            try:
+                objective_func.losses = objective_func.losses[1:]
+            except:
+                pass
+            objective_func.niter -= 1
+        self.data[objective_func_pv].append(objective_func.objective_means)  # this is mean for compat
+        self.data['DetectorAll'].append(objective_func.objective_acquisitions)
+        self.data['DetectorStat'].append(objective_func.values)
+        self.data['DetectorStd'].append(objective_func.std_dev)
+        self.data['timestamps'].append(objective_func.times)
+        self.data['charge'].append(objective_func.charge)
+        self.data['current'].append(objective_func.current)
+        self.data['stat_name'].append(objective_func.stats.display_name)
+        for ipv in range(len(self.losspvs)):
+            self.data[self.losspvs[ipv]] = [a[ipv] for a in objective_func.losses]
+
+        self.detValStart = self.data[objective_func_pv][0]
+        self.detValStop = self.data[objective_func_pv][-1]
+
+        # replace with matlab friendly strings
+        for key in self.data:
+            key2 = key.replace(":", "_")
+            self.data[key2] = self.data.pop(key)
+
+        # extra into to add into the save file
+        self.data["MachineInterface"] = self.name
+        try:
+            self.data["epicsname"] = epics.name  # returns fakeepics if caput has been disabled
+        except:
+            pass
+        self.data["BEND_DMP1_400_BDES"] = self.get_value("BEND:DMP1:400:BDES")
+        self.data["Energy"] = self.get_energy()
+        self.data["ScanAlgorithm"] = str(method_name)  # string of the algorithm name
+        self.data["ObjFuncPv"] = str(objective_func_pv)  # string identifing obj func pv
+        self.data['DetectorMean'] = str(
+            objective_func_pv.replace(":", "_"))  # reminder to look at self.data[objective_func_pv]
+        # TODO: Ask Joe if this is really needed...
+        #self.data["NormAmpCoeff"] = norm_amp_coeff
+        self.data["niter"] = objective_func.niter
+
+        # save data
+        self.last_filename = matlog.save("OcelotScan", self.data, path='default')  # self.save_path)
+
+        print('Saved scan data to ', self.last_filename)
+
+        # clear for next run
+        self.data = dict()
+
+        return True, ""

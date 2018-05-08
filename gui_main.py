@@ -274,70 +274,7 @@ class MainWindow(Ui_Form):
         Method to send Optimization parameters + screenshot to eLogboob
         :return:
         """
-
-        filename = "screenshot"
-        filetype = "png"
-        self.screenShot(filename, filetype)
-        table = self.Form.scan_params
-
-        # curr_time = datetime.now()
-        # timeString = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
-        text = ""
-
-        if not self.cb_use_predef.checkState():
-            text += "obj func: A   : " + str(self.le_a.text()).split("/")[-2]  + "/"+ str(self.le_a.text()).split("/")[-1] + "\n"
-            if str(self.le_b.text()) != "" and self.is_le_addr_ok(self.le_b):
-                text += "obj func: B   : " + str(self.le_b.text()).split("/")[-2] + "/" + str(self.le_b.text()).split("/")[-1] + "\n"
-            if str(self.le_c.text()) != "" and self.is_le_addr_ok(self.le_c):
-                text += "obj func: C   : " + str(self.le_c.text()).split("/")[-2] + "/" + str(self.le_c.text()).split("/")[-1] + "\n"
-            if str(self.le_d.text()) != "" and self.is_le_addr_ok(self.le_d):
-                text += "obj func: D   : " + str(self.le_d.text()).split("/")[-2] + "/" + str(self.le_d.text()).split("/")[-1] + "\n"
-            if str(self.le_e.text()) != "" and self.is_le_addr_ok(self.le_e):
-                text += "obj func: E   : " + str(self.le_e.text()).split("/")[-2] + "/" + str(self.le_e.text()).split("/")[-1] + "\n"
-            text += "obj func: expr: " + str(self.le_obf.text()) + "\n"
-        else:
-            try:
-                text += "obj func: A   : predefined  " + self.Form.objective_func.eid + "\n"
-            except:
-                pass
-        if table is not None:
-            for i, dev in enumerate(table["devs"]):
-                # print(dev.split("/"))
-                text += "dev           : " + dev.split("/")[-2] + "/" + dev.split("/")[-1] + "   " + str(table["currents"][i][0]) + " --> " + str(
-                    table["currents"][i][1]) + "\n"
-
-            text += "iterations    : " + str(table["iter"]) + "\n"
-            text += "delay         : " + str(self.Form.total_delay) + "\n"
-            text += "START-->STOP  : " + str(table["sase"][0]) + " --> " + str(table["sase"][1]) + "\n"
-            text += "Method        : " + str(table["method"]) + "\n"
-        screenshot_data = None
-        try:
-            with open(self.Form.optimizer_path + filename + "." + filetype, 'rb') as screenshot:
-                 screenshot_data = screenshot.read()
-        except IOError as ioe:
-            print("Could not find screenshot to read. Exception was: ", ioe)
-        if self.Form is not None and self.Form.mi is not None:
-            res = self.Form.mi.send_to_logbook(author="", title="OCELOT Optimization", severity="INFO", text=text,
-                                               image=screenshot_data)
-
-        if not res:
-            self.Form.error_box("error during eLogBook sending")
-
-    def screenShot(self, filename, filetype):
-
-        """
-        Takes a screenshot of the whole gui window, saves png and ps images to file
-        :param filename: (str) Directory string of where to save the file
-        :param filetype: (str) String of the filetype to save
-        :return:
-        """
-
-        s = str(filename) + "." + str(filetype)
-        p = QWidget.grab(self.Form)
-        p.save(s, 'png')
-        p = p.scaled(465, 400)
-        # save again a small image to use for the logbook thumbnail
-        p.save(str(s[:-4]) + "_sm.png", 'png')
+        self.Form.mi.logbook(self)
 
     def loadStyleSheet(self):
         """
