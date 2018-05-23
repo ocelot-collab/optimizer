@@ -283,6 +283,20 @@ class LCLSMachineInterface(MachineInterface):
 
         :return: status (bool), error_msg (str)
         """
+        def byteify(input):
+            if isinstance(input, dict):
+                return {byteify(key): byteify(value)
+                        for key, value in input.iteritems()}
+            elif isinstance(input, list):
+                return [byteify(element) for element in input]
+            elif isinstance(input, unicode):
+                return input.encode('utf-8')
+            else:
+                return input
+
+        def removeUnicodeKeys(input_dict):  # implemented line 91
+            return dict([(byteify(e[0]), e[1]) for e in input_dict.items()])
+
         print(self.name + " - Write Data: ", method_name)
         try:  # if GP is used, the model is saved via saveModel first
             self.data
@@ -355,7 +369,7 @@ class LCLSMachineInterface(MachineInterface):
         self.data["niter"] = objective_func.niter
 
         # save data
-        self.last_filename = matlog.save("OcelotScan", self.data, path='default')  # self.save_path)
+        self.last_filename = matlog.save("OcelotScan", removeUnicodeKeys(self.data), path='default')  # self.save_path)
 
         print('Saved scan data to ', self.last_filename)
 
