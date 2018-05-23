@@ -91,7 +91,7 @@ class OcelotInterfaceWindow(QFrame):
         self.name_gauss_sklearn = "Gaussian Process sklearn"
         self.name_custom = "Custom Minimizer"
         self.name_simplex_norm = "Simplex Norm."
-        #self.name_es = "Extremum Seeking"
+        self.name_es = "Extremum Seeking"
         # self.name4 = "Conjugate Gradient"
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
@@ -99,7 +99,7 @@ class OcelotInterfaceWindow(QFrame):
         #self.ui.cb_select_alg.addItem(self.name_gauss)
         self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
-        self.ui.cb_select_alg.addItem(self.name_es)
+        #self.ui.cb_select_alg.addItem(self.name_es)
         if sklearn_version >= "0.18":
             self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
 
@@ -267,7 +267,17 @@ class OcelotInterfaceWindow(QFrame):
                     if dev.simplex_step == 0:
                         lims = dev.get_limits()
                         rel_step = self.ui.sb_isim_rel_step.value()
-                        minimizer.dev_steps.append((lims[1] - lims[0]) * rel_step / 100.)
+                        d_lims = lims[1] - lims[0]
+                        # set the same step as for pure Simplex if delta lims is zeros
+                        if np.abs(d_lims) < 2e-5:
+                            val0 = dev.get_value()
+                            if np.abs(val0) < 1e-8:
+                                step = 0.00025
+                            else:
+                                step = val0*0.05
+                            minimizer.dev_steps.append(step)
+                        else:
+                            minimizer.dev_steps.append(d_lims * rel_step / 100.)
             else:
                 minimizer.dev_steps = None
 
