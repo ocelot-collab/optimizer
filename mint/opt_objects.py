@@ -134,6 +134,14 @@ class MachineInterface(object):
         """
         return Device(eid=pv)
 
+    def get_plot_attrs(self):
+        """
+        Returns a list of attributes to be fetched from Target class to present at the Plot 1.
+
+        :return: (list) Attributes from the Target class to be used in the plot.
+        """
+        return ["penalties"]
+
     def write_data(self, method_name, objective_func, devices=[], maximization=False, max_iter=0):
         """
         Save optimization parameters to the Database

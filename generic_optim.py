@@ -58,6 +58,7 @@ class OcelotInterfaceWindow(QFrame):
         Make the timer object that updates GUI on clock cycle during a scan.
         """
         # PATHS
+        self.plot1_curves = dict()
         self.optimizer_args = None
         self.parse_arguments()
         self.dev_mode = self.optimizer_args.devmode
@@ -113,7 +114,6 @@ class OcelotInterfaceWindow(QFrame):
 
         self.objective_func_pv = "test_obj"
 
-        self.show_obj_value = False
         self.addPlots()
 
         # database
@@ -513,22 +513,26 @@ class OcelotInterfaceWindow(QFrame):
         if len(self.objective_func.times) == 0:
             return
 
-        y = np.array(self.objective_func.penalties)
-
         x = np.array(self.objective_func.times) - self.objective_func.times[0]
 
-        if x.size != y.size:
-            return
-
-        self.obj_func_line.setData(x=x, y=y)
-        if self.show_obj_value:
-            self.obj_func_value.setData(x=x, y=self.objective_func.values)
+        for plot_item, _ in self.mi.get_plot_attrs():
+            pg_plot_curve = self.plot1_curves[plot_item]
+            try:
+                y_data = getattr(self.objective_func, plot_item, None)
+                y_data = np.array(y_data)
+                if y_data is None:
+                    continue
+                if y_data.size != x.size:
+                    return
+                pg_plot_curve.setData(x=x, y=y_data)
+            except Exception as ex:
+                print("No data to plot for: ", plot_item, ". Exception was: ", ex)
 
         #plot data for all devices being scanned
         for dev in self.devices:
             if len(dev.times) == 0:
                 return
-            y = np.array(dev.values)-self.multiPlotStarts[dev.eid]
+            y = np.array(dev.values) - self.multiPlotStarts[dev.eid]
             x = np.array(dev.times) - np.array(dev.times)[0]
             line = self.multilines[dev.eid]
             line.setData(x=x, y=y)
@@ -549,6 +553,17 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.widget_2.setLayout(layout)
         layout.addWidget(self.plot1, 0, 0)
 
+        self.plot1_curves = dict()
+        self.leg1 = customLegend(offset=(75, 20))
+        self.leg1.setParentItem(self.plot1.graphicsItem())
+        for plot_item, item_label in self.mi.get_plot_attrs():
+            # create the obj func line object
+            color = self.randColor()
+            pen = pg.mkPen(color, width=3)
+            self.plot1_curves[plot_item] = pg.PlotCurveItem(x=[], y=[], pen=pen, antialias=True, name=plot_item)
+            self.plot1.addItem(self.plot1_curves[plot_item])
+            self.leg1.addItem(self.plot1_curves[plot_item], item_label, color=str(color.name()))
+
         #setup plot 2 for device monitor
         self.plot2 = pg.PlotWidget(title="Device Monitor", labels={'left': "Device (Current - Start)", 'bottom': "Time (seconds)"})
         self.plot2.showGrid(1, 1, 1)
@@ -560,16 +575,6 @@ class OcelotInterfaceWindow(QFrame):
         #legend for plot 2
         self.leg2 = customLegend(offset=(75, 20))
         self.leg2.setParentItem(self.plot2.graphicsItem())
-
-        #create the obj func line object
-        color = QtGui.QColor(0, 255, 255)
-        pen=pg.mkPen(color, width=3)
-        self.obj_func_line = pg.PlotCurveItem(x=[], y=[], pen=pen, antialias=True)
-        self.obj_func_value = pg.PlotCurveItem(x=[], y=[], pen=pg.mkPen(QtGui.QColor(255, 255, 51), width=3),
-                                               antialias=True, name="value")
-        self.plot1.addItem(self.obj_func_line)
-        if self.show_obj_value:
-            self.plot1.addItem(self.obj_func_value)
 
     def setUpMultiPlot(self, devices):
         """
@@ -643,9 +648,8 @@ class OcelotInterfaceWindow(QFrame):
         layout_quick_add = resetpanel_box.ui.layout_quick_add
 
         def add_to_list():
-            l = cb_quick_list.currentData()
-            for pv in l:
-                resetpanel_box.addPv(pv)
+            pvs = cb_quick_list.currentData()
+            resetpanel_box.addPv(pvs, force_active=True)
 
         def clear_list():
             resetpanel_box.pvs = []
@@ -703,7 +707,7 @@ class customLegend(pg.LegendItem):
 
     def addItem(self, item, name, color="CCFF00"):
 
-        label = pg.LabelItem(name, color=color, size="6pt", bold=True)
+        label = pg.LabelItem(name, color=color, size="10pt", bold=True)
         sample = None
         row = self.layout.rowCount()
         self.items.append((sample, label))

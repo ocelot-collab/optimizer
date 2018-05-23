@@ -36,8 +36,9 @@ except ImportError:
     pass
 
 try:
-    import matlog
-except ImportError:
+    import mint.lcls.matlog as matlog
+except ImportError as ex:
+    print("Error importing matlog, reverting to simlog. The error was: ", ex)
     import mint.lcls.simlog as matlog
 
 
@@ -260,6 +261,15 @@ class LCLSMachineInterface(MachineInterface):
             ("DMD PVs", ["DMD:IN20:1:DELAY_1", "DMD:IN20:1:DELAY_2", "DMD:IN20:1:WIDTH_2", "SIOC:SYS0:ML03:AO956"])
         ])
         return devs
+
+    def get_plot_attrs(self):
+        """
+        Returns a list of tuples in which the first element is the attributes to be fetched from Target class
+        to present at the Plot 1 and the second element is the label to be used at legend.
+
+        :return: (list) Attributes from the Target class to be used in the plot.
+        """
+        return [("values", "statistics"), ("objective_means", "mean")]
 
     def write_data(self, method_name, objective_func, devices=[], maximization=False, max_iter=0):
         """
