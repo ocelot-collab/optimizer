@@ -138,7 +138,7 @@ class ResetpanelWindow(QFrame):
                     self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str("None")))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(255, 0, 0))  # red
                 else:
-                    self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(value, 4))))
+                    self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[dev.eid], 4))))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(89, 89, 89))  # grey
 
                 if value is None:
