@@ -36,7 +36,7 @@ except ImportError:
     pass
 
 try:
-    import mint.lcls.matlog as matlog
+    import matlog
 except ImportError as ex:
     print("Error importing matlog, reverting to simlog. The error was: ", ex)
     import mint.lcls.simlog as matlog
