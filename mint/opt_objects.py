@@ -15,6 +15,17 @@ from PyQt5.QtWidgets import QWidget
 class MachineInterface(object):
     def __init__(self):
         self.debug = False
+        self._use_num_points = False
+
+    def use_num_points(self):
+        """
+        Determine whether or not a "Number of Points" to acquire must be added at the interface and passed on to the
+        Target function.
+        This is useful at machines in which you have many points during one acquisition and you want to perform some
+        statistics on the data.
+        :return: (bool)
+        """
+        return self._use_num_points
 
     def get_value(self, channel):
         """
@@ -394,6 +405,7 @@ class Target(object):
         self.nreadings = 1
         self.interval = 0.0
         self.stats = None
+        self.points = None
 
     def get_value(self):
         return 0

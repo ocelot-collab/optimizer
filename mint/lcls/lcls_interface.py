@@ -48,6 +48,7 @@ from mint.opt_objects import MachineInterface
 class LCLSMachineInterface(MachineInterface):
     def __init__(self):
         super(LCLSMachineInterface, self).__init__()
+        self._use_num_points = True
 
         if 'epics' not in sys.modules:
             raise Exception('No module named epics. LCLSMachineInterface will not work. Try simulation mode instead.')

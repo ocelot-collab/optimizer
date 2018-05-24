@@ -58,16 +58,18 @@ class SLACTarget(Target):
         The last 120 entries correspond to pulse energies over past 1 second.
 
         Returns:
-                Float of SASE or other detecor measurment
+                Float of SASE or other detecor measurement
         """
         datain = self.mi.get_value(self.eid)
-        points = 120
+        if self.points is None:
+            self.points = 120
+        print("Get Value of : ", self.points, " points.")
 
         if self.stats is None:
             self.stats = stats.StatNone
 
         try:
-            data = datain[-int(points):]
+            data = datain[-int(self.points):]
             self.objective_acquisition = data
             self.objective_mean = np.mean(self.objective_acquisition)
             self.objective_stdev = np.std(self.objective_acquisition)

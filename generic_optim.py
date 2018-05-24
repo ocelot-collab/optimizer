@@ -110,6 +110,10 @@ class OcelotInterfaceWindow(QFrame):
         self.assemble_preset_box()
         self.assemble_quick_add_box()
 
+        if not self.mi.use_num_points():
+            self.ui.label_datapoints.setVisible(False)
+            self.ui.sb_datapoints.setVisible(False)
+
         self.total_delay = self.ui.sb_tdelay.value()
 
         self.objective_func_pv = "test_obj"
@@ -248,6 +252,10 @@ class OcelotInterfaceWindow(QFrame):
         self.set_obj_fun()
 
         self.objective_func_pv = self.objective_func.eid
+
+        if self.mi.use_num_points():
+            self.objective_func.points = self.ui.sb_datapoints.value()
+
         self.updatePlotLabels()
         # Set minimizer - the optimization method (Simplex, GP, ...)
         minimizer = self.scan_method_select()

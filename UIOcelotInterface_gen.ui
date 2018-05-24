@@ -358,6 +358,27 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QLabel" name="label_datapoints">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>18</pointsize>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Data Points</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
             <item>
@@ -428,6 +449,27 @@
                 </property>
                 <property name="minimum">
                  <number>1</number>
+                </property>
+                <property name="value">
+                 <number>1</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="sb_datapoints">
+                <property name="font">
+                 <font>
+                  <pointsize>18</pointsize>
+                 </font>
+                </property>
+                <property name="locale">
+                 <locale language="English" country="UnitedStates"/>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>9999</number>
                 </property>
                 <property name="value">
                  <number>1</number>

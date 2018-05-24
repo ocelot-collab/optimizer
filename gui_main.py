@@ -105,6 +105,7 @@ class MainWindow(Ui_Form):
 
         table["use_predef"] = self.cb_use_predef.checkState()
         table["statistics"] = self.cb_statistics.currentIndex()
+        table["data_points"] = self.sb_datapoints.value()
 
         max_pen = self.sb_max_pen.value()
         timeout = self.sb_tdelay.value()
@@ -182,6 +183,7 @@ class MainWindow(Ui_Form):
 
             if "use_predef" in table.keys(): self.cb_use_predef.setCheckState(table["use_predef"])
             if "statistics" in table.keys(): self.cb_statistics.setCurrentIndex(table["statistics"])
+            if "data_points" in table.keys(): self.sb_datapoints.setValue(table["data_points"])
             self.sb_max_pen.setValue(max_pen)
             self.sb_tdelay.setValue(timeout)
             self.sb_nreadings.setValue(table["nreadings"])
