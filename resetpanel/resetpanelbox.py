@@ -435,6 +435,10 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.ui_check.reset.clicked.connect(self.resetAll)
         self.ui_check.reset.clicked.connect(self.ui_check.close)
         self.ui_check.label.setText("Are you sure you want to implement \nchanges to checkbox selected PVs?")
+        frame_gm = self.ui_check.frameGeometry()
+        center_point = QtGui.QDesktopWidget().availableGeometry().center()
+        frame_gm.moveCenter(center_point)
+        self.ui_check.move(frame_gm.topLeft())
         self.ui_check.show()
 
 def main():

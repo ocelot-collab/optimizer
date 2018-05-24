@@ -199,8 +199,9 @@ class ResetpanelWindow(QFrame):
         self.ui_check.exit.clicked.connect(self.ui_check.close)
         self.ui_check.reset.clicked.connect(self.resetAll)
         self.ui_check.reset.clicked.connect(self.ui_check.close)
-        frame_gm = self.ui.check.frameGeometry()
+        frame_gm = self.ui_check.frameGeometry()
         center_point = QtGui.QDesktopWidget().availableGeometry().center()
+        frame_gm.moveCenter(center_point)
         self.ui_check.move(frame_gm.topLeft())
         self.ui_check.show()
 
