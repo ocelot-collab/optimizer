@@ -174,7 +174,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         :param pv: (str or list): String name of the PV to add or list of strings to add
         :param force_active: (bool): Whether or not to force the checkbox to be checked. Default is False.
         """
-        if isinstance(pv, str):
+        if isinstance(pv, (str, unicode)):
             pvs = [pv]
         else:
             pvs = pv

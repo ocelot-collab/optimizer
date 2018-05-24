@@ -43,6 +43,8 @@ except ImportError as ex:
 
 
 from mint.opt_objects import MachineInterface
+from mint.opt_objects import Device
+from mint.lcls.lcls_devices import LCLSQuad
 
 
 class LCLSMachineInterface(MachineInterface):
@@ -78,6 +80,12 @@ class LCLSMachineInterface(MachineInterface):
         """
         this_dir = os.path.dirname(os.path.realpath(__file__))
         return os.path.realpath(os.path.join(this_dir, '..', '..', 'parameters', 'lcls'))
+
+    def device_factory(self, pv):
+        if pv.startswith("QUAD:"):
+            pass # TODO: Finish the modifications to accept the QUAD
+            #return LCLSQuad(pv)
+        return Device(eid=pv)
 
     def get_value(self, device_name):
         """

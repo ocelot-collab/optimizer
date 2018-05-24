@@ -66,9 +66,9 @@ class ResetpanelWindow(QFrame):
         for dev in self.devices:
             try:
                 self.startValues[dev.eid] = dev.get_value()
-            except:
+            except Exception as ex:
                 self.startValues[dev.eid] = None
-                print("Get Start Value: ", dev.eid, " not working")
+                print("Get Start Value: ", dev.eid, " not working. Exception was: ", ex)
                 # print(self.startValues[dev.eid])
                 # self.pv_objects[pv].add_callback(callback=self.PvGetCallBack)
 
