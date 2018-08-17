@@ -60,13 +60,7 @@ class SLACTarget(Target):
         Returns:
                 Float of SASE or other detecor measurement
         """
-        while True:
-            datain = self.mi.get_value(self.eid)
-            if datain is None:
-                time.sleep(0.1)
-            else:
-                break
-
+        datain = self.mi.get_value(self.eid)
         if self.points is None:
             self.points = 120
         print("Get Value of : ", self.points, " points.")

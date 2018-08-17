@@ -151,7 +151,7 @@ class MachineInterface(object):
 
         :return: (list) Attributes from the Target class to be used in the plot.
         """
-        return ["penalties"]
+        return [("penalties", "penalties")]
 
     def write_data(self, method_name, objective_func, devices=[], maximization=False, max_iter=0):
         """
