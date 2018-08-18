@@ -1,4 +1,4 @@
-﻿"""
+"""
 Objective Function
 
 S.Tomin, 2017
@@ -24,7 +24,6 @@ class XFELTarget(Target):
     """
     def __init__(self, mi=None, eid="x57**2 + y57**2 + x59**2 + y59"):
         super(XFELTarget, self).__init__(eid=eid)
-
         self.mi = mi
         self.debug = False
         self.kill = False

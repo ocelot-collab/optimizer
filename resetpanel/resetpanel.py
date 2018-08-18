@@ -15,6 +15,8 @@ from mint.opt_objects import *
 
 from resetpanel.UIresetpanel import Ui_Form
 
+import os
+
 sys.path.append("..")
 
 
@@ -51,57 +53,22 @@ class ResetpanelWindow(QFrame):
     def loadStyleSheet(self):
         """ Load in the dark theme style sheet. """
         try:
-            self.cssfile = "style.css"
+            self.cssfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "style.css")
             with open(self.cssfile, "r") as f:
-                self.setStyleSheet(f.read())
+                style = f.read()
+                self.setStyleSheet(style)
+                QApplication.instance().setStyleSheet(style)
         except IOError:
             print('No style sheet found!')
-
-    # def getPvList(self, pvs_in=None):
-    #    """
-    #    Method to build a pv list from file.
-    #
-    #    Can get passed string filename to parse text into a pv list, ex.
-    #            PV_1
-    #            PV_2
-    #            ...
-    #            PV_N
-    #
-    #    Entrys with at '#' in the file are ignored
-    #    Alternativly can be passed a list of pv strings for build the pv list
-    #    Saves the PV list as a class varable
-    #
-    #    Args:
-    #            pvs_in: Can be either List of pvs, or string filename
-    #
-    #    """
-    #
-    #    if not pvs_in:
-    #        return
-    #
-    #    if type(pvs_in) != list:
-    #        self.pvs = []
-    #        for line in open(pvs_in):
-    #            l = line.rstrip('\n')
-    #            if l[0] == '#': #exclude commented PVs
-    #                continue
-    #            self.pvs.append(str(l))
-    #    else:
-    #        self.pvs = pvs_in
-    #
-    #    self.devices = self.create_devices(pvs=self.pvs)
-    #
-    #    self.getStartValues()
-    #    self.initTable()
 
     def getStartValues(self):
         """ Initializes start values for the PV list. """
         for dev in self.devices:
             try:
                 self.startValues[dev.eid] = dev.get_value()
-            except:
+            except Exception as ex:
                 self.startValues[dev.eid] = None
-                print("Get Start Value: ", dev.eid, " not working")
+                print("Get Start Value: ", dev.eid, " not working. Exception was: ", ex)
                 # print(self.startValues[dev.eid])
                 # self.pv_objects[pv].add_callback(callback=self.PvGetCallBack)
 
@@ -138,46 +105,7 @@ class ResetpanelWindow(QFrame):
                 s_val = np.around(s_val, 4)
             self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(s_val)))
 
-            # change font size
-            # font = QtGui.QFont()
-            # font.setPointSize(12)
-            # self.ui.tableWidget.item(row, 1).setFont(font)
-
-            # self.pv_objects[pv].run_callbacks()#initialize in the pvs current value
-            # print("init", self.ui.tableWidget.item(row, 0))
-
-    # update the table on PV change callback
-    #
-    # REMOVED BECAUSE CALLBACK CAUSED SEG FAUTLS.
-    #
-    # def PvGetCallBack(self,**kw):
-
-    #        #get pv info from the callback kw arg
-    #        val=kw['value']
-    #        pv=kw['pvname']
-    #
-    #        #set current string to red at 0.5 percent difference from initial value
-    #        percent = 0.005
-
-    #
-    #        #find the difference from PV start to current, decide to change table color
-    #        try:
-    #                #get row for callback PV in the gui table, set string to pv value
-    #                row = self.pvs.index(str(pv))
-    #                self.ui.tableWidget.setItem(row,2,QtGui.QTableWidgetItem(str(val)))
-
-    #                tol  = abs(self.startValues[pv]*percent)
-    #                diff = abs(abs(self.startValues[pv]) - abs(val))
-    #                if diff > tol:
-    #                        self.ui.tableWidget.item(row,2).setForeground(QtGui.QColor(255,0,0))
-    #                else:
-    #                        self.ui.tableWidget.item(row,2).setForeground(QtGui.QColor(255,255,255))
-    #                QApplication.processEvents()
-    #        except:
-    #                pass
-
     def updateCurrentValues(self):
-
         """
         Method to update the table on every clock cycle.
         Loops through the pv list and gets new data, then updates the Current Value column.
@@ -193,22 +121,27 @@ class ResetpanelWindow(QFrame):
                 # print("ERROR getting value. Device:", dev.eid)
                 value = None
 
-            if self.startValues[dev.eid] == None and value != None:
+            if self.startValues[dev.eid] is None and value is not None:
                 self.startValues[dev.eid] = value
 
-            if self.startValues[dev.eid] == None or value == None:
-                self.ui.tableWidget.item(row, 5).setFlags(QtCore.Qt.NoItemFlags)
+            if self.startValues[dev.eid] is None or value is None:
+                item = self.ui.tableWidget.item(row, 5)
+
+                if item is None:
+                    continue
+
+                item.setFlags(QtCore.Qt.NoItemFlags)
                 for col in [0, 5]:
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(255, 0, 0))  # red
 
-                if self.startValues[dev.eid] == None:
+                if self.startValues[dev.eid] is None:
                     self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str("None")))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(255, 0, 0))  # red
                 else:
                     self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(value, 4))))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(89, 89, 89))  # grey
 
-                if value == None:
+                if value is None:
                     self.ui.tableWidget.setItem(row, 2, QtGui.QTableWidgetItem(str("None")))
                     self.ui.tableWidget.item(row, 2).setBackground(QtGui.QColor(255, 0, 0))  # red
                 else:
@@ -266,6 +199,10 @@ class ResetpanelWindow(QFrame):
         self.ui_check.exit.clicked.connect(self.ui_check.close)
         self.ui_check.reset.clicked.connect(self.resetAll)
         self.ui_check.reset.clicked.connect(self.ui_check.close)
+        frame_gm = self.ui_check.frameGeometry()
+        center_point = QtGui.QDesktopWidget().availableGeometry().center()
+        frame_gm.moveCenter(center_point)
+        self.ui_check.move(frame_gm.topLeft())
         self.ui_check.show()
 
 

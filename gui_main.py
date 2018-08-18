@@ -4,8 +4,11 @@ S.Tomin, 2017
 """
 
 from UIOcelotInterface_gen import *
+import os
 import json
 import scipy
+from PyQt5.QtGui import QCursor
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
 import subprocess
 import base64
@@ -30,12 +33,12 @@ class MainWindow(Ui_Form):
         self.pb_hyper_file.clicked.connect(self.get_hyper_file)
         self.pb_logbook.clicked.connect(self.logbook)
 
-        self.le_a.textChanged.connect(self.check_address)
-        self.le_b.textChanged.connect(self.check_address)
-        self.le_c.textChanged.connect(self.check_address)
-        self.le_d.textChanged.connect(self.check_address)
-        self.le_e.textChanged.connect(self.check_address)
-        self.le_alarm.textChanged.connect(self.check_address)
+        self.le_a.editingFinished.connect(self.check_address)
+        self.le_b.editingFinished.connect(self.check_address)
+        self.le_c.editingFinished.connect(self.check_address)
+        self.le_d.editingFinished.connect(self.check_address)
+        self.le_e.editingFinished.connect(self.check_address)
+        self.le_alarm.editingFinished.connect(self.check_address)
 
         self.sb_tdelay.valueChanged.connect(self.set_cycle)
         self.sb_ddelay.valueChanged.connect(self.set_cycle)
@@ -44,17 +47,14 @@ class MainWindow(Ui_Form):
         self.read_alarm = QtCore.QTimer()
         self.read_alarm.timeout.connect(self.alarm_value)
         self.read_alarm.start(1000)
-        path2preset = self.Form.config_dir + "standard/"
-        self.pb_sase1_1.clicked.connect(lambda: self.load_settings(filename=path2preset + "sase1_1.json"))
-        self.pb_sase1_2.clicked.connect(lambda: self.load_settings(filename=path2preset + "sase1_2.json"))
-        self.pb_disp_1.clicked.connect(lambda: self.load_settings(filename=path2preset + "disp_1.json"))
-        self.pb_disp_2.clicked.connect(lambda: self.load_settings(filename=path2preset + "disp_2.json"))
 
     def alarm_value(self):
         """
         reading alarm value
         :return:
         """
+        if self.le_alarm.hasFocus():
+            return
         dev = str(self.le_alarm.text())
         try:
             value = self.Form.mi.get_value(dev)
@@ -81,16 +81,22 @@ class MainWindow(Ui_Form):
         self.is_le_addr_ok(self.le_alarm)
 
     def is_le_addr_ok(self, line_edit):
+        if not line_edit.isEnabled():
+            return False
         dev = str(line_edit.text())
         state = True
         try:
-            self.Form.mi.get_value(dev)
+            val = self.Form.mi.get_value(dev)
+            if val is None:
+                state = False
         except:
             state = False
+
         if state:
             line_edit.setStyleSheet("color: rgb(85, 255, 0);")
         else:
             line_edit.setStyleSheet("color: red")
+        line_edit.clearFocus()
         return state
 
     def save_state(self, filename):
@@ -98,6 +104,8 @@ class MainWindow(Ui_Form):
         table = self.widget.get_state()
 
         table["use_predef"] = self.cb_use_predef.checkState()
+        table["statistics"] = self.cb_statistics.currentIndex()
+        table["data_points"] = self.sb_datapoints.value()
 
         max_pen = self.sb_max_pen.value()
         timeout = self.sb_tdelay.value()
@@ -174,6 +182,8 @@ class MainWindow(Ui_Form):
             obj_fun = table["obj_fun"]
 
             if "use_predef" in table.keys(): self.cb_use_predef.setCheckState(table["use_predef"])
+            if "statistics" in table.keys(): self.cb_statistics.setCurrentIndex(table["statistics"])
+            if "data_points" in table.keys(): self.sb_datapoints.setValue(table["data_points"])
             self.sb_max_pen.setValue(max_pen)
             self.sb_tdelay.setValue(timeout)
             self.sb_nreadings.setValue(table["nreadings"])
@@ -217,11 +227,10 @@ class MainWindow(Ui_Form):
         except:
             print("RESTORE STATE: ERROR")
 
-
     def save_state_as(self):
-
         filename = QtGui.QFileDialog.getSaveFileName(self.Form, 'Save State',
-        self.Form.config_dir, "txt (*.json)", None, QtGui.QFileDialog.DontUseNativeDialog)[0]
+                                                     self.Form.config_dir, "txt (*.json)", None,
+                                                     QtGui.QFileDialog.DontUseNativeDialog)[0]
         if filename:
             name = filename.split("/")[-1]
             parts = name.split(".")
@@ -231,26 +240,28 @@ class MainWindow(Ui_Form):
             if len(parts)<2 or parts[1] !="json":
                 part = filename.split(".")[0]
                 filename = part + ".json"
-            copy(self.Form.obj_func_path, self.Form.obj_save_path + body_name +".py")
+            copy(self.Form.path_to_obj_func, self.Form.obj_save_path + body_name +".py")
             #self.Form.set_file = filename
             self.save_state(filename)
 
-
     def load_state_from(self):
         filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load State',
-        self.Form.config_dir, "txt (*.json)", None, QtGui.QFileDialog.DontUseNativeDialog)[0]
+                                                     self.Form.config_dir, "txt (*.json)", None,
+                                                     QtGui.QFileDialog.DontUseNativeDialog)[0]
         if filename:
             self.load_settings(filename)
 
     def load_settings(self, filename):
+        print("Load Settings with: ", filename)
         (body_name, extension) = filename.split("/")[-1].split(".")
-        copy(self.Form.obj_save_path + body_name + ".py", self.Form.obj_func_path)
+        copy(self.Form.obj_save_path + body_name + ".py", self.Form.path_to_obj_func)
         self.restore_state(filename)
 
     def get_hyper_file(self):
         #filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters', filter="txt (*.npy *.)")
         filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters',
-        self.Form.optimizer_path  + "parameters", "txt (*.npy)", QtGui.QFileDialog.DontUseNativeDialog)
+                                                     self.Form.optimizer_path + "parameters", "txt (*.npy)",
+                                                     QtGui.QFileDialog.DontUseNativeDialog)
         if filename:
             self.Form.hyper_file = str(filename)
             self.pb_hyper_file.setText(self.Form.hyper_file)
@@ -265,67 +276,7 @@ class MainWindow(Ui_Form):
         Method to send Optimization parameters + screenshot to eLogboob
         :return:
         """
-
-        filename = "screenshot"
-        filetype = "png"
-        self.screenShot(filename, filetype)
-        table = self.Form.scan_params
-
-        # curr_time = datetime.now()
-        # timeString = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
-        text = ""
-
-        if not self.cb_use_predef.checkState():
-            text += "obj func: A   : " + str(self.le_a.text()).split("/")[-2]  + "/"+ str(self.le_a.text()).split("/")[-1] + "\n"
-            if str(self.le_b.text()) != "" and self.is_le_addr_ok(self.le_b):
-                text += "obj func: B   : " + str(self.le_b.text()).split("/")[-2] + "/" + str(self.le_b.text()).split("/")[-1] + "\n"
-            if str(self.le_c.text()) != "" and self.is_le_addr_ok(self.le_c):
-                text += "obj func: C   : " + str(self.le_c.text()).split("/")[-2] + "/" + str(self.le_c.text()).split("/")[-1] + "\n"
-            if str(self.le_d.text()) != "" and self.is_le_addr_ok(self.le_d):
-                text += "obj func: D   : " + str(self.le_d.text()).split("/")[-2] + "/" + str(self.le_d.text()).split("/")[-1] + "\n"
-            if str(self.le_e.text()) != "" and self.is_le_addr_ok(self.le_e):
-                text += "obj func: E   : " + str(self.le_e.text()).split("/")[-2] + "/" + str(self.le_e.text()).split("/")[-1] + "\n"
-            text += "obj func: expr: " + str(self.le_obf.text()) + "\n"
-        else:
-            text += "obj func: A   : predefined  " + self.Form.objective_func.eid + "\n"
-        if table is not None:
-            for i, dev in enumerate(table["devs"]):
-                # print(dev.split("/"))
-                text += "dev           : " + dev.split("/")[-2] + "/" + dev.split("/")[-1] + "   " + str(table["currents"][i][0]) + " --> " + str(
-                    table["currents"][i][1]) + "\n"
-
-            text += "iterations    : " + str(table["iter"]) + "\n"
-            text += "delay         : " + str(self.Form.total_delay) + "\n"
-            text += "START-->STOP  : " + str(table["sase"][0]) + " --> " + str(table["sase"][1]) + "\n"
-            text += "Method        : " + str(table["method"]) + "\n"
-        screenshot_data = None
-        try:
-            with open(self.Form.optimizer_path + filename + "." + filetype, 'rb') as screenshot:
-                 screenshot_data = screenshot.read()
-        except IOError as ioe:
-            print("Could not find screenshot to read. Exception was: ", ioe)
-        if self.Form is not None and self.Form.mi is not None:
-            res = self.Form.mi.send_to_logbook(author="", title="OCELOT Optimization", severity="INFO", text=text,
-                                               image=screenshot_data)
-
-        if not res:
-            self.Form.error_box("error during eLogBook sending")
-
-    def screenShot(self, filename, filetype):
-
-        """
-        Takes a screenshot of the whole gui window, saves png and ps images to file
-        :param filename: (str) Directory string of where to save the file
-        :param filetype: (str) String of the filetype to save
-        :return:
-        """
-
-        s = str(filename) + "." + str(filetype)
-        p = QWidget.grab(self.Form)
-        p.save(s, 'png')
-        p = p.scaled(465, 400)
-        # save again a small image to use for the logbook thumbnail
-        p.save(str(s[:-4]) + "_sm.png", 'png')
+        self.Form.mi.logbook(self)
 
     def loadStyleSheet(self):
         """
@@ -333,7 +284,7 @@ class MainWindow(Ui_Form):
         :return:
         """
         try:
-            self.cssfile = "style.css"
+            self.cssfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "style.css")
             with open(self.cssfile, "r") as f:
                 self.Form.setStyleSheet(f.read())
         except IOError:
@@ -399,6 +350,10 @@ class MainWindow(Ui_Form):
             self.label_21.setEnabled(False)
             self.label_28.setEnabled(False)
             self.label_29.setEnabled(False)
+
+            self.cb_statistics.setEnabled(True)
+            self.pb_edit_obj_func.setEnabled(True)
+            self.pb_edit_obj_func.setCursor(QCursor(Qt.PointingHandCursor))
         else:
             self.le_a.setEnabled(True)
             self.le_b.setEnabled(True)
@@ -413,6 +368,10 @@ class MainWindow(Ui_Form):
             self.label_21.setEnabled(True)
             self.label_28.setEnabled(True)
             self.label_29.setEnabled(True)
+
+            self.cb_statistics.setEnabled(False)
+            self.pb_edit_obj_func.setEnabled(False)
+            self.pb_edit_obj_func.setCursor(QCursor(Qt.ForbiddenCursor))
 
     def open_help(self):
         """
