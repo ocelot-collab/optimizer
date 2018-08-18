@@ -12,7 +12,7 @@ S. Tomin, 2017
 from __future__ import absolute_import, print_function
 import os
 import functools
-
+import numpy as np
 from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialog
 from PyQt5 import QtGui, QtCore, Qt, uic
@@ -305,8 +305,8 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                     spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
                 spin_box.setLocale(eng)
                 spin_box.setDecimals(3)
-                spin_box.setMaximum(999)
-                spin_box.setMinimum(-999)
+                spin_box.setMaximum(99999)
+                spin_box.setMinimum(-99999)
                 spin_box.setSingleStep(0.1)
                 spin_box.setAccelerated(True)
                 if i == 0:  # Running for low limit spin box

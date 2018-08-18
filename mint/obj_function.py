@@ -43,22 +43,52 @@ class XFELTarget(Target):
         """
         return 0
 
+    def read_bpms(self, bpms, nreadings):
+        orbits = np.zeros((nreadings, len(bpms)))
+        for i in range(nreadings):
+            for j, bpm in enumerate(bpms):
+                orbits[i, j] = self.mi.get_value(bpm)
+            time.sleep(0.1)
+        return np.mean(orbits, axis=0)
+
     def get_value(self):
         """
         Method to get signal of target function (e.g. SASE signal).
 
         :return: value
+        XFEL.RF/LLRF.CONTROLLER/CTRL.A1.I1/SP.AMPL
         """
-        x57 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.57.I1/X.SA1")
-        y57 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.57.I1/Y.SA1")
-        x59 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.59.I1/X.SA1")
-        y59 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.59.I1/Y.SA1")
-        return -np.sqrt(x57 ** 2 + y57 ** 2 + x59 ** 2 + y59 ** 2)
+        bpms = ["XFEL.DIAG/BPM/BPMA.59.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.72.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.75.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.77.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.80.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.82.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.85.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.87.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.90.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.92.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMF.95.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMC.134.L1/X.ALL", 
+        "XFEL.DIAG/BPM/BPMA.117.I1/X.ALL",
+        "XFEL.DIAG/BPM/BPMC.158.L1/X.ALL",
+        "XFEL.DIAG/BPM/BPMA.179.B1/X.ALL"]
+        Vinit = self.mi.get_value("XFEL.RF/LLRF.CONTROLLER/CTRL.A1.I1/SP.AMPL")
 
-        # values = np.array([dev.get_value() for dev in self.devices])
-        # return 2*np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
-        # value = self.mi.get_value(self.eid)
-
+        orbit1 = self.read_bpms(bpms=bpms, nreadings=7)
+        
+        time.sleep(0.1)
+        self.mi.set_value("XFEL.RF/LLRF.CONTROLLER/CTRL.A1.I1/SP.AMPL", Vinit - 2)
+        time.sleep(0.9)
+        
+        orbit2 = self.read_bpms(bpms=bpms, nreadings=7)
+        
+        self.mi.set_value("XFEL.RF/LLRF.CONTROLLER/CTRL.A1.I1/SP.AMPL", Vinit)
+        time.sleep(0.9)
+        
+        target = -np.sqrt(np.sum((orbit2 - orbit1)**2))
+        return target
+        #return -np.sqrt(a ** 2 + b ** 2 + c**2)
 
     def get_penalty(self):
         """

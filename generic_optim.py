@@ -55,9 +55,12 @@ class OcelotInterfaceWindow(QFrame):
         """
         # PATHS
         path = os.path.realpath(__file__)
-        self.path2ocelot = os.path.dirname(path)
-        self.optimizer_path = self.path2ocelot + os.sep
-        self.config_dir = self.path2ocelot + os.sep + "parameters" + os.sep
+        #self.path2ocelot = os.path.dirname(path)
+        self.path2ocelot =  os.path.abspath(os.path.join(__file__ ,"../.."))
+        print(self.path2ocelot)
+        self.optimizer_path = os.path.abspath(os.path.join(__file__ ,"../")) + os.sep #self.path2ocelot + os.sep
+        print(self.optimizer_path)
+        self.config_dir = self.path2ocelot + os.sep + "config_optim_new" + os.sep
         self.set_file = self.config_dir + "default.json" # ./parameters/default.json"
         self.obj_func_path = self.optimizer_path + "mint" + os.sep + "obj_function.py"
         self.obj_save_path = self.config_dir +  "obj_funcs" + os.sep

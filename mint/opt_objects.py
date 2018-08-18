@@ -171,8 +171,9 @@ class Target(object):
     def get_penalty(self):
         """
         Method to calculate the penalty on the basis of the value and alarm level.
-
-        penalty = -get_value() + alarm()
+        OLD: penalty = -get_value() + alarm()
+        
+        NEW: penalty = get_value() - alarm()
 
 
         :return: penalty
@@ -189,8 +190,8 @@ class Target(object):
             alarm = self.pen_max
         if alarm > 0.7:
             alarm = self.pen_max / 2.
-        pen += alarm
-        pen -= sase
+        pen -= alarm
+        pen += sase
         self.niter += 1
         # print("niter = ", self.niter)
         self.penalties.append(pen)
