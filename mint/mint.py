@@ -8,7 +8,7 @@ S. Tomin, 2017
 
 """
 from __future__ import print_function, absolute_import
-from time import sleep
+import time
 from scipy.optimize import OptimizeResult
 import scipy
 import numpy as np
@@ -479,7 +479,7 @@ class Optimizer(Thread):
         self.do_wait()
 
         print('sleeping ' + str(self.timeout))
-        sleep(self.timeout)
+        time.sleep(self.timeout)
 
         coef = 1
         if self.maximization:
