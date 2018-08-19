@@ -10,7 +10,7 @@ S. Tomin, 2017
 """
 
 from __future__ import absolute_import, print_function
-import os
+import os, sys
 import functools
 import numpy as np
 
@@ -174,7 +174,9 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         :param pv: (str or list): String name of the PV to add or list of strings to add
         :param force_active: (bool): Whether or not to force the checkbox to be checked. Default is False.
         """
-        if isinstance(pv, (str, unicode)):
+        if sys.version_info[0] >= 3 and isinstance(pv, str):
+            pvs = [pv]
+        elif sys.version_info[0] < 3 and isinstance(pv, unicode):
             pvs = [pv]
         else:
             pvs = pv
@@ -324,8 +326,8 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                     spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
                 spin_box.setLocale(eng)
                 spin_box.setDecimals(3)
-                spin_box.setMaximum(999)
-                spin_box.setMinimum(-999)
+                spin_box.setMaximum(999999)
+                spin_box.setMinimum(-999999)
                 spin_box.setSingleStep(0.1)
                 spin_box.setAccelerated(True)
                 if i == 0:  # Running for low limit spin box
