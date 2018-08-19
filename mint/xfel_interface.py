@@ -38,7 +38,8 @@ class XFELMachineInterface(MachineInterface):
             print('error importing doocs library')
         self.logbook_name = "xfellog"
 
-        self.mutex = Lock()
+        path2root = os.path.abspath(os.path.join(__file__ , "../../.."))
+        self.config_dir = os.path.join(path2root, "config_optim")
 
     def get_value(self, channel):
         """
@@ -58,8 +59,7 @@ class XFELMachineInterface(MachineInterface):
         :param val: value
         :return: None
         """
-        #print("SETTING")
-        pydoocs.write(channel, val)
+        pydoocs.write(channel, float(val))
         return
 
 
@@ -157,7 +157,7 @@ class XFELMachineInterface(MachineInterface):
 # test interface
 
 
-class TestMachineInterface(MachineInterface):
+class TestMachineInterface(XFELMachineInterface):
     """
     Machine interface for testing
     """
@@ -233,22 +233,4 @@ class TestMachineInterface(MachineInterface):
         from mint import xfel_obj_function
         return xfel_obj_function
 
-    def get_preset_settings(self):
-        """
-        Return the preset settings to be assembled as Push Buttons at the user interface for quick load of settings.
 
-        :return: (dict) Dictionary with Key being the group name and as value an array of dictionaries following the
-        format:
-            {"display": "Text of the PushButton", "filename": "my_file.json"}
-        """
-        presets = {
-            "SASE Optimization": [
-                {"display": "1. Launch orbit SASE1", "filename": "sase1_1.json"},
-                {"display": "2. Match Quads SASE1", "filename": "sase1_2.json"},
-            ],
-            "Dispersion Minimization": [
-                {"display": "1. I1 Horizontal", "filename": "disp_1.json"},
-                {"display": "2. I1 Vertical", "filename": "disp_2.json"},
-            ]
-        }
-        return presets
