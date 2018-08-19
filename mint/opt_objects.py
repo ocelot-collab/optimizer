@@ -16,6 +16,9 @@ class MachineInterface(object):
     def __init__(self):
         self.debug = False
         self._use_num_points = False
+        #path = os.path.realpath(__file__)
+        path2optimizer = os.path.abspath(os.path.join(__file__ , "../.."))
+        self.config_dir = os.path.join(path2optimizer, "parameters")
 
     def use_num_points(self):
         """
@@ -357,7 +360,7 @@ class Device(object):
     def check_limits(self, value):
         limits = self.get_limits()
         # Disable Limits when both are 0.
-        if limits[0] == limits[1] and limits[0] == 0.:
+        if np.abs(limits[0]) < 1e-15 and np.abs(limits[1]) < 1e-15:
             return False
         if value < limits[0] or value > limits[1]:
             print('limits exceeded for ', self.id, " - ", value, limits[0], value, limits[1])
@@ -413,8 +416,9 @@ class Target(object):
     def get_penalty(self):
         """
         Method to calculate the penalty on the basis of the value and alarm level.
+        OLD: penalty = -get_value() + alarm()
 
-        penalty = -get_value() + alarm()
+        NEW: penalty = get_value() - alarm()
 
 
         :return: penalty
@@ -431,8 +435,8 @@ class Target(object):
             alarm = self.pen_max
         if alarm > 0.7:
             alarm = self.pen_max / 2.
-        pen += alarm
-        pen -= sase
+        pen -= alarm
+        pen += sase
         self.niter += 1
         # print("niter = ", self.niter)
         self.penalties.append(pen)
