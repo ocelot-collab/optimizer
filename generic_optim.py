@@ -73,10 +73,7 @@ class OcelotInterfaceWindow(QFrame):
             else:
                 self.mi = globals()[class_name]()
 
-        path = os.path.realpath(__file__)
-        self.path2ocelot = os.path.dirname(path)
-        self.optimizer_path = self.path2ocelot + os.sep
-        self.config_dir = os.path.join(self.path2ocelot, "parameters")
+        self.config_dir = self.mi.config_dir
         self.path2preset = os.path.join(self.config_dir, "standard")
         self.set_file = os.path.join(self.config_dir, "default.json")  # ./parameters/default.json"
         self.obj_save_path = os.path.join(self.config_dir, "obj_funcs")
@@ -206,7 +203,6 @@ class OcelotInterfaceWindow(QFrame):
             del(self.opt)
             self.ui.pb_start_scan.setStyleSheet("color: rgb(85, 255, 127);")
             self.ui.pb_start_scan.setText("Start optimization")
-            return 0
         QFrame.closeEvent(self, event)
 
     def start_scan(self):
@@ -422,7 +418,7 @@ class OcelotInterfaceWindow(QFrame):
                 tclass = obj_function_module.target_class
             else:
                 tclass = [obj for name, obj in inspect.getmembers(obj_function_module) if
-                 inspect.isclass(obj) and issubclass(obj, Target) and obj != Target][0]
+                            inspect.isclass(obj) and issubclass(obj, Target) and obj != Target][0]
 
             print("Target Class: ", tclass)
             self.objective_func = tclass(mi=self.mi)
