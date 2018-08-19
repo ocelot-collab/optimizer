@@ -149,4 +149,4 @@ def load(path):
 if __name__ == "__main__":
     """ Will print out the days matlab data directory to command line if this file is executed """
     path = getPath()
-    print path
+    print(path)
