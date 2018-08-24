@@ -72,7 +72,7 @@ class OcelotInterfaceWindow(QFrame):
                 self.mi = XFELMachineInterface()
             else:
                 self.mi = globals()[class_name]()
-
+        self.optimizer_path = os.path.abspath(os.path.join(__file__ ,"../")) + os.sep 
         self.config_dir = self.mi.config_dir
         self.path2preset = os.path.join(self.config_dir, "standard")
         self.set_file = os.path.join(self.config_dir, "default.json")  # ./parameters/default.json"
