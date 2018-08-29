@@ -151,6 +151,14 @@ class ResetpanelWindow(QFrame):
 
                 continue
 
+            lim_low, lim_high = dev.get_limits()
+            spin_box = self.ui.tableWidget.cellWidget(row, 3)
+            spin_box.setValue(lim_low)
+
+            spin_box = self.ui.tableWidget.cellWidget(row, 4)
+            spin_box.setValue(lim_high)
+
+
             # if value out of the limits
             if dev.check_limits(value):
                 for col in [3, 4]:

@@ -83,8 +83,7 @@ class LCLSMachineInterface(MachineInterface):
 
     def device_factory(self, pv):
         if pv.startswith("QUAD:"):
-            pass # TODO: Finish the modifications to accept the QUAD
-            #return LCLSQuad(pv)
+            return LCLSQuad(pv)
         return Device(eid=pv)
 
     def get_value(self, device_name):

@@ -323,7 +323,7 @@ class Device(object):
     def set_high_limit(self, val):
         self.high_limit = val
 
-    def get_value(self):
+    def get_value(self, save=False):
         val = self.mi.get_value(self.eid)
         return val
 

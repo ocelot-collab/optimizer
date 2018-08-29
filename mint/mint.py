@@ -426,6 +426,11 @@ class Optimizer(Thread):
                 return True
         return False
 
+    def get_values(self):
+        for i in range(len(self.devices)):
+            print('reading ', self.devices[i].id)
+            self.devices[i].get_value(save=True)
+
     def set_values(self, x):
         for i in range(len(self.devices)):
             print('setting', self.devices[i].id, '->', x[i])
@@ -477,6 +482,7 @@ class Optimizer(Thread):
         self.set_values(x)
         self.set_triggers()
         self.do_wait()
+        self.get_values()
 
         print('sleeping ' + str(self.timeout))
         time.sleep(self.timeout)
@@ -512,7 +518,7 @@ class Optimizer(Thread):
 
         target_ref = self.target.get_penalty()
 
-        x = [dev.get_value() for dev in self.devices]
+        x = [dev.get_value(save=True) for dev in self.devices]
         x_init = x
 
         if self.logging:
