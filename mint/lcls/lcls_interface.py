@@ -50,6 +50,7 @@ from mint.lcls.lcls_devices import LCLSQuad
 class LCLSMachineInterface(MachineInterface):
     def __init__(self):
         super(LCLSMachineInterface, self).__init__()
+        self._save_at_exit = False
         self._use_num_points = True
 
         if 'epics' not in sys.modules:

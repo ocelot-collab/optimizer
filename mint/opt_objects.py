@@ -15,10 +15,19 @@ from PyQt5.QtWidgets import QWidget
 class MachineInterface(object):
     def __init__(self):
         self.debug = False
+        self._save_at_exit = True
         self._use_num_points = False
         #path = os.path.realpath(__file__)
         path2optimizer = os.path.abspath(os.path.join(__file__ , "../.."))
         self.config_dir = os.path.join(path2optimizer, "parameters")
+
+    def save_at_exit(self):
+        """
+        Determine whether or not to save to file the screen options when closing
+        the software.
+        :return: (bool)
+        """
+        return self._save_at_exit
 
     def use_num_points(self):
         """
