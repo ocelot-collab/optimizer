@@ -6,6 +6,7 @@ from ..opt_objects import Device
 class LCLSQuad(Device):
     def __init__(self, eid=None):
         super(LCLSQuad, self).__init__(eid=eid)
+        self._can_edit_limits = False
         if eid.endswith(':BACT') or eid.endswith(":BCTRL"):
             prefix = eid[:eid.rfind(':')+1]
         else:
