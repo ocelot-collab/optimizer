@@ -196,7 +196,8 @@ class OcelotInterfaceWindow(QFrame):
         return minimizer
 
     def closeEvent(self, event):
-        self.ui.save_state(self.set_file)
+        if self.mi.save_at_exit():
+            self.ui.save_state(self.set_file)
         if self.ui.pb_start_scan.text() == "Stop optimization":
             self.opt.opt_ctrl.stop()
             self.m_status.is_ok = lambda: True

@@ -50,6 +50,7 @@ from mint.lcls.lcls_devices import LCLSQuad
 class LCLSMachineInterface(MachineInterface):
     def __init__(self):
         super(LCLSMachineInterface, self).__init__()
+        self._save_at_exit = False
         self._use_num_points = True
 
         if 'epics' not in sys.modules:
@@ -83,8 +84,7 @@ class LCLSMachineInterface(MachineInterface):
 
     def device_factory(self, pv):
         if pv.startswith("QUAD:"):
-            pass # TODO: Finish the modifications to accept the QUAD
-            #return LCLSQuad(pv)
+            return LCLSQuad(pv)
         return Device(eid=pv)
 
     def get_value(self, device_name):

@@ -15,10 +15,19 @@ from PyQt5.QtWidgets import QWidget
 class MachineInterface(object):
     def __init__(self):
         self.debug = False
+        self._save_at_exit = True
         self._use_num_points = False
         #path = os.path.realpath(__file__)
         path2optimizer = os.path.abspath(os.path.join(__file__ , "../.."))
         self.config_dir = os.path.join(path2optimizer, "parameters")
+
+    def save_at_exit(self):
+        """
+        Determine whether or not to save to file the screen options when closing
+        the software.
+        :return: (bool)
+        """
+        return self._save_at_exit
 
     def use_num_points(self):
         """
@@ -310,6 +319,7 @@ class Device(object):
         self.target = None
         self.low_limit = 0.
         self.high_limit = 0.
+        self._can_edit_limits = True
 
     def set_value(self, val):
         self.values.append(val)
@@ -323,7 +333,7 @@ class Device(object):
     def set_high_limit(self, val):
         self.high_limit = val
 
-    def get_value(self):
+    def get_value(self, save=False):
         val = self.mi.get_value(self.eid)
         return val
 
