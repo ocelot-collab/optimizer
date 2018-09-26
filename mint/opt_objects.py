@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QWidget
 
 
 class MachineInterface(object):
-    def __init__(self):
+    def __init__(self, args):
         self.debug = False
         self._save_at_exit = True
         self._use_num_points = False
@@ -28,6 +28,17 @@ class MachineInterface(object):
         :return: (bool)
         """
         return self._save_at_exit
+
+    @staticmethod
+    def add_args(subparser):
+        """
+        Method that will add the Machine interface specific arguments to the
+        command line argument parser.
+
+        :param subparser: (ArgumentParser)
+        :return:
+        """
+        return
 
     def use_num_points(self):
         """
@@ -57,6 +68,16 @@ class MachineInterface(object):
         :return: None
         """
         raise NotImplementedError
+
+    def customize_ui(self, gui):
+        """
+        Method invoked to modify the UI and apply customizations pertinent to the
+        Machine Interface
+
+        :param gui: (MainWindow) The application Main Window
+        :return: None
+        """
+        pass
 
     def logbook(self, gui):
         """
@@ -379,6 +400,15 @@ class Device(object):
 
     def get_limits(self):
         return [self.low_limit, self.high_limit]
+
+    def get_delta(self):
+        """
+        Calculate and return the travel range for this device.
+
+        :return: (float) Travel Range
+        """
+        ll, hl = self.get_limits()
+        return hl-ll
 
 
 # for testing
