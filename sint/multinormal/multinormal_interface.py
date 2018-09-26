@@ -158,7 +158,6 @@ class MultinormalInterface(MachineInterface):
         return val
 
     def set_value(self, variable_names, values):
-        print("Called Set for: ", variable_names, " with: ", values)
         self.set1(variable_names, values)
 
     def get_energy(self):
@@ -253,12 +252,9 @@ class MultinormalInterface(MachineInterface):
             self.points = self.numSamples  # for compatibility with machine interface api
 
         # perturb mean by nsample noise
-        print("***** DEBUG: Called F and points is: ", self.points)
         self.y = np.array(
             [self.mean + np.random.normal(0., self.stdev, self.mean.shape)
              for i in range(int(self.points))])
-        print("******* DEBUG: Y: ", self.y)
-        print("******* DEBUG: MEAN: ", self.mean)
 
         return np.array(self.y, ndmin=2)
 
