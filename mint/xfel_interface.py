@@ -18,7 +18,7 @@ import subprocess
 import base64
 from threading import Lock
 from mint.opt_objects import MachineInterface, Device
-
+from collections import OrderedDict
 
 class AlarmDevice(Device):
     """
@@ -153,7 +153,35 @@ class XFELMachineInterface(MachineInterface):
             ]
         }
         return presets
+    def get_quick_add_devices(self):
+        """
+        Return a dictionary with:
+        {
+        "QUADS1" : ["...", "..."],
+        "QUADS2": ["...", "..."]
+        }
 
+        That is converted into a combobox which allow users to easily populate the devices list
+
+        :return: dict
+        """
+        devs = OrderedDict([
+            ("IN20 M. Quads", ["QUAD:IN20:361:BCTRL", "QUAD:IN20:371:BCTRL", "QUAD:IN20:425:BCTRL",
+                               "QUAD:IN20:441:BCTRL", "QUAD:IN20:511:BCTRL", "QUAD:IN20:525:BCTRL"]),
+            ("LI21 M. Quads", ["QUAD:LI21:201:BCTRL", "QUAD:LI21:211:BCTRL", "QUAD:LI21:271:BCTRL",
+                               "QUAD:LI21:278:BCTRL"]),
+            ("LI26 201-501", ["QUAD:LI26:201:BCTRL", "QUAD:LI26:301:BCTRL", "QUAD:LI26:401:BCTRL",
+                              "QUAD:LI26:501:BCTRL"]),
+            ("LI26 601-901", ["QUAD:LI26:601:BCTRL", "QUAD:LI26:701:BCTRL", "QUAD:LI26:801:BCTRL",
+                              "QUAD:LI26:901:BCTRL"]),
+            ("LTU M. Quads", ["QUAD:LTU1:620:BCTRL", "QUAD:LTU1:640:BCTRL", "QUAD:LTU1:660:BCTRL",
+                              "QUAD:LTU1:680:BCTRL"]),
+            ("Dispersion Quads", ["QUAD:LI21:221:BCTRL", "QUAD:LI21:251:BCTRL", "QUAD:LI24:740:BCTRL",
+                                  "QUAD:LI24:860:BCTRL", "QUAD:LTU1:440:BCTRL", "QUAD:LTU1:460:BCTRL"]),
+            ("CQ01/SQ01/Sol.", ["SOLN:IN20:121:BCTRL", "QUAD:IN20:121:BCTRL", "QUAD:IN20:122:BCTRL"]),
+            ("DMD PVs", ["DMD:IN20:1:DELAY_1", "DMD:IN20:1:DELAY_2", "DMD:IN20:1:WIDTH_2", "SIOC:SYS0:ML03:AO956"])
+        ])
+        return devs
 # test interface
 
 
