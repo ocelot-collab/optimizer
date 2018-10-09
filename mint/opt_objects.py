@@ -13,12 +13,32 @@ from PyQt5.QtWidgets import QWidget
 
 
 class MachineInterface(object):
-    def __init__(self):
+    def __init__(self, args):
         self.debug = False
+        self._save_at_exit = True
         self._use_num_points = False
         #path = os.path.realpath(__file__)
         path2optimizer = os.path.abspath(os.path.join(__file__ , "../.."))
         self.config_dir = os.path.join(path2optimizer, "parameters")
+
+    def save_at_exit(self):
+        """
+        Determine whether or not to save to file the screen options when closing
+        the software.
+        :return: (bool)
+        """
+        return self._save_at_exit
+
+    @staticmethod
+    def add_args(subparser):
+        """
+        Method that will add the Machine interface specific arguments to the
+        command line argument parser.
+
+        :param subparser: (ArgumentParser)
+        :return:
+        """
+        return
 
     def use_num_points(self):
         """
@@ -48,6 +68,16 @@ class MachineInterface(object):
         :return: None
         """
         raise NotImplementedError
+
+    def customize_ui(self, gui):
+        """
+        Method invoked to modify the UI and apply customizations pertinent to the
+        Machine Interface
+
+        :param gui: (MainWindow) The application Main Window
+        :return: None
+        """
+        pass
 
     def logbook(self, gui):
         """
@@ -310,6 +340,7 @@ class Device(object):
         self.target = None
         self.low_limit = 0.
         self.high_limit = 0.
+        self._can_edit_limits = True
 
     def set_value(self, val):
         self.values.append(val)
@@ -323,7 +354,7 @@ class Device(object):
     def set_high_limit(self, val):
         self.high_limit = val
 
-    def get_value(self):
+    def get_value(self, save=False):
         val = self.mi.get_value(self.eid)
         return val
 
@@ -369,6 +400,15 @@ class Device(object):
 
     def get_limits(self):
         return [self.low_limit, self.high_limit]
+
+    def get_delta(self):
+        """
+        Calculate and return the travel range for this device.
+
+        :return: (float) Travel Range
+        """
+        ll, hl = self.get_limits()
+        return hl-ll
 
 
 # for testing

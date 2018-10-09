@@ -44,7 +44,12 @@ from mint import opt_objects as obj
 
 from mint.xfel_interface import *
 from mint.lcls.lcls_interface import *
+from sint.multinormal.multinormal_interface import *
+
 from stats import stats
+
+AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
+                                TestMachineInterface, MultinormalInterface]
 
 
 class OcelotInterfaceWindow(QFrame):
@@ -63,15 +68,16 @@ class OcelotInterfaceWindow(QFrame):
         self.parse_arguments()
         self.dev_mode = self.optimizer_args.devmode
 
+        args = vars(self.optimizer_args)
         if self.dev_mode:
-            self.mi = TestMachineInterface()
+            self.mi = TestMachineInterface(args)
         else:
             class_name = self.optimizer_args.mi
             if class_name not in globals():
                 print("Could not find Machine Interface with name: {}. Loading XFELMachineInterface instead.".format(class_name))
-                self.mi = XFELMachineInterface()
+                self.mi = XFELMachineInterface(args)
             else:
-                self.mi = globals()[class_name]()
+                self.mi = globals()[class_name](args)
         self.optimizer_path = os.path.abspath(os.path.join(__file__ ,"../")) + os.sep 
         self.config_dir = self.mi.config_dir
         self.path2preset = os.path.join(self.config_dir, "standard")
@@ -151,13 +157,27 @@ class OcelotInterfaceWindow(QFrame):
         self.multiPvTimer = QtCore.QTimer()
         self.multiPvTimer.timeout.connect(self.getPlotData)
 
+        self.mi.customize_ui(self)
 
     def parse_arguments(self):
-        parser = argparse.ArgumentParser(description="Ocelot Optimizer")
+        parser = argparse.ArgumentParser(description="Ocelot Optimizer",
+                                         add_help=False)
+        parser.set_defaults(mi='XFELMachineInterface')
         parser.add_argument('--devmode', action='store_true',
                             help='Enable development mode.', default=False)
-        parser.add_argument('--mi', help="Which Machine Interface to use. Defaults to XFELMachineInterface.", default="XFELMachineInterface")
-        self.optimizer_args = parser.parse_args()
+
+        parser_mi = argparse.ArgumentParser()
+
+        mis = [mi.name for mi in AVAILABLE_MACHINE_INTERFACES]
+        subparser = parser_mi.add_subparsers(title='Machine Interface Options', dest="mi")
+        for mi in AVAILABLE_MACHINE_INTERFACES:
+            mi_parser = subparser.add_parser(mi.name, help='{} arguments'.format(mi.name))
+            mi.add_args(mi_parser)
+
+        self.optimizer_args, others = parser.parse_known_args()
+
+        if len(others) != 0:
+            self.optimizer_args = parser_mi.parse_args(others, namespace=self.optimizer_args)
 
     def statistics_select(self, value):
         if self.objective_func is not None:
@@ -196,7 +216,8 @@ class OcelotInterfaceWindow(QFrame):
         return minimizer
 
     def closeEvent(self, event):
-        self.ui.save_state(self.set_file)
+        if self.mi.save_at_exit():
+            self.ui.save_state(self.set_file)
         if self.ui.pb_start_scan.text() == "Stop optimization":
             self.opt.opt_ctrl.stop()
             self.m_status.is_ok = lambda: True
@@ -708,6 +729,7 @@ class OcelotInterfaceWindow(QFrame):
             vert_spacer = QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
             inner_layout.addItem(vert_spacer)
             layout.addWidget(gb)
+
 
 class customLegend(pg.LegendItem):
     """
