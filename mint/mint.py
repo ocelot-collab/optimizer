@@ -454,8 +454,7 @@ class Optimizer(Thread):
         """
         self.norm_scales = np.zeros(np.size(self.devices))
         for i, dev in enumerate(self.devices):
-            lims = dev.get_limits()
-            delta = lims[-1] - lims[0]
+            delta = dev.get_delta()
             self.norm_scales[i] = delta*self.norm_coef
 
         return self.norm_scales

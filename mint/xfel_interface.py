@@ -32,8 +32,10 @@ class XFELMachineInterface(MachineInterface):
     """
     Machine Interface for European XFEL
     """
-    def __init__(self):
-        super(XFELMachineInterface, self).__init__()
+    name = 'XFELMachineInterface'
+
+    def __init__(self, args=None):
+        super(XFELMachineInterface, self).__init__(args)
         if 'pydoocs' not in sys.modules:
             print('error importing doocs library')
         self.logbook_name = "xfellog"
@@ -161,6 +163,8 @@ class TestMachineInterface(XFELMachineInterface):
     """
     Machine interface for testing
     """
+    name = 'TestMachineInterface'
+
     def __init__(self):
         super(TestMachineInterface, self).__init__()
         self.data = 1.

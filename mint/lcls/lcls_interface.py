@@ -35,29 +35,20 @@ except ImportError:
     # Ignore the error since maybe no one is trying to use it... we will raise on the ctor.
     pass
 
-try:
-    import matlog
-except ImportError as ex:
-    print("Error importing matlog, reverting to simlog. The error was: ", ex)
-    import mint.lcls.simlog as matlog
-
-
 from mint.opt_objects import MachineInterface
-from mint.opt_objects import Device
-from mint.lcls.lcls_devices import LCLSQuad
+from mint.lcls.lcls_devices import LCLSQuad, LCLSDevice
 
 
 class LCLSMachineInterface(MachineInterface):
-    def __init__(self):
-        super(LCLSMachineInterface, self).__init__()
+    name = 'LCLSMachineInterface'
+
+    def __init__(self, args=None):
+        super(LCLSMachineInterface, self).__init__(args)
         self._save_at_exit = False
         self._use_num_points = True
 
         if 'epics' not in sys.modules:
             raise Exception('No module named epics. LCLSMachineInterface will not work. Try simulation mode instead.')
-
-        # Interface Name
-        self.name = 'LCLSMachineInterface'
 
         self.data = dict()
         self.pvs = dict()
@@ -85,7 +76,8 @@ class LCLSMachineInterface(MachineInterface):
     def device_factory(self, pv):
         if pv.startswith("QUAD:"):
             return LCLSQuad(pv)
-        return Device(eid=pv)
+        d = LCLSDevice(eid=pv)
+        return d
 
     def get_value(self, device_name):
         """
@@ -292,6 +284,14 @@ class LCLSMachineInterface(MachineInterface):
 
         :return: status (bool), error_msg (str)
         """
+        try:
+            import matlog
+        except ImportError as ex:
+            print(
+                "Error importing matlog, reverting to simlog. The error was: ",
+                ex)
+            import mint.lcls.simlog as matlog
+
         def byteify(input):
             if isinstance(input, dict):
                 return {byteify(key): byteify(value)
