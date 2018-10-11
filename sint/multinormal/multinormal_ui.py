@@ -155,7 +155,6 @@ class MultinormalDisplay(QWidget):
             for j, val in enumerate(row):
                 self.tbl_corr.setItem(i, j, QTableWidgetItem(str(val)))
 
-        self.resizeTableWidget(self.tbl_corr)
         self.tbl_corr.itemChanged.connect(self.symmetrize)
 
     def update_sim_moments(self):
@@ -191,5 +190,4 @@ class MultinormalDisplay(QWidget):
         # update simulation correlation matrix
         self.mi.store_moments(self.mi.offsets, self.mi.sigmas, self.mi.corrmat)
 
-        self.resizeTableWidget(tableWidget)
         tableWidget.itemChanged.connect(self.update_sim_moments)
