@@ -1,9 +1,11 @@
+from __future__ import absolute_import, print_function
+
 import numpy as np
 from collections import OrderedDict
 
 from mint.opt_objects import MachineInterface
-from multinormal_devices import MultinormalDevice
-from multinormal_ui import MultinormalDisplay
+from sint.multinormal.multinormal_devices import MultinormalDevice
+from sint.multinormal.multinormal_ui import MultinormalDisplay
 
 class MultinormalInterface(MachineInterface):
     name = "MultinormalInterface"

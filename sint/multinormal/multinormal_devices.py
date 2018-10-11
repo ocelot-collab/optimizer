@@ -33,4 +33,4 @@ class MultinormalDevice(Device):
             return m1
 
     def get_limits(self):
-        return [-1, 1]
+        return [-5, 5]

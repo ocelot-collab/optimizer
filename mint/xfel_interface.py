@@ -155,6 +155,7 @@ class XFELMachineInterface(MachineInterface):
             ]
         }
         return presets
+
     def get_quick_add_devices(self):
         """
         Return a dictionary with:
@@ -167,21 +168,30 @@ class XFELMachineInterface(MachineInterface):
 
         :return: dict
         """
+
+
         devs = OrderedDict([
-            ("IN20 M. Quads", ["QUAD:IN20:361:BCTRL", "QUAD:IN20:371:BCTRL", "QUAD:IN20:425:BCTRL",
-                               "QUAD:IN20:441:BCTRL", "QUAD:IN20:511:BCTRL", "QUAD:IN20:525:BCTRL"]),
-            ("LI21 M. Quads", ["QUAD:LI21:201:BCTRL", "QUAD:LI21:211:BCTRL", "QUAD:LI21:271:BCTRL",
-                               "QUAD:LI21:278:BCTRL"]),
-            ("LI26 201-501", ["QUAD:LI26:201:BCTRL", "QUAD:LI26:301:BCTRL", "QUAD:LI26:401:BCTRL",
-                              "QUAD:LI26:501:BCTRL"]),
-            ("LI26 601-901", ["QUAD:LI26:601:BCTRL", "QUAD:LI26:701:BCTRL", "QUAD:LI26:801:BCTRL",
-                              "QUAD:LI26:901:BCTRL"]),
-            ("LTU M. Quads", ["QUAD:LTU1:620:BCTRL", "QUAD:LTU1:640:BCTRL", "QUAD:LTU1:660:BCTRL",
-                              "QUAD:LTU1:680:BCTRL"]),
-            ("Dispersion Quads", ["QUAD:LI21:221:BCTRL", "QUAD:LI21:251:BCTRL", "QUAD:LI24:740:BCTRL",
-                                  "QUAD:LI24:860:BCTRL", "QUAD:LTU1:440:BCTRL", "QUAD:LTU1:460:BCTRL"]),
-            ("CQ01/SQ01/Sol.", ["SOLN:IN20:121:BCTRL", "QUAD:IN20:121:BCTRL", "QUAD:IN20:122:BCTRL"]),
-            ("DMD PVs", ["DMD:IN20:1:DELAY_1", "DMD:IN20:1:DELAY_2", "DMD:IN20:1:WIDTH_2", "SIOC:SYS0:ML03:AO956"])
+            ("Launch SASE1", ["XFEL.MAGNETS/MAGNET.ML/CFX.2162.T2/CURRENT.SP",
+                               "XFEL.MAGNETS/MAGNET.ML/CFX.2219.T2/CURRENT.SP",
+                               "XFEL.MAGNETS/MAGNET.ML/CFY.2177.T2/CURRENT.SP",
+                               "XFEL.MAGNETS/MAGNET.ML/CFY.2207.T2/CURRENT.SP"]),
+
+            ("Match Quads SASE1", ["XFEL.MAGNETS/MAGNET.ML/CFX.2162.T2/CURRENT.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CFX.2219.T2/CURRENT.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CFY.2177.T2/CURRENT.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CFY.2207.T2/CURRENT.SP"]),
+            ("I1 Hor. Disp.", ["XFEL.MAGNETS/MAGNET.ML/CBB.62.I1D/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.90.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.95.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.65.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.51.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.102.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CX.39.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/BL.50I.I1/KICK_DEG.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/BL.50II.I1/KICK_DEG.SP"]),
+            ("I1 Ver. Disp.", ["XFEL.MAGNETS/MAGNET.ML/CIY.92.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIY.72.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CY.39.I1/KICK_MRAD.SP"])
         ])
         return devs
 # test interface
@@ -193,8 +203,8 @@ class TestMachineInterface(XFELMachineInterface):
     """
     name = 'TestMachineInterface'
 
-    def __init__(self):
-        super(TestMachineInterface, self).__init__()
+    def __init__(self, args):
+        super(TestMachineInterface, self).__init__(args)
         self.data = 1.
         pass
     def get_alarms(self):
