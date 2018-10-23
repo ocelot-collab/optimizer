@@ -44,11 +44,6 @@ class MultinormalInterface(MachineInterface):
 
         # making this its own function in case we want to call again later
         self.store_moments(params[0], params[1], params[2])
-        print("******* DEBUG ***********")
-        print(" X: ")
-        print(self.x)
-        print(" Y: ")
-        print(self.y)
 
     @staticmethod
     def add_args(parser):
