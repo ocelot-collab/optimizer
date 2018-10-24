@@ -93,6 +93,9 @@ class MultinormalInterface(MachineInterface):
         """
         gui.hyper_file = "devmode"
         gui.ui.pb_hyper_file.setText(gui.hyper_file)
+
+        # Seed File
+        gui.ui.lineEdit_4.setText("parameters/simSeed.mat")
         self.display_tab = MultinormalDisplay(parent=gui, mi=self)
         tab_widget = gui.ui.tabWidget
         tab_widget.addTab(self.display_tab, "Simulation Mode")
