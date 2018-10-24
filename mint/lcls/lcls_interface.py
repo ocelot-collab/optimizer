@@ -38,6 +38,8 @@ except ImportError:
 from mint.opt_objects import MachineInterface
 from mint.lcls.lcls_devices import LCLSQuad, LCLSDevice
 
+def no_op(*args, **kwargs):
+    print("Write operation disabled. Running in Read Only Mode")
 
 class LCLSMachineInterface(MachineInterface):
     name = 'LCLSMachineInterface'
@@ -49,6 +51,25 @@ class LCLSMachineInterface(MachineInterface):
 
         if 'epics' not in sys.modules:
             raise Exception('No module named epics. LCLSMachineInterface will not work. Try simulation mode instead.')
+
+        if args.get('read_only', False):
+            print("****************************************************************")
+            print("************************* WARNING ******************************")
+            print("****************************************************************")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("          Runnning LCLS Interface in Read Only Mode.")
+            print("****************************************************************")
+            epics.caput = no_op
+            epics.ca.put = no_op
 
         self.data = dict()
         self.pvs = dict()
@@ -62,6 +83,21 @@ class LCLSMachineInterface(MachineInterface):
         except:
             self.losspvs = []
             print(self.name, ' - WARNING: Could not read ', self.losses_filename)
+
+    @staticmethod
+    def add_args(parser):
+        """
+        Method that will add the Machine interface specific arguments to the
+        command line argument parser.
+
+        :param parser: (ArgumentParser)
+        :return:
+        """
+        if not parser:
+            return
+
+        parser.add_argument('--read-only', default=False, required=False, action='store_true',
+                            help="Disable write operations to the process variables.")
 
     @staticmethod
     def get_params_folder():
@@ -88,7 +124,7 @@ class LCLSMachineInterface(MachineInterface):
         """
         pv = self.pvs.get(device_name, None)
         if pv is None:
-            self.pvs[device_name] = epics.PV(device_name)
+            self.pvs[device_name] = epics.get_pv(device_name)
             return self.pvs[device_name].get()
         else:
             if not pv.connected:
@@ -105,7 +141,7 @@ class LCLSMachineInterface(MachineInterface):
         """
         pv = self.pvs.get(device_name, None)
         if pv is None:
-            self.pvs[device_name] = epics.PV(device_name)
+            self.pvs[device_name] = epics.get_pv(device_name)
             return None
         else:
             if not pv.connected:
