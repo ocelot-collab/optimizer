@@ -100,7 +100,7 @@ class OcelotInterfaceWindow(QFrame):
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
         self.ui.cb_select_alg.addItem(self.name_simplex)
-        #self.ui.cb_select_alg.addItem(self.name_gauss)
+        self.ui.cb_select_alg.addItem(self.name_gauss)
         self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
         #self.ui.cb_select_alg.addItem(self.name_es)
@@ -196,6 +196,7 @@ class OcelotInterfaceWindow(QFrame):
         #GP Method
         if current_method == self.name_gauss:
             minimizer = mint.GaussProcess()
+            minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:
             minimizer = mint.GaussProcessSKLearn()
@@ -279,6 +280,7 @@ class OcelotInterfaceWindow(QFrame):
         minimizer = self.scan_method_select()
 
         # configure the Minimizer
+        minimizer.mi = self.mi
         if minimizer.__class__ in [mint.GaussProcess, mint.GaussProcessSKLearn]:
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
             minimizer.seed_timeout = self.ui.sb_tdelay.value()
