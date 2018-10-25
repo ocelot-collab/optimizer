@@ -32,14 +32,29 @@ try:
         out_q.put([[res.x, res.fun[0][0]]])
 
     # parallelize minimizations using different starting positions using multiprocessing, scipy.optimize.minimize
-    def parallelminimize(f,x0s,fargs,margs,v0best=None):
+    def parallelminimize(f,x0s,fargs,margs,v0best=None,relative_bounds=None):
         # f is fcn to minimize
         # x0s are positions to start search from
         # fargs are arguments to pass to f
         # margs are arguments to pass to scipy.optimize.minimize
         
         # arguments to loop over
-        args = [(f,x,fargs,margs) for x in x0s]
+        if type(relative_bounds) is not type(None): # static bounds
+            args = [(f,x,fargs,margs) for x in x0s]
+        else: # relative bounds
+            args = []
+            for x in x0s:
+                thesemargs = copy.copy(margs)
+                thesemargs['bounds'] = (x + relative_bounds.T).T # it works. deal with it.
+                args += [(f,x,fargs,thesemargs)]
+        #print '\n[arg[3][\'bounds\'] for arg in args] = \n', [arg[3]['bounds'] for arg in args], '\n'
+        
+        ## add relative bounds
+        #if type(relative_bounds) is not type(None):
+            #for i in range(len(args)):
+                #args[i][3]['bounds'] = args[i][1] + relative_bounds
+            #print '\n[arg[3][\'bounds\'] for arg in args] = \n', [arg[3]['bounds'] for arg in args], '\n'
+            ##print '\nargs = ', args, '\n'
 
         # https://stackoverflow.com/questions/9786102/how-do-i-parallelize-a-simple-python-loop#9786225
         # also could try concurrent futures
@@ -64,45 +79,53 @@ try:
 
         for b in range(nbatch):
 
-            procs = []
-            
-            ilow = b*nprocs
-            ihigh = min(nrun,(b+1)*nprocs)
-                
-            #print 'launching processes'
+            # try running a batch until it works
+            while True:
+                try:
+                    procs = []
+                    
+                    ilow = b*nprocs
+                    ihigh = min(nrun,(b+1)*nprocs)
+                        
+                    #print 'launching processes'
 
-            for i in range(ilow, ihigh):
-                p = mp.Process(
-                        target=worker,
-                        args=args[i]+tuple([queues[i-ilow]]))
-                procs.append(p)
-                p.start()
-                
-            #print 'collecting results'
+                    for i in range(ilow, ihigh):
+                        p = mp.Process(
+                                target=worker,
+                                args=args[i]+tuple([queues[i-ilow]]))
+                        procs.append(p)
+                        p.start()
+                        
+                    #print 'collecting results'
 
-            for i in range(ilow, ihigh):
-                res += my_queue_get(queues[i-ilow]) # grab from this queue
-                
-            #print 'waiting for termination/cleanup'
+                    for i in range(ilow, ihigh):
+                        res += my_queue_get(queues[i-ilow]) # grab from this queue
+                        
+                    #print 'waiting for termination/cleanup'
 
-            # waits for worker to finish
-            for p in procs:
-                p.join()
-                p.terminate() # send SIGTERM just in case
-                del p # remove the multiprocessing.Process
+                    # waits for worker to finish
+                    for p in procs:
+                        p.join()
+                        p.terminate() # send SIGTERM just in case
+                        del p # remove the multiprocessing.Process
+                        
+                    #print 'done with batch ', b+1, ' of ', nbatch
+                    
+                    break # made it this far so break out of the while loop
                 
-            #print 'done with batch ', b+1, ' of ', nbatch
+                except:
+                    time.sleep(recovery_sleep_time_seconds) # wait a bit for processes to close before trying again
             
         res = np.array(res)
-        print 'res = ', res
+        #print 'res = ', res
         res = res[res[:,1]==np.min(res[:,-1])][0]
-        print 'res = ', res
-        print 'selected min is ',res[-1]
+        #print 'res = ', res
+        #print 'selected min is ',res[-1]
         #res = np.array(res[0])
         #print 'res = ',res
         
         # check if there's a better point
-        print 'v0best = ', v0best
+        #print 'v0best = ', v0best
         if v0best is None:
             res = np.array(res[0])
         else:
@@ -111,7 +134,7 @@ try:
             else:
                 res = np.array(res[0])
                 
-        print 'res = ',res
+        #print 'res = ',res
 
         return res
 except:
@@ -152,34 +175,42 @@ def parallelmap(f,xs,fargs):
 
     for b in range(nbatch):
 
-        procs = []
-        
-        ilow = b*nprocs
-        ihigh = min(nrun,(b+1)*nprocs)
-            
-        #print 'launching processes'
+        # try running a batch until it works
+        while True:
+            try:
+                procs = []
+                
+                ilow = b*nprocs
+                ihigh = min(nrun,(b+1)*nprocs)
+                    
+                #print 'launching processes'
 
-        for i in range(ilow, ihigh):
-            p = mp.Process(
-                    target=worker,
-                    args=args[i]+tuple([queues[i-ilow]]))
-            procs.append(p)
-            p.start()
-            
-        #print 'collecting results'
+                for i in range(ilow, ihigh):
+                    p = mp.Process(
+                            target=worker,
+                            args=args[i]+tuple([queues[i-ilow]]))
+                    procs.append(p)
+                    p.start()
+                    
+                #print 'collecting results'
 
-        for i in range(ilow, ihigh):
-            res += my_queue_get(queues[i-ilow]) # grab from this queue
-            
-        #print 'waiting for termination/cleanup'
+                for i in range(ilow, ihigh):
+                    res += my_queue_get(queues[i-ilow]) # grab from this queue
+                    
+                #print 'waiting for termination/cleanup'
 
-        # waits for worker to finish
-        for p in procs:
-            p.join()
-            p.terminate() # send SIGTERM just in case
-            del p # remove the multiprocessing.Process
+                # waits for worker to finish
+                for p in procs:
+                    p.join()
+                    p.terminate() # send SIGTERM just in case
+                    del p # remove the multiprocessing.Process
+                    
+                #print 'done with batch ', b+1, ' of ', nbatch
+                    
+                break # made it this far so break out of the while loop
             
-        #print 'done with batch ', b+1, ' of ', nbatch
+            except:
+                time.sleep(recovery_sleep_time_seconds) # wait a bit for processes to close before trying again
         
     # sort by argument order passed (seems presorted but just in case)
     #res = res[res[:,0].argsort()] # this doesn't work in genreal; must mix back in xs for slicing
@@ -244,40 +275,48 @@ def parallelmap2(f,fargslist,hostlist=None):
 
     for b in range(nbatch):
 
-        procs = []
-        
-        ilow = b*nprocs
-        ihigh = min(nrun,(b+1)*nprocs)
-            
-        #print 'launching processes'
+        # try running a batch until it works
+        while True:
+            try:
+                procs = []
+                
+                ilow = b*nprocs
+                ihigh = min(nrun,(b+1)*nprocs)
+                    
+                #print 'launching processes'
 
-        for i in range(ilow, ihigh):
-            if runLocalQ:
-                Args = args[i] # copy this one's args
-            else:
-                if nhosts:
-                    Args = (f, args[i][1]+[hostlist[(i-ilow) % nhosts]])
-                else:
-                    Args = (f, args[i][1]+[hostlist])
-            Args += tuple([queues[i-ilow]]) # assign a queue
-            p = mp.Process(target=worker,args=Args)
-            procs.append(p)
-            p.start()
-            
-        #print 'collecting results'
+                for i in range(ilow, ihigh):
+                    if runLocalQ:
+                        Args = args[i] # copy this one's args
+                    else:
+                        if nhosts:
+                            Args = (f, args[i][1]+[hostlist[(i-ilow) % nhosts]])
+                        else:
+                            Args = (f, args[i][1]+[hostlist])
+                    Args += tuple([queues[i-ilow]]) # assign a queue
+                    p = mp.Process(target=worker,args=Args)
+                    procs.append(p)
+                    p.start()
+                    
+                #print 'collecting results'
 
-        for i in range(ilow, ihigh):
-            res += my_queue_get(queues[i-ilow]) # grab from this queue
-            
-        #print 'waiting for termination/cleanup'
+                for i in range(ilow, ihigh):
+                    res += my_queue_get(queues[i-ilow]) # grab from this queue
+                    
+                #print 'waiting for termination/cleanup'
 
-        # waits for worker to finish
-        for p in procs:
-            p.join()
-            p.terminate() # send SIGTERM just in case
-            del p # remove the multiprocessing.Process
+                # waits for worker to finish
+                for p in procs:
+                    p.join()
+                    p.terminate() # send SIGTERM just in case
+                    del p # remove the multiprocessing.Process
+                    
+                #print 'done with batch ', b+1, ' of ', nbatch
+                    
+                break # made it this far so break out of the while loop
             
-        #print 'done with batch ', b+1, ' of ', nbatch
+            except:
+                time.sleep(recovery_sleep_time_seconds) # wait a bit for processes to close before trying again
         
     # sort by argument order passed (seems presorted but just in case)
     #res = res[res[:,0].argsort()] # this doesn't work in genreal; must mix back in xs for slicing
@@ -308,7 +347,7 @@ try:
         
         # generate points to search
         ndim = len(lengths)
-        nevalpp = neval + 1
+        #nevalpp = neval + 1
         #x0s = np.array([hammersley(i,ndim,nevalpp) for i in range(1,nevalpp)]) # hammersley uniform in all dims
         #x0s = np.vstack(parallelmap(hammersley, range(1,nevalpp), (ndim,nevalpp)))
         x0s = create_hammersley_samples(order=neval, dim=ndim).T
@@ -343,39 +382,47 @@ try:
 
         for b in range(nbatch):
 
-            procs = []
-            
-            ilow = b*nprocs
-            ihigh = min(nrun,(b+1)*nprocs)
-                
-            #print 'launching processes'
+            # try running a batch until it works
+            while True:
+                try:
+                    procs = []
+                    
+                    ilow = b*nprocs
+                    ihigh = min(nrun,(b+1)*nprocs)
+                        
+                    #print 'launching processes'
 
-            for i in range(ilow, ihigh):
-                p = mp.Process(
-                        target=worker,
-                        args=args[i]+tuple([queues[i-ilow]]))
-                procs.append(p)
-                p.start()
-                
-            #print 'collecting results'
-                
-            if len(res):
-                for i in range(ilow, ihigh):
-                    res = np.vstack((res,my_queue_get(queues[i-ilow])))
-            else:
-                res = np.array(my_queue_get(queues[0]))
-                for i in range(ilow+1, ihigh):
-                    res = np.vstack((res,my_queue_get(queues[i-ilow])))
-                
-            #print 'waiting for termination/cleanup'
+                    for i in range(ilow, ihigh):
+                        p = mp.Process(
+                                target=worker,
+                                args=args[i]+tuple([queues[i-ilow]]))
+                        procs.append(p)
+                        p.start()
+                        
+                    #print 'collecting results'
+                        
+                    if len(res):
+                        for i in range(ilow, ihigh):
+                            res = np.vstack((res,my_queue_get(queues[i-ilow])))
+                    else:
+                        res = np.array(my_queue_get(queues[0]))
+                        for i in range(ilow+1, ihigh):
+                            res = np.vstack((res,my_queue_get(queues[i-ilow])))
+                        
+                    #print 'waiting for termination/cleanup'
 
-            # waits for worker to finish
-            for p in procs:
-                p.join() # wait until close
-                p.terminate() # send SIGTERM just in case
-                del p # remove the multiprocessing.Process
+                    # waits for worker to finish
+                    for p in procs:
+                        p.join() # wait until close
+                        p.terminate() # send SIGTERM just in case
+                        del p # remove the multiprocessing.Process
+                        
+                    #print 'done with batch ', b+1, ' of ', nbatch
+                    
+                    break # made it this far so break out of the while loop
                 
-            #print 'done with batch ', b+1, ' of ', nbatch
+                except:
+                    time.sleep(recovery_sleep_time_seconds) # wait a bit for processes to close before trying again
 
         ## return nkeep smallest values
         #res = np.array(res)

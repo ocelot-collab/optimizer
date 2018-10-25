@@ -1,5 +1,9 @@
 # -*- coding: iso-8859-1 -*-
 import sys
+try:
+    sys.path.append('./matrixmodel/')
+except:
+    pass
 import numpy as np
 #from scipy.optimize import minimize
 #import numdifftools as nd
@@ -8,10 +12,10 @@ from numpy.linalg import inv
 import re
 import pandas as pd
 import time as steve
-from matrixmodel.parallelstuff import parallelmap
-from matrixmodel.archive_stuff import *
+from parallelstuff import parallelmap
+from archive_stuff import *
 from scipy import special
-from matrixmodel.genesis_tools import *
+from genesis_tools import *
 from scipy.optimize import curve_fit as fit
 
 try:
@@ -31,12 +35,12 @@ class Beamconfig:
             print '\n', '\n', 'CAUTION!! Epics is enabled. DO NOT MAKE CHANGES TO MACHINE (via caput commands, which should never appear in this script).'
         if config_type == 'current':
             if self.disable_epics:
-                print 'Epics disabled. Cannot get current config. Terminating scipt.'
+                print 'Epics disabled (in beamconfig.py). Cannot get current config. Terminating scipt.'
                 sys.exit()
             else:
                 self.quads, self.und_quads, self.mquad_names = self.get_model()[0:3]
-                self.beamEnergyMeV = epics.caget('BEND:DMP1:400:BDES')
-                self.emitx = epics.caget('WIRE:IN20:561:EMITN_X') 
+                self.beamEnergyMeV = 1000.*epics.caget('BEND:DMP1:400:BDES') ##################### Check units! Should this factor of 1000 be here?
+                self.emitx = epics.caget('WIRE:IN20:561:EMITN_X')
                 self.emity = epics.caget('WIRE:IN20:561:EMITN_Y')
         if config_type == 'archive':
             self.disable_epics = True
@@ -47,26 +51,26 @@ class Beamconfig:
             self.quads, self.und_quads, self.mquad_names = self.get_model()[0:3]
             self.quads[:,0] = mquadpvs
             self.beamEnergyMeV = beamEnergyMeV
-            self.undQuadGrad = undQuadGrad
-        self.und_quads[0,0:2] = [-1.*undQuadGrad*10*.04, .04] #################Change me????????????????
-        self.und_quads[1:,0] = [undQuadGrad*10*.08*(-1)**i for i in range(len(self.und_quads[1:,0])) ]
+            self.und_quads[0,0:2] = [-1.*undQuadGrad*10*.04, .04] #################Change me????????????????
+            self.und_quads[1:,0] = [undQuadGrad*10*.08*(-1)**i for i in range(len(self.und_quads[1:,0])) ]
+
         #print self.und_quads
         #print self.mquad_names
         self.mquad_dict = {}
         for i, mquad_name in enumerate(self.mquad_names):
             self.mquad_dict[mquad_name] = i
         self.zend = sum(self.quads[:,1]) + sum(self.quads[:,2])
-        self.gamma_rel = beamEnergyMeV / 0.511 #relatvistic gamma, not to be confused with the twiss parameter 'gamma'
+        self.gamma_rel = self.beamEnergyMeV / 0.511 #relatvistic gamma, not to be confused with the twiss parameter 'gamma'
         self.beamCurrent = beamCurrent
         self.delgam = (0.629 + 0.477 * self.beamCurrent / 1000.) / 0.511
-        if type(emitx) is not type(None): 
+        if type(emitx) is not type(None):
             self.emitx = emitx #normalized emittance
         else:
             try: type(self.emitx)
             except:
                 print 'Failed to specify or acquire emitx. Using default value of 0.4e-6'
                 self.emitx = 0.4e-6
-        if type(emity) is not type(None): 
+        if type(emity) is not type(None):
             self.emity = emity #normalized emittance
         else:
             try: type(self.emity)
@@ -88,7 +92,7 @@ class Beamconfig:
         self.input_twiss_x, self.input_twiss_y = self.back_prop() #input_twiss_x, input_twiss_y are the twiss parameters that are required at the beginning of beamline in order to produce the matched_twiss params at the undulator.
         #self.quad_names = [' Unfinished...
         print 'Beamline successfully configured.'
-        
+
     def output_twiss(self, quadx_id=0, quady_id=1, dquadx = 0, dquady = 0):
         #quadx, quady are the indeces of the quads you wish to vary
         #dquadx, dquady are the amounts that you wish to vary. Units are the same as the quad PVs, i.e. field integrals: gradient(kG/m)*length(m)
@@ -98,7 +102,7 @@ class Beamconfig:
         twissx, twissy = self.twiss(self.zend, self.input_twiss_x, self.input_twiss_y, quads)
         return twissx, twissy
 
-    
+
     def varied_twiss(self, quadx_id = 0, quady_id = 1, rel_rangex=[-1,3], rel_rangey=[-2.5,1.5], resolution=[11,11]):
         #this method outputs a list of twiss parameters (halfway through the first undulator quad) for various configurations close to the match.
         #quadx and quady are the indeces of the quads you wish to vary. 0 corresponds to the first quad in the beam line (currently LTU620), and so on.
@@ -128,37 +132,59 @@ class Beamconfig:
             quadval_grid = [quadval_row] + quadval_grid
         return twiss_grid, rangex, rangey, quadval_grid
 
-    def corrmat(self, pvnames):
+    def corrmat(self, pvnames, fastQ = False, corrScale = 1.):
+        try:
+            np.exp(corrScale * 1. + 0.) # can we do math with corrScale?
+            corr_scale_factor = max(-1,min(1,corrScale))
+        except:
+            print 'matrixmodel.beamconfig.corrmat - WARNING: ', corrScale, ' is an invalid choice for corrScale (should be a float between 0 and 1)'
+            corr_scale_factor = 1.
         corrparams = []
         for i in range(len(pvnames)-1):
-            rho = self.corrparam(pvnames[i], pvnames[i+1])[0]
+            rho = self.corrparam(pvnames[i], pvnames[i+1], fastQ = fastQ)[0]
             print 'correlation param (rho) for ', pvnames[i], pvnames[i+1], ' = ', rho
-            corrparams += [rho]
+            corrparams += [corr_scale_factor * rho]
         mat = np.identity(len(corrparams)+1)
         for i, rho in enumerate(corrparams):
             mat[i,i+1], mat[i+1,i] = rho, rho
         print 'correlation matrix for given PVs = ', mat
         return mat
-            
-        
-    def corrparam(self, pvname1, pvname2):
+
+    def corrmat_full(self, pvnames, fastQ = False):
+        mat = np.identity(len(pvnames))
+        for od in range(len(pvnames)-1): # off diagonal rows
+            for i in range(len(pvnames)-1-od): # elements along one off-diag row
+                loc = i+1+od
+                rho = self.corrparam(pvnames[i], pvnames[loc], fastQ = fastQ)[0]
+                print 'correlation param (rho) for ', pvnames[i], pvnames[loc], ' = ', rho
+                mat[i,loc], mat[loc,i] = rho, rho
+        print 'correlation matrix for given PVs = ', mat
+        return mat
+
+
+    def corrparam(self, pvname1, pvname2, fastQ = False, eps = 1.e-5):
         quadx_id, quady_id = self.mquad_dict[pvname1], self.mquad_dict[pvname2]
         #eps = np.finfo(float).eps
-        eps = 1.e-3 #1.e-16 is too small??
+        #eps = 1.e-6 #1.e-16 is too small??
         #corrplot, quadval_grid = self.beam_size_heatmap(quadx_id=quadx_id, quady_id=quady_id, rel_rangex=[-eps, eps], rel_rangey=[-eps, eps], resolution=[3,3], showplot=False, filename=None)
-        corrplot, quadval_grid = self.beam_size_heatmap_parallel(quadx_id=quadx_id, quady_id=quady_id, rel_rangex=[-eps, eps], rel_rangey=[-eps, eps], resolution=[3,3], showplot=False, filename=None)
-        print 'corrplot = ', corrplot
+        corrplot, quadval_grid = self.beam_size_heatmap_parallel(quadx_id=quadx_id, quady_id=quady_id, rel_rangex=[-eps, eps], rel_rangey=[-eps, eps], resolution=[3,3], showplot=False, filename=None, fastQ=fastQ)
+        #print 'corrplot = ', corrplot
         hess = np.zeros([2, 2])
         hess[0,0] = 1/eps*( (corrplot[1,2]-corrplot[1,1])/eps - (corrplot[1,1]-corrplot[1,0])/eps )
         hess[1,0] = 1/eps*( (corrplot[0,2]-corrplot[0,1])/eps - (corrplot[1,2]-corrplot[1,1])/eps )
         hess[0,1] = 1/eps*( (corrplot[0,2]-corrplot[1,2])/eps - (corrplot[0,1]-corrplot[1,1])/eps )
         hess[1,1] = 1/eps*( (corrplot[0,1]-corrplot[1,1])/eps - (corrplot[1,1]-corrplot[2,1])/eps )
-        rho = -1*hess[0,1]/np.sqrt(hess[0,0]*hess[1,1]) #Should I have this negative 1 there????
+        print 'hess = \n', hess
+        hess[0,0] = 1/eps*( (corrplot[1,2]-corrplot[1,1])/eps - (corrplot[1,1]-corrplot[1,0])/eps )
+        hess[1,0] = 1/(2*eps)*( (corrplot[0,2]-corrplot[2,2])/eps - (corrplot[0,0]-corrplot[2,0])/eps )
+        hess[0,1] = 1/(2*eps)*( (corrplot[2,2]-corrplot[2,0])/eps - (corrplot[0,2]-corrplot[0,0])/eps )
+        hess[1,1] = 1/eps*( (corrplot[2,1]-corrplot[1,1])/eps - (corrplot[1,1]-corrplot[0,1])/eps )
+        print 'hess = \n', hess
+        rho = -1*hess[0,1]/np.sqrt(hess[0,0]*hess[1,1]) #should I have this negative 1 here????
         covar = hess
         return rho, covar, corrplot
-        
-        
-    def beam_size_heatmap_parallel(self, quadx_id=0, quady_id=1, rel_rangex=[-1,3], rel_rangey=[-2.5,1.5], resolution=[11,11], showplot = True, filename = None):
+
+    def beam_size_heatmap_parallel(self, quadx_id=0, quady_id=1, rel_rangex=[-1,3], rel_rangey=[-2.5,1.5], resolution=[11,11], showplot = True, filename = None, fastQ=False):
         #method to generate heatmap of average beam sizes in undulator using the simple matrix model.
 
         #zs, sizes, sigma_xs, sigma_ys  = self.beam_size_undulator_only(self.matched_twiss_x_matrixmodel, self.matched_twiss_y_matrixmodel, self.und_quads)[1:5]
@@ -183,11 +209,18 @@ class Beamconfig:
                 #betay, alphay = twissy[0,0], twissy[0,1]
                 argslist += [(twissx, twissy)]
                 iterator += 1
-        resultslist = parallelmap(self.beam_size_undulator_only_onearg, argslist, ([self.und_quads]) )
-        print 'Beam size evaluated ', len(argslist), ' times.'
+        if fastQ == True:
+            resultslist = parallelmap(self.beam_size_undulator_only_onearg_fast, argslist, ([self.und_quads]) )
+        else:
+            resultslist = parallelmap(self.beam_size_undulator_only_onearg, argslist, ([self.und_quads]) )
+        #print 'Beam size evaluated ', len(argslist), ' times.'
+        #print 'length of results list = ', len(resultslist)
+        #print 'resultslist[0][0][0] = ', resultslist[0][0][0]
+
         iterator = 0
         for i, row in enumerate(twiss_grid1):
             for j, twiss in enumerate(row):
+                #print resultslist[iterator][0][0]
                 corrplot[i,j] = resultslist[iterator][0][0]
                 iterator += 1
         #assign plot range to axes
@@ -211,7 +244,7 @@ class Beamconfig:
         print 'Finished beam size heatmap.'
         return corrplot, quadval_grid
 
-        
+
     def beam_size_heatmap(self, pv_names = None, quadx_id=0, quady_id=1, rel_rangex=[-1,3], rel_rangey=[-2.5,1.5], resolution=[11,11], showplot = False, filename = None):
         #method to generate heatmap of average beam sizes in undulator using the simple matrix model.
 
@@ -275,7 +308,7 @@ class Beamconfig:
         plt.close()
         print 'Finished beam size heatmap.'
         return corrplot, quadval_grid
-        
+
     def genesis_heatmap(self, quadx_id=0, quady_id=1, rel_rangex=[-1,3], rel_rangey=[-2.5,1.5], resolution=[11,11], reoptimize = False, showplot = True, filename = None):
         #ONLY PLOTS FEL HEATMAP... DOES NOT PLOT: taper, detuning optimization, bunching factor vs z, radphase vs z, bunching phase vs z, power vs z, log(power) vs z, and beam size vs z
         print  '\n', '\n', 'Generating FEL heatmap...'
@@ -347,7 +380,7 @@ class Beamconfig:
         zs = s.run_genesis_for_twiss(plotQ=False)[0] # run once just to get list of z values from genesis.
         for z in zs:
             corrplot_list = corrplot_list + [ [z, np.zeros([resolution[0],resolution[1]])] ] #make a list of ordered pairs formatted: [z value, corrplot]
-            
+
         if s.input_params['emitx'] == 2.34556e-6:
             print 'WARNING WARNING: WE FUCKED UP'
         for i, row in enumerate(twiss_grid1):
@@ -371,7 +404,7 @@ class Beamconfig:
 
                 iterator += 1
 
-                
+
         #assign plot range to axes
         top = rangey[1]
         bottom = rangey[0]
@@ -393,7 +426,7 @@ class Beamconfig:
             plt.close()
         print 'Finished generating FEL heatmaps. Took ', np.sum(runtimes)/60., ' minutes.',  '\n', '\n'
 
-        
+
         ################# below function is work in progress
     def genesis_FEL_vs_betas(self, quadx_id=0, quady_id=1, rel_frac_rangex=[-1,3], rel_frac_rangey=[-2.5,1.5], resolution=[11,11], reoptimize = False, showplot = True, filename = None):
         #ONLY PLOTS FEL HEATMAP... DOES NOT PLOT: taper, detuning optimization, bunching factor vs z, radphase vs z, bunching phase vs z, power vs z, log(power) vs z, and beam size vs z
@@ -448,7 +481,7 @@ class Beamconfig:
         plt.close()
         print 'Finished generating FEL heatmap. Took ', np.sum(runtimes)/60., ' minutes.',  '\n', '\n'
 
-        
+
     def genesis_single_run(self, quadx_id = 0, quady_id = 1, dquadx = 0, dquady = 0, detuning_zstop = None, plotQ = False, filename = None):
         #plots taper, detuning optimization, bunching factor vs z, radphase vs z, bunching phase vs z, power vs z, log(power) vs z, and beam size vs z, FOR CHOSEN CONFIGURATION. Defaults to matched config.
         print '\n', '\n', 'Running single genesis simulation with specified settings...'
@@ -459,15 +492,15 @@ class Beamconfig:
         print 'twissx = ', '\n', twissx, '\n', 'twissy = ', '\n', twissy
         print 'For reference, the matched twiss are: '
         print 'matched twissx = ', '\n', self.matched_twiss_x, '\n', 'matched twissy = ', '\n', self.matched_twiss_y
-        
+
         s = serpent()
         self.configure_serpent(s, input_twiss_x = twissx, input_twiss_y = twissy, optimize_detuning = True, detuning_zstop = detuning_zstop, plotQ = plotQ)
 
         #s.run_genesis_for_twiss(betax=betax, betay=betay, alphax=alphax, alphay=alphay, plotQ=True, plotName = filename)
         s.run_genesis_for_twiss(plotQ=plotQ, plotName = filename)
         print 'Finished running single genesis sim.' '\n', '\n'
-        
-        
+
+
     def get_arc_config(self, ttime): #time format '2017-07-01T00:00:01'
         pvlist = ['QUAD:LTU1:620:BCTRL', 'QUAD:LTU1:640:BCTRL', 'QUAD:LTU1:660:BCTRL', 'QUAD:LTU1:665:BCTRL', 'QUAD:LTU1:680:BCTRL', 'QUAD:LTU1:720:BCTRL', 'QUAD:LTU1:730:BCTRL', 'QUAD:LTU1:740:BCTRL', 'QUAD:LTU1:750:BCTRL', 'QUAD:LTU1:760:BCTRL', 'QUAD:LTU1:770:BCTRL', 'QUAD:LTU1:820:BCTRL', 'QUAD:LTU1:840:BCTRL', 'QUAD:LTU1:860:BCTRL', 'QUAD:LTU1:880:BCTRL', 'QUAD:UND1:180:BCTRL']
         quad_vals = []
@@ -518,7 +551,7 @@ class Beamconfig:
         Mtinv = inv(Mt)
         input_twiss_y= Minv.dot(self.matched_twiss_y).dot(Mtinv)
         return input_twiss_x, input_twiss_y
-        
+
     def calcmatch_FODO_genesis(self, beamEnergyMeV = 3370., undQuadGrad = 10):
         # note that for genesis simulation (where the undulator magnets are 30 cm), undQuadGrad = gradient integral / length = (3 T) / (0.3 m) = 10 T/m
         # for the actual accelerator lattice, the undQuadGrad = gradient integral / length = (3 T) / (0.08 m) = 37.5 T/m
@@ -554,7 +587,7 @@ class Beamconfig:
 
         #print 'output twiss = ', M1.dot(twiss_x).dot(M1.transpose())
 
-        
+
 
         return twiss_x, twiss_y
 
@@ -602,7 +635,10 @@ class Beamconfig:
         #data = pd.read_csv('fullmachine_rmats_2018-05-13-090800-XLEAP-3880MeV', delimiter='\t')
         #data = pd.read_csv('fullmachine_rmats_2018-05-15-142400-XLEAP-3430MeV', delimiter='\t')
         #data = pd.read_csv('/home/physics/kennedy1/genesis_corrplotting/vcurrent/fullmachine_rmats', delimiter='\t')
-        data = pd.read_csv('matrixmodel/fullmachine_rmats', delimiter='\t')
+        try:
+            data = pd.read_csv('../../fullmachine_rmats', delimiter='\t')
+        except:
+            data = pd.read_csv('./matrixmodel/fullmachine_rmats', delimiter='\t')
 
         elements = []
         keys = data.keys()[0]
@@ -729,12 +765,12 @@ class Beamconfig:
         #s is the segment index in which position z is found,
         #c is a string that denotes whether this segment is a quad or a drift space,
         #remainder is the distance into the final segment that the z position specified extends.
-        
+
         quads = np.copy(Quads)
         for i in range(len(quads)-1): #these 3 lines convert the pvs (field integrals in kG) to the gradients (in T/m)
             quads[i,0] = quads[i,0]*0.1/quads[i,1]
         quads[-1,0] = quads[-1,0]*0.1/(2.*quads[-1,1]) # the last matching quad is the first half of the first undulator quad. To get the field gradient from the field integral, you need to divide by the length of the quad. The true length of this quad is twice the length that is stored in the array (because the length has been cut in half).
-        
+
         if dim == 'x':
             sign = 1
         if dim == 'y':  #need to reverse sign of quad focusing parameters (k) if dealing in the y-dimension
@@ -751,7 +787,7 @@ class Beamconfig:
             Ms = Ms + [ self.MQ(sign*self.a*quads[s,0], remainder) ]
         if c == 'drift':
             Ms = Ms + [ self.MQ(sign*self.a*quads[s,0], quads[s,1]), self.MO(remainder) ]
-            
+
         #print 'matching quad and drift space transport matrices for dim = ', dim, ': ', Ms
         return Ms
 
@@ -820,7 +856,7 @@ class Beamconfig:
         s.input_params['xlamds'] = reslambda #new reslambda def
 
         #resK = resonantK(gamma_beam, lambda_fel, lambda_undulator) #previous resK fcn call
-        resK = self.und_Ks[0] 
+        resK = self.und_Ks[0]
         #rho1 = rhoFEL(gamma_beam, current_beam, 1., resK, lambda_undulator) #previous rhoFEL fcn call
         rho1 = self.rhoFEL(self.gamma_rel, self.beamCurrent, 1., resK, lambda_undulator)
         #rho_all = fastRhoFEL(sizes, rho1) #previous rho_all fcn call
@@ -895,6 +931,31 @@ class Beamconfig:
 
     # one argument for parallelization
 
+    def beam_size_undulator_only(self, input_twiss_x, input_twiss_y, uquads):
+
+        # beam size stuff
+        zund_start = 0
+        quads = np.copy(uquads)
+
+        zend = sum(quads[:-1,1]) + sum(quads[:-1,2]) ###################WHY DOES THE LAST UND QUAD NOT FOCUS PROPERLY?????????????????????????????
+        stepsize = 0.1
+        zs = np.arange(0, zend, stepsize)
+        zs_und = np.arange(zund_start, zend, stepsize)
+
+        beta_xs = []
+        beta_ys = []
+        for z in zs:
+            twiss_x, twiss_y = self.twiss(z, input_twiss_x, input_twiss_y, quads)
+            beta_xs += [twiss_x[0,0]]
+            beta_ys += [twiss_y[0,0]]
+
+        sigma_xs = np.sqrt(self.emitx_u*np.array(beta_xs))
+        sigma_ys = np.sqrt(self.emity_u*np.array(beta_ys))
+        sizes = np.sqrt(sigma_xs*sigma_ys)
+        avg_size = np.mean( sizes )
+
+        return avg_size, zs, sizes, sigma_xs, sigma_ys, beta_xs, beta_ys
+
     def beam_size_undulator_only_onearg(self, onearg, uquads):
         input_twiss_x, input_twiss_y = onearg
         # beam size stuff
@@ -920,17 +981,17 @@ class Beamconfig:
 
         return avg_size, zs, sizes, sigma_xs, sigma_ys, beta_xs, beta_ys
 
-        
-    def beam_size_undulator_only(self, input_twiss_x, input_twiss_y, uquads):
-
+    def beam_size_undulator_only_onearg_fast(self, onearg, uquads):
+        input_twiss_x, input_twiss_y = onearg
         # beam size stuff
-        zund_start = 0
+
         quads = np.copy(uquads)
 
         zend = sum(quads[:-1,1]) + sum(quads[:-1,2]) ###################WHY DOES THE LAST UND QUAD NOT FOCUS PROPERLY?????????????????????????????
-        stepsize = 0.1
-        zs = np.arange(0, zend, stepsize)
-        zs_und = np.arange(zund_start, zend, stepsize)
+        zs = [0]
+        for quad in quads:
+            zs += [zs[-1]+quad[1]]
+            zs += [zs[-1]+quad[2]]
 
         beta_xs = []
         beta_ys = []
@@ -943,7 +1004,7 @@ class Beamconfig:
         sigma_ys = np.sqrt(self.emity_u*np.array(beta_ys))
         sizes = np.sqrt(sigma_xs*sigma_ys)
         avg_size = np.mean( sizes )
-        
+
         return avg_size, zs, sizes, sigma_xs, sigma_ys, beta_xs, beta_ys
 
     def beam_size_faster_FEL_onearg(self, onearg_tuple, current_beam = 1., sigma_g = 2.6, zstop = 1e6, lambda_fel = None, lambda_undulator = 0.03):
@@ -1111,7 +1172,7 @@ class Beamconfig:
         #cbar.set_label('Meters')
         #plt.show()
         #plt.close()
-        
+
     def fitfcn(self, x, amp, mu_x, mu_y, Sigma11, Sigma12, Sigma22):
         x = np.array(x)
         mu = np.array([mu_x, mu_y])

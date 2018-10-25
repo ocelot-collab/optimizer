@@ -72,6 +72,7 @@ import time
 #import math
 from copy import deepcopy
 import pandas as pd
+import copy
 
 from heatmap import plotheatmap
 
@@ -550,6 +551,7 @@ class BayesOpt:
         self.x_best = x_best
         x_curr = self.current_x[-1]
         #y_curr = self.current_y[-1]
+        #x_start = x_curr
         x_start = x_best
 
         # calculate length scales
@@ -573,7 +575,10 @@ class BayesOpt:
             if(self.bounds is None): # looks like a scale factor
                 self.bounds = 1.0
 
-            bound_lengths = 5. * lengthscales # 3x hyperparam lengths
+            bound_lengths = 3. * lengthscales # 3x hyperparam lengths
+            relative_bounds = np.transpose(np.array([-bound_lengths, bound_lengths]))
+            
+            #iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
             iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
 
         else:
@@ -681,16 +686,67 @@ class BayesOpt:
 
                 print 'neval = ', neval,'\t nkeep = ',nkeep
 
-                # parallelgridsearch generates pseudo-random grid, then performs an ICDF transform
-                # to map to multinormal distrinbution centered on x_start and with widths given by hyper params
-                v0s = parallelgridsearch(aqfcn,x_start,0.6*lengthscales,fargs,neval,nkeep)
+                ## parallelgridsearch generates pseudo-random grid, then performs an ICDF transform
+                ## to map to multinormal distrinbution centered on x_start and with widths given by hyper params
+                #v0s = parallelgridsearch(aqfcn,x_start,0.6*lengthscales,fargs,neval,nkeep)
+                #x0s = v0s[:,:-1] # for later testing if the minimize results are better than the best starting point
+                #v0best = v0s[0]
+                ##x0s = parallelgridsearch(aqfcn,x_start,lengthscales,fargs,max(1,int(neval/2)),max(1,int(nkeep/2)))
+                ##x0s = np.vstack((x0s,parallelgridsearch(aqfcn,x_start,0.5*lengthscales,fargs,max(1,int(neval/2)),max(1,int(nkeep/2)))))
+
+                # add the 10 best points seen so far (largest Y_obs)
+                nbest = 3 # add the best points seen so far (largest Y_obs)
+                nstart = 2 # make sure some starting points are there to prevent run away searches
+                yobs = np.array([y[0][0] for y in self.Y_obs])
+                isearch = yobs.argsort()[-nbest:]
+                for i in range(min(nstart,len(self.Y_obs))): #
+                    if np.sum(isearch == i) == 0: # not found in list
+                        isearch = np.append(isearch, i)
+                isearch.sort() # sort to bias searching near earlier steps
+                #isearch = isearch[::-1]
+                #print 'isearch = ', isearch
+                #print 'self.X_obs = ', self.X_obs
+                #print 'self.Y_obs = ', self.Y_obs
+                v0s = None
+                for i in isearch:
+                    vs = parallelgridsearch(aqfcn,self.X_obs[i],0.6*lengthscales,fargs,neval,nkeep)
+                    if type(v0s) == type(None):
+                        v0s = copy.copy(vs)
+                    else:
+                        v0s = np.vstack((v0s,vs))
+
+                #print 'v0s = ', v0s
+
+                v0sort = v0s[:,-1].argsort()[:nkeep] # keep the nlargest
+                #print 'v0sort = ', v0sort
+                #print 'v0s[v0sort] = ', v0s[v0sort]
+                v0s = v0s[v0sort]
+                
                 x0s = v0s[:,:-1] # for later testing if the minimize results are better than the best starting point
                 v0best = v0s[0]
                 #x0s = parallelgridsearch(aqfcn,x_start,lengthscales,fargs,max(1,int(neval/2)),max(1,int(nkeep/2)))
                 #x0s = np.vstack((x0s,parallelgridsearch(aqfcn,x_start,0.5*lengthscales,fargs,max(1,int(neval/2)),max(1,int(nkeep/2)))))
 
-                x0s = np.vstack((x0s,np.array(x_curr))) # last point
-                x0s = np.vstack((x0s,np.array(x_best))) # best so far
+                
+                #print 'self.X_obs = \n', self.X_obs, '\n'
+                #print 'self.Y_obs = \n', self.Y_obs, '\n'
+                #yobs = np.array([y[0][0] for y in self.Y_obs])
+                #print 'yobs = \n', yobs, '\n'
+                #print 'yobs.argsort() = \n', yobs.argsort(), '\n'
+                #print 'yobs.argsort()[-5:] = \n', yobs.argsort()[-5:], '\n'
+                #print 'self.X_obs[0] = \n', self.X_obs[0], '\n'
+                #print 'type(self.X_obs[0]) = \n', type(self.X_obs[0]), '\n'
+                #xobs = [self.X_obs[i] for i in yobs.argsort()[-5:]] # take the best 5
+                #print 'xobs = \n', xobs, '\n'
+                
+                # add more points to search from
+                #x0s = np.vstack((x0s,np.array(x_curr))) # last point
+                #x0s = np.vstack((x0s,np.array(x_best))) # best so far
+                ## add the 10 best points seen so far (largest Y_obs)
+                #yobs = np.array([y[0][0] for y in self.Y_obs])
+                #for i in yobs.argsort()[-10:]:
+                    #x0s = np.vstack((x0s,np.array(self.X_obs[i])))
+                
                 print 'x0s = ', x0s
                 print 'fargs = ', fargs
 
@@ -702,7 +758,9 @@ class BayesOpt:
                 else:
                     # use minimize
                     mkwargs = dict(bounds=iter_bounds, method=optmethod, options={'maxiter':maxiter}, tol=tolerance) # keyword args for scipy.optimize.minimize
-                    res = parallelminimize(aqfcn,x0s,fargs,mkwargs,v0best)
+                    res = parallelminimize(aqfcn,x0s,fargs,mkwargs,v0best,relative_bounds=relative_bounds)
+                print 'mkwargs = ', mkwargs
+                print 'res = ', res
 
             else: # single-processing
                 if basinhoppingQ:
