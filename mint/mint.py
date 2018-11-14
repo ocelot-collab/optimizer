@@ -275,10 +275,8 @@ class GaussProcess(Minimizer):
             self.mi.data["dim_z"]        = self.model.dim_z
         except:
             pass
-        try:
+        if type(self.model.mask) is not type(None):
             self.mi.data["mask"]        = self.model.mask
-        except:
-            pass
         try:
             self.mi.data["alpha"]        = self.model.alpha
         except:
@@ -304,9 +302,13 @@ class GaussProcess(Minimizer):
             self.mi.data["nseed"]    = 0
 
         if type(self.model.prmeanp) is type(None):
-            self.mi.data["prmean_params"] = "None"
+            self.mi.data["prmean_params_amp"] = "None"
+            self.mi.data["prmean_params_centroid"] = "None"
+            self.mi.data["prmean_params_invcovarmat"] = "None"
         else:
-            self.mi.data["prmean_params"] = self.model.prmeanp
+            self.mi.data["prmean_params_amp"] = self.model.prmeanp[0]
+            self.mi.data["prmean_params_centroid"] = self.model.prmeanp[1]
+            self.mi.data["prmean_params_invcovarmat"] = self.model.prmeanp[2]
         if type(self.model.prvarp) is type(None):
             self.mi.data["prvar_params"] = "None"
         else:
