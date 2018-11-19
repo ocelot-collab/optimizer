@@ -309,7 +309,12 @@
                 <property name="font">
                  <font>
                   <pointsize>18</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
                  </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(14, 109, 245);</string>
                 </property>
                 <property name="text">
                  <string>Trim Delay (seconds)          </string>
@@ -372,7 +377,12 @@
                 <property name="font">
                  <font>
                   <pointsize>18</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
                  </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(14, 109, 245);</string>
                 </property>
                 <property name="text">
                  <string>Data Points</string>
@@ -1126,7 +1136,12 @@
             <property name="font">
              <font>
               <pointsize>16</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
              </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(14, 109, 245);</string>
             </property>
             <property name="text">
              <string>Statistical Method:</string>
@@ -1451,7 +1466,12 @@
               <property name="font">
                <font>
                 <pointsize>18</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
                </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(14, 109, 245);</string>
               </property>
               <property name="text">
                <string>Select Optimiser Algorithm </string>
@@ -1463,7 +1483,12 @@
               <property name="font">
                <font>
                 <pointsize>18</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
                </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(14, 109, 245);</string>
               </property>
               <property name="text">
                <string>Number Iterations</string>
@@ -1520,10 +1545,15 @@
                 <property name="font">
                  <font>
                   <pointsize>18</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
                  </font>
                 </property>
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(14, 109, 245);</string>
+                </property>
                 <property name="text">
-                 <string>Relative Step in %</string>
+                 <string>Relative Step in % (Scaling Coefficient)</string>
                 </property>
                </widget>
               </item>
