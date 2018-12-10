@@ -609,12 +609,22 @@ class Optimizer(Thread):
             delta = dev.get_delta()
             self.norm_scales[idx] = delta*self.norm_coef
 
+        self.norm_scales = np.array(self.norm_scales)
+        
+        # Randomize the initial steps of simplex - Talk to Joe if it fails
+        if isinstance(self.minimizer, Simplex):
+            self.norm_scales *= np.sign(np.random.randn(self.norm_scales.size))
         return self.norm_scales
 
     def error_func(self, x):
         if self.normalization:
             delta_x = x
-            delta_x_scaled = delta_x/0.00025*self.norm_scales
+            #delta_x_scaled = delta_x/0.00025*self.norm_scales
+            if isinstance(self.minimizer, Simplex):
+                delta_x_scaled = delta_x/0.00025*self.norm_scales
+            else:
+                delta_x_scaled = delta_x*self.norm_scales
+
             x = self.x_init + delta_x_scaled
             print("delta_x = ", delta_x, "delta_x_scaled = ", delta_x_scaled)
 

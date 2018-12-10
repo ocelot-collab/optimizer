@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 
-def normscales(mi, pvs, default_length_scale=1., verboseQ=False):
+def normscales(mi, devices, default_length_scale=1., verboseQ=False):
     """
     Method to load in the hyperparameters, or length scales, from a .npy file.
     Sorts data, ordering parameters with this objects pv list.
@@ -27,7 +27,8 @@ def normscales(mi, pvs, default_length_scale=1., verboseQ=False):
     
     energy = mi.get_energy()
 
-    vals = [mi.get_value(dev_id) for dev_id in pvs]
+    pvs = [dev.eid for dev in devices]
+    vals = [dev.get_value() for dev in devices]
 
     key = str(int(round(energy)))
     filename = 'parameters/hype3.npy'

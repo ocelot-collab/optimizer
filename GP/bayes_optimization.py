@@ -143,7 +143,7 @@ class BayesOpt:
         print 'BO: self.covarmat = ', self.covarmat
         self.invcovarmat = np.linalg.inv(self.covarmat)
         
-        self.usePriorMean = True
+        self.usePriorMean = False
         self.build_prior_mean()
         
         
@@ -1013,7 +1013,7 @@ class HyperParams:
 
         print 'DETECTOR AMP = ', ave, ' and hyper amp = ', coeff
         print 'DETECTOR STD = ', std, ' and hyper variance = ', noise
-
+        
         dout = ( np.array([hyps]), coeff, noise )
         #prints for debug
         print()

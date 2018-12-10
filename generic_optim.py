@@ -445,10 +445,7 @@ class OcelotInterfaceWindow(QFrame):
         # solving minimization or maximization problem
         self.opt.maximization = self.ui.rb_maximize.isChecked()
 
-        print("********** FORCING NORMALIZATION")
-        self.opt.normalization = True
-
-        if self.ui.cb_select_alg.currentText() == self.name_simplex_norm:
+        if self.ui.cb_select_alg.currentText() in [self.name_simplex_norm]:
             self.opt.normalization = True
             self.opt.norm_coef = self.ui.sb_isim_rel_step.value()*0.01
             print("OPT", self.opt.norm_coef)
