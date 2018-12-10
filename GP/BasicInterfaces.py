@@ -49,5 +49,3 @@ class GPint(object):
         
     def setX(self, x_new):
         self.x = x_new
-        
-    

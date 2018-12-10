@@ -1,5 +1,5 @@
 import time
-
+import numpy as np
 from ..opt_objects import Device
 
 
@@ -19,10 +19,10 @@ class LCLSDevice(Device):
         val = self.get_value()
 
         # Method 1: % of Range
-        m1 = (hl-ll)*self.range_percent/100.0
+        m1 = np.abs((hl-ll)*self.range_percent/100.0)
 
         # Method 2: % of Current Value
-        m2 = val*self.value_percent/100.0
+        m2 = np.abs(val*self.value_percent/100.0)
 
         # Method 3: Mean(M1, M2)
         m3 = (m1+m2)/2.0
@@ -35,7 +35,7 @@ class LCLSDevice(Device):
             return m1
 
 
-class LCLSQuad(Device):
+class LCLSQuad(LCLSDevice):
     def __init__(self, eid=None):
         super(LCLSQuad, self).__init__(eid=eid)
         self._can_edit_limits = False
@@ -53,7 +53,12 @@ class LCLSQuad(Device):
         self.mi.set_value(self.eid, val)
 
     def get_value(self, save=False):
-        val = self.mi.get_value(self.pv_read)
+        if self.mi.read_only:
+            val = self.target
+            if val is None:
+                val = self.mi.get_value(self.pv_read)
+        else:
+            val = self.mi.get_value(self.pv_read)
         if save:
             self.values.append(val)
             self.times.append(time.time())

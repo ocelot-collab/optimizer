@@ -48,6 +48,7 @@ class LCLSMachineInterface(MachineInterface):
         super(LCLSMachineInterface, self).__init__(args)
         self._save_at_exit = False
         self._use_num_points = True
+        self.read_only = False
 
         if 'epics' not in sys.modules:
             raise Exception('No module named epics. LCLSMachineInterface will not work. Try simulation mode instead.')
@@ -70,6 +71,7 @@ class LCLSMachineInterface(MachineInterface):
             print("****************************************************************")
             epics.caput = no_op
             epics.ca.put = no_op
+            self.read_only = True
 
         self.data = dict()
         self.pvs = dict()
@@ -175,6 +177,10 @@ class LCLSMachineInterface(MachineInterface):
         charge = self.get_charge()
         current = self.get_value('BLEN:LI24:886:BIMAX')
         return charge, current
+
+    def get_beamrate(self):
+        rate = self.get_value('EVNT:SYS0:1:LCLSBEAMRATE')
+        return rate
 
     def get_losses(self):
         losses = [self.get_value(pv) for pv in self.losspvs]

@@ -27,6 +27,8 @@ from threading import Thread
 import sklearn
 from op_methods.es import ES_min
 
+from mint import normscales
+
 sklearn_version = sklearn.__version__
 if sklearn_version >= "0.18":
     from GP import gaussian_process as gp_sklearn
@@ -164,14 +166,16 @@ class GaussProcess(Minimizer):
             corrmat = self.mi.corrmat
             covarmat = self.mi.covarmat
         else:
-            try:
-                #hardcoded for now
-                rho = 0.
-                corrmat = np.array([  [1., rho], [rho, 1.]  ])
+            #try:
+                ##hardcoded for now
+                #rho = 0.
+                #corrmat = np.array([  [1., rho], [rho, 1.]  ])
 
-            except:
-                print('WARNING: There was an error importing a correlation matrix from the matrix model. Using an identity matrix instead.')
-                corrmat = np.eye(len(dev_ids))
+            #except:
+                #print('WARNING: There was an error importing a correlation matrix from the matrix model. Using an identity matrix instead.')
+                #corrmat = np.eye(len(dev_ids))
+                
+            corrmat = np.eye(len(dev_ids))
 
             # build covariance matrix from correlation matrix and length scales
             diaglens = np.diagflat(np.sqrt(0.5/np.exp(hyps1[0]))) # length scales (or principal widths)
@@ -595,10 +599,15 @@ class Optimizer(Thread):
 
         :return: np.array() - device_delta_limits * norm_coef
         """
-        self.norm_scales = np.zeros(np.size(self.devices))
-        for i, dev in enumerate(self.devices):
+        self.norm_scales = normscales.normscales(self.target.mi, self.devices)
+        if self.norm_scales is None:
+            self.norm_scales = [None] * np.size(self.devices)
+
+        for idx, dev in enumerate(self.devices):
+            if self.norm_scales[idx] is not None:
+                continue
             delta = dev.get_delta()
-            self.norm_scales[i] = delta*self.norm_coef
+            self.norm_scales[idx] = delta*self.norm_coef
 
         return self.norm_scales
 

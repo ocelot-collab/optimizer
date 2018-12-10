@@ -890,11 +890,11 @@ class HyperParams:
         #get current L3 beam energy
         # if len(energy) is 3: key = energy[0:1]
         # if len(energy) is 4: key = energy[0:2]
-        key = str(int(round(energy)))
-        print "Loading raw data for",key,"GeV from",filename
-        f = np.load(str(filename)); filedata0 = f[0][key]; names0 = filedata0.keys()
-        print energy, names0
-        filedata = filedata0
+        #key = str(int(round(energy)))
+        #print "Loading raw data for",key,"GeV from",filename
+        #f = np.load(str(filename)); filedata0 = f[0][key]; names0 = filedata0.keys()
+        #print energy, names0
+        #filedata = filedata0
 
         # scrapes
         self.prior_params_file = 'parameters/fit_params_2018-01_to_2018-01.pkl'

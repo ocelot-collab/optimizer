@@ -260,8 +260,8 @@ class MainWindow(Ui_Form):
     def get_hyper_file(self):
         #filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters', filter="txt (*.npy *.)")
         filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters',
-                                                     self.Form.optimizer_path + "parameters", "txt (*.npy)",
-                                                     QtGui.QFileDialog.DontUseNativeDialog)
+                                                     self.Form.optimizer_path + "parameters", "txt (*.npy)"
+                                                     )
         if filename:
             self.Form.hyper_file = str(filename)
             self.pb_hyper_file.setText(self.Form.hyper_file)
