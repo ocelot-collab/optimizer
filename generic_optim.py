@@ -27,8 +27,9 @@ print("PATH", os.path.realpath(__file__))
 # for pyqtgraph import
 #sys.path.append(path[:indx]+"ocelot")
 
-from PyQt5.QtWidgets import (QApplication, QFrame, QGroupBox, QLabel, QComboBox, QPushButton, QSpacerItem,
-                             QVBoxLayout, QDesktopWidget)
+from PyQt5.QtWidgets import (QApplication, QFrame, QGroupBox, QLabel, QComboBox,
+                             QPushButton, QSpacerItem, QVBoxLayout, QDesktopWidget,
+                             QFormLayout, QLineEdit)
 import platform
 import pyqtgraph as pg
 if sys.version_info[0] == 2:
@@ -115,7 +116,18 @@ class OcelotInterfaceWindow(QFrame):
         self.assemble_preset_box()
         self.assemble_quick_add_box()
 
-        if not self.mi.use_num_points():
+        if self.mi.use_num_points():
+            # Get rid of Interval Between Readings
+            self.ui.label_6.setVisible(False)
+            self.ui.sb_ddelay.setVisible(False)
+
+            # Get rid of number of readings
+            self.ui.label_30.setVisible(False)
+            self.ui.sb_nreadings.setVisible(False)
+
+            # Get rid of Cycle Period
+            self.ui.label_7.setVisible(False)
+        else:
             self.ui.label_datapoints.setVisible(False)
             self.ui.sb_datapoints.setVisible(False)
 
@@ -185,6 +197,7 @@ class OcelotInterfaceWindow(QFrame):
             self.optimizer_args = parser_mi.parse_args(others, namespace=self.optimizer_args)
 
     def setup_plots(self):
+        self.setup_objhist_plot()
         self.setup_obj_plot('plot_obj')
         self.setup_obj_plot('plot_obj_browser')
         self.setup_devices_plot('plot_dev')
@@ -206,6 +219,10 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.browser_dev_plot_panel.setLayout(layout)
         layout.addWidget(self.plots_dict['plot_dev_browser']['plot'])
 
+        layout = QVBoxLayout()
+        self.ui.browser_objhist_plot_panel.setLayout(layout)
+        layout.addWidget(self.plots_dict['plot_objhist_browser']['plot'])
+
         headers = ["Variable", "Value"]
         table = self.ui.browser_data_table
         table.setColumnCount(len(headers))
@@ -224,6 +241,24 @@ class OcelotInterfaceWindow(QFrame):
         region.setMovable(False)
         # region.setZValue(-10)
         plot.addItem(region)
+
+    def setup_objhist_plot(self):
+        name = 'plot_objhist_browser'
+        self.plots_dict[name] = dict()
+        plot_curves = dict()
+
+        plot = pg.PlotWidget(title="Objective Function Histogram Monitor", labels={'left': 'Count', 'bottom':'Data'})
+        plot.showGrid(1, 1, 1)
+        plot.getAxis('left').enableAutoSIPrefix(enable=False) # stop the auto unit scaling on y axes
+
+        color = self.randColor()
+        pen = pg.mkPen(color, width=3)
+        plot_curves['histogram'] = pg.PlotCurveItem(x=[], y=[], pen=pen, antialias=True, name='histogram')
+        plot.addItem(plot_curves['histogram'])
+
+        self.plots_dict[name]['plot'] = plot
+        self.plots_dict[name]['legend'] = None
+        self.plots_dict[name]['curves'] = plot_curves
 
     def setup_obj_plot(self, name):
         self.plots_dict[name] = dict()
@@ -713,6 +748,18 @@ class OcelotInterfaceWindow(QFrame):
                 index_val = x[index]
                 region.setBounds([index_val, index_val])
 
+        histogram_data_key = 'values'
+        if hasattr(self.objective_func, 'objective_acquisitions'):
+            histogram_data_key = 'objective_acquisitions'
+
+        try:
+            val = getattr(self.objective_func, histogram_data_key)[index]
+            hist, bins = np.histogram(val, bins='auto')
+            line = self.plots_dict['plot_objhist_browser']['curves']['histogram']
+            line.setData(x=bins[:-1], y=hist)
+        except Exception as ex:
+            print("No data to plot histogram. Exception was: ", ex)
+
         table = self.ui.browser_data_table
         table.setRowCount(len(self.devices) + len(self.mi.get_plot_attrs()))
         table_data = []
@@ -826,19 +873,30 @@ class OcelotInterfaceWindow(QFrame):
             pvs = cb_quick_list.currentData()
             resetpanel_box.addPv(pvs, force_active=True)
 
+        def add_from_txt(le):
+            pv = le.text()
+            if pv:
+                resetpanel_box.addPv(pv, force_active=True)
+
         def clear_list():
             resetpanel_box.pvs = []
             resetpanel_box.devices = []
             resetpanel_box.ui.tableWidget.setRowCount(0)
 
+        layout_buttons = QVBoxLayout()
+
+
         pb_clear_dev = QPushButton(resetpanel_box)
         pb_clear_dev.setText("Clear Devices")
         pb_clear_dev.setMaximumWidth(100)
         pb_clear_dev.clicked.connect(clear_list)
+
         pb_add_dev = QPushButton(resetpanel_box)
         pb_add_dev.setText("Add Devices")
+        pb_add_dev.setStyleSheet("color: orange")
         pb_add_dev.clicked.connect(add_to_list)
         pb_add_dev.setMaximumWidth(100)
+
         lb_from_list = QLabel()
         lb_from_list.setText("From List: ")
         lb_from_list.setMaximumWidth(75)
@@ -848,10 +906,25 @@ class OcelotInterfaceWindow(QFrame):
         for display, itms in devs.items():
             cb_quick_list.addItem(display, itms)
 
-        layout_quick_add.addWidget(pb_clear_dev)
-        layout_quick_add.addWidget(pb_add_dev)
-        layout_quick_add.addWidget(lb_from_list)
-        layout_quick_add.addWidget(cb_quick_list)
+        if len(devs.items()) >= 1:
+            cb_quick_list.setCurrentIndex(1)
+
+        lb_manually = QLabel()
+        lb_manually.setText("Or Manually Enter: ")
+        lb_manually.setMaximumWidth(75)
+        le_manually = QLineEdit()
+        le_manually.setMinimumWidth(200)
+        le_manually.returnPressed.connect(functools.partial(add_from_txt, le_manually))
+
+        layout_buttons.addWidget(pb_add_dev)
+        layout_buttons.addWidget(pb_clear_dev)
+
+        frm_layout = QFormLayout()
+        frm_layout.addRow(lb_from_list, cb_quick_list)
+        frm_layout.addRow(lb_manually, le_manually)
+
+        layout_quick_add.addLayout(layout_buttons)
+        layout_quick_add.addLayout(frm_layout)
 
     def assemble_preset_box(self):
         print("Assembling Preset Box")

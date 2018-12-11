@@ -34,6 +34,40 @@ class LCLSDevice(Device):
         else:
             return m1
 
+    def update_limits_from_pv(self):
+        ll = self.mi.get_value(self.pv_low)
+        hl = self.mi.get_value(self.pv_high)
+        self.default_limits = [ll, hl]
+
+    def get_limits(self):
+        return self.low_limit, self.high_limit
+
+    def set_low_limit(self, val):
+        if not hasattr(self, 'pv_low'):
+            super(LCLSDevice, self).set_low_limit(val)
+            return
+
+        self.update_limits_from_pv()
+        if val >= self.high_limit-0.0001:
+            return
+        if val >= self.default_limits[0]:
+            self.low_limit = val
+        else:
+            self.low_limit = self.default_limits[0]
+
+    def set_high_limit(self, val):
+        if not hasattr(self, 'pv_high'):
+            super(LCLSDevice, self).set_high_limit(val)
+            return
+
+        self.update_limits_from_pv()
+        if val <= self.low_limit+0.0001:
+            return
+        if val <= self.default_limits[1]:
+            self.high_limit = val
+        else:
+            self.high_limit = self.default_limits[1]
+
 
 class LCLSQuad(LCLSDevice):
     def __init__(self, eid=None):
@@ -64,16 +98,3 @@ class LCLSQuad(LCLSDevice):
             self.times.append(time.time())
 
         return val
-
-    def get_limits(self):
-        self.low_limit = self.mi.get_value(self.pv_low)
-        self.high_limit = self.mi.get_value(self.pv_high)
-        return [self.low_limit, self.high_limit]
-
-    def set_low_limit(self, val):
-        # We will not allow limits to be changed from the interface
-        return
-
-    def set_high_limit(self, val):
-        # We will not allow limits to be changed from the interface
-        return

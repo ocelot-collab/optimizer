@@ -6,6 +6,9 @@ class MultinormalDevice(Device):
         super(MultinormalDevice, self).__init__(eid=eid)
         self.value_percent = 25.0
         self.range_percent = 2.0
+        self.default_limits = [-5, 5]
+        self.low_limit = -5
+        self.high_limit = 5
 
     def get_delta(self):
         """
@@ -33,4 +36,20 @@ class MultinormalDevice(Device):
             return m1
 
     def get_limits(self):
-        return [-5, 5]
+        return self.low_limit, self.high_limit
+
+    def set_low_limit(self, val):
+        if val >= self.high_limit-0.0001:
+            return
+        if val >= self.default_limits[0]:
+            self.low_limit = val
+        else:
+            self.low_limit = self.default_limits[0]
+
+    def set_high_limit(self, val):
+        if val <= self.low_limit+0.0001:
+            return
+        if val <= self.default_limits[1]:
+            self.high_limit = val
+        else:
+            self.high_limit = self.default_limits[1]
