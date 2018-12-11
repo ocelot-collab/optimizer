@@ -253,7 +253,7 @@ class OcelotInterfaceWindow(QFrame):
 
         color = self.randColor()
         pen = pg.mkPen(color, width=3)
-        plot_curves['histogram'] = pg.PlotCurveItem(x=[], y=[], pen=pen, antialias=True, name='histogram')
+        plot_curves['histogram'] = pg.PlotCurveItem(x=[0,1], y=[0], pen=pen, antialias=True, name='histogram', stepMode = True, fillLevel = 0, brush = (0, 0, 255, 150))
         plot.addItem(plot_curves['histogram'])
 
         self.plots_dict[name]['plot'] = plot
@@ -756,7 +756,7 @@ class OcelotInterfaceWindow(QFrame):
             val = getattr(self.objective_func, histogram_data_key)[index]
             hist, bins = np.histogram(val, bins='auto')
             line = self.plots_dict['plot_objhist_browser']['curves']['histogram']
-            line.setData(x=bins[:-1], y=hist)
+            line.setData(x=bins, y=hist)
         except Exception as ex:
             print("No data to plot histogram. Exception was: ", ex)
 

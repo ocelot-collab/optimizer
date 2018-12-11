@@ -313,8 +313,8 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         header.setResizeMode(0, QtGui.QHeaderView.Stretch)
         header.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
         header.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
-        header.setResizeMode(3, QtGui.QHeaderView.Fixed)
-        header.setResizeMode(4, QtGui.QHeaderView.Fixed)
+        header.setResizeMode(3, QtGui.QHeaderView.ResizeToContents)
+        header.setResizeMode(4, QtGui.QHeaderView.ResizeToContents)
         header.setResizeMode(5, QtGui.QHeaderView.Fixed)
         for row in range(len(self.pvs)):
             eng = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates)
