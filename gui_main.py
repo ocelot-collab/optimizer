@@ -351,12 +351,12 @@ class MainWindow(Ui_Form):
             self.le_c.setEnabled(False)
             self.le_d.setEnabled(False)
             self.le_e.setEnabled(False)
-            self.le_obf.setEnabled(False)
+            # self.le_obf.setEnabled(False)
 
             self.label_16.setEnabled(False)
             self.label_19.setEnabled(False)
             self.label_20.setEnabled(False)
-            self.label_21.setEnabled(False)
+            # self.label_21.setEnabled(False)
             self.label_28.setEnabled(False)
             self.label_29.setEnabled(False)
 
@@ -369,12 +369,12 @@ class MainWindow(Ui_Form):
             self.le_c.setEnabled(True)
             self.le_d.setEnabled(True)
             self.le_e.setEnabled(True)
-            self.le_obf.setEnabled(True)
+            # self.le_obf.setEnabled(True)
 
             self.label_16.setEnabled(True)
             self.label_19.setEnabled(True)
             self.label_20.setEnabled(True)
-            self.label_21.setEnabled(True)
+            # self.label_21.setEnabled(True)
             self.label_28.setEnabled(True)
             self.label_29.setEnabled(True)
 

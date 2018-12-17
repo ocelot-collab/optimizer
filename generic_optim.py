@@ -419,8 +419,9 @@ class OcelotInterfaceWindow(QFrame):
         self.update_devices_plot(self.devices)
         self.update_plot_timer.start(100)
         # set the Objective function from GUI or from file mint.obj_function.py (reloading)
-        self.set_obj_fun()
-
+        self.set_obj_fun(update_objfunc_text=False)
+        if self.ui.le_obf.text():
+            self.objective_func.eid = self.ui.le_obf.text()
         self.objective_func_pv = self.objective_func.eid
 
         if self.mi.use_num_points():
@@ -569,7 +570,7 @@ class OcelotInterfaceWindow(QFrame):
             self.ui.widget_2.setStyleSheet("background-color:323232;")
             self.ui.widget_3.setStyleSheet("background-color:323232;")
 
-    def set_obj_fun(self):
+    def set_obj_fun(self, update_objfunc_text=True):
         """
         Method to set objective function from the GUI (channels A,B,C) or reload module obj_function.py
 
@@ -597,6 +598,8 @@ class OcelotInterfaceWindow(QFrame):
 
             print("Target Class: ", tclass)
             self.objective_func = tclass(mi=self.mi)
+            if update_objfunc_text:
+                self.ui.le_obf.setText(self.objective_func.eid)
             self.objective_func.devices = []
             self.objective_func.stats = self.ui.cb_statistics.currentData()
         else:
