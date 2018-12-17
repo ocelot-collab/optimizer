@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function
-
+import os
 import numpy as np
 from collections import OrderedDict
 
@@ -12,6 +12,8 @@ class MultinormalInterface(MachineInterface):
 
     def __init__(self, args=None):
         super(MultinormalInterface, self).__init__(args)
+        self.config_dir = os.path.join(self.config_dir,
+                                       "multinormal")  # <ocelot>/parameters/lcls
         self.points = 1
         self._use_num_points = True
 

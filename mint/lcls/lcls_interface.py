@@ -46,6 +46,8 @@ class LCLSMachineInterface(MachineInterface):
 
     def __init__(self, args=None):
         super(LCLSMachineInterface, self).__init__(args)
+        self.config_dir = os.path.join(self.config_dir,
+                                       "lcls")  # <ocelot>/parameters/lcls
         self._save_at_exit = False
         self._use_num_points = True
         self.read_only = False

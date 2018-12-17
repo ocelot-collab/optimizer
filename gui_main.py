@@ -152,16 +152,24 @@ class MainWindow(Ui_Form):
 
         table["algorithm"] = str(self.cb_select_alg.currentText())
         table["maximization"] = self.rb_maximize.isChecked()
+
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(filename)
+
         with open(filename, 'w') as f:
             json.dump(table, f)
         # pickle.dump(table, filename)
         print("SAVE State")
 
     def restore_state(self, filename):
-        # try:
-        with open(filename, 'r') as f:
-            # data_new = pickle.load(f)
-            table = json.load(f)
+        try:
+            with open(filename, 'r') as f:
+                # data_new = pickle.load(f)
+                table = json.load(f)
+        except Exception as ex:
+            print("Restore State failed for file: {}. Exception was: {}".format(filename, ex))
+            return
+
 
         # Build the PV list from dev PVs or selected source
         pvs = table["id"]
