@@ -540,7 +540,7 @@ class OptControl:
 
 
 class Optimizer(Thread):
-    def __init__(self, normalize=False):
+    def __init__(self):
         super(Optimizer, self).__init__()
         self.debug = False
         self.minimizer = Simplex()
@@ -668,7 +668,8 @@ class Optimizer(Thread):
 
         pen = coef*self.target.get_penalty()
         print('penalty:', pen)
-        if self.debug: print('penalty:', pen)
+        if self.debug:
+            print('penalty:', pen)
 
         self.opt_ctrl.save_step(pen, x)
         return pen

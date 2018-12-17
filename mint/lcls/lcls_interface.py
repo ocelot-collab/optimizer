@@ -38,8 +38,10 @@ except ImportError:
 from mint.opt_objects import MachineInterface
 from mint.lcls.lcls_devices import LCLSQuad, LCLSDevice
 
+
 def no_op(*args, **kwargs):
     print("Write operation disabled. Running in Read Only Mode")
+
 
 class LCLSMachineInterface(MachineInterface):
     name = 'LCLSMachineInterface'
