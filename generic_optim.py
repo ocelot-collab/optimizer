@@ -436,7 +436,7 @@ class OcelotInterfaceWindow(QFrame):
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
             minimizer.seed_timeout = self.ui.sb_tdelay.value()
             minimizer.hyper_file = self.hyper_file
-            minimizer.norm_coef = self.ui.sb_isim_rel_step.value()/ 100.
+            minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
 
         elif minimizer.__class__ == mint.Simplex:
             if self.ui.cb_use_isim.checkState():

@@ -617,16 +617,30 @@ class Optimizer(Thread):
         return self.norm_scales
 
     def error_func(self, x):
-        if self.normalization:
-            delta_x = x
-            #delta_x_scaled = delta_x/0.00025*self.norm_scales
-            if isinstance(self.minimizer, Simplex):
-                delta_x_scaled = delta_x/0.00025*self.norm_scales
-            else:
-                delta_x_scaled = delta_x*self.norm_scales
+        # Start with an array of 1s
+        length_scales = np.ones(len(self.devices))
+        print("Starting length scales as array of ones: ", length_scales)
 
-            x = self.x_init + delta_x_scaled
-            print("delta_x = ", delta_x, "delta_x_scaled = ", delta_x_scaled)
+        # We need a tiny step for Simplex
+        if isinstance(self.minimizer, Simplex):
+            length_scales /= 0.00025
+            print("Simplex length scales adjusted (Divide by 0.00025): ", length_scales)
+
+        # If we are normalizing, apply the norm_scales
+        if self.normalization:
+            length_scales *= self.norm_scales
+            print("Normalization flag set... length scales adjusted with norm_scales (", self.norm_scales, ") : ", length_scales)
+
+        # If a norm_coef was defined, apply as well.
+        if self.norm_coef:
+            length_scales *= self.norm_coef
+            print(
+                "Scaling coeficient set... length scales adjusted with norm_coef (", self.norm_coef, ") : ",
+                length_scales)
+
+        print("delta_x = ", x, "delta_x_scaled = ", x*length_scales)
+        x = self.x_init + x * length_scales
+
 
         if self.opt_ctrl.kill:
             #self.minimizer.kill = self.opt_ctrl.kill
@@ -685,8 +699,8 @@ class Optimizer(Thread):
         if self.logging:
             self.logger.log_start(dev_ids, method=self.minimizer.__class__.__name__, x_init=x_init, target_ref=target_ref)
 
+        self.x_init = x_init
         if self.normalization:
-            self.x_init = x_init
             x = np.zeros_like(x)
             self.calc_scales()
 
