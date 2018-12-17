@@ -77,6 +77,7 @@ class BESSYMachineInterface(MachineInterface):
         :param device_name: (str) PV name used in caput
         :return: (object) Data from the PV. Variable data type depending on PV type
         """
+
         pv = self.pvs.get(device_name, None)
         if pv is None:
             self.pvs[device_name] = epics.PV(device_name)
