@@ -53,15 +53,6 @@ class BESSYMachineInterface(MachineInterface):
         self.data = dict()
         self.pvs = dict()
 
-        # grab loss pvs # TODO: Fix this filename...
-        self.losses_filename = os.path.join(self.get_params_folder(), 'lion.pvs')
-        try:
-            self.losspvs = pd.read_csv(self.losses_filename, header=None)  # ionization chamber values
-            self.losspvs = [pv[0] for pv in np.array(self.losspvs)]
-            print(self.name, ' - INFO: Loaded ', len(self.losspvs), ' loss PVs from ', self.losses_filename)
-        except:
-            self.losspvs = []
-            print(self.name, ' - WARNING: Could not read ', self.losses_filename)
 
     #@staticmethod
     #def get_params_folder():
