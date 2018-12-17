@@ -64,10 +64,21 @@ class SLACTarget(Target):
         #for i in range(self.nreadings):
         #    datain.extend(self.mi.get_value(self.eid))
         #    time.sleep(self.interval)
-        datain = self.mi.get_value(self.eid)
         if self.points is None:
             self.points = 120
         print("Get Value of : ", self.points, " points.")
+
+        try:
+            rate = self.mi.get_beamrate()
+            nap_time = self.points/(rate*1.0)
+        except Exception as ex:
+            nap_time = 1
+            print("Something went wrong with the beam rate calculation. Let's sleep 1 second.")
+            print("Exception was: ", ex)
+
+        time.sleep(nap_time)
+
+        datain = self.mi.get_value(self.eid)
 
         if self.stats is None:
             self.stats = stats.StatNone
