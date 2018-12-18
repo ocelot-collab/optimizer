@@ -388,16 +388,17 @@ class OcelotInterfaceWindow(QFrame):
         if self.ui.pb_start_scan.text() == "Stop optimization":
             # stop the optimization
             self.opt.opt_ctrl.stop()
+            self.opt.join()
             self.m_status.is_ok = lambda: True
 
             # Save the optimization parameters to the database
-            try:
-                ret, msg = self.save2db()
-                if not ret:
-                    self.error_box(message=msg)
-            except Exception as ex:
-                print("ERROR start_scan: can not save to db. Exception was: ", ex)
-                traceback.print_exc()
+            #try:
+            ret, msg = self.save2db()
+            if not ret:
+               self.error_box(message=msg)
+            #except Exception as ex:
+            #    print("ERROR start_scan: can not save to db. Exception was: ", ex)
+            #    traceback.print_exc()
             del self.opt
             # Setting the button
             self.ui.pb_start_scan.setStyleSheet("color: rgb(85, 255, 127);")

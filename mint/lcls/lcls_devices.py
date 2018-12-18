@@ -4,8 +4,9 @@ from ..opt_objects import Device
 
 
 class LCLSDevice(Device):
-    def __init__(self, eid=None):
+    def __init__(self, eid=None, mi=None):
         super(LCLSDevice, self).__init__(eid=eid)
+        self.mi = mi
         self.value_percent = 25.0
         self.range_percent = 2.0
 
@@ -38,6 +39,9 @@ class LCLSDevice(Device):
         ll = self.mi.get_value(self.pv_low)
         hl = self.mi.get_value(self.pv_high)
         self.default_limits = [ll, hl]
+        self.low_limit = self.default_limits[0]
+        self.high_limit = self.default_limits[1]
+        print("Limits for {} are: {}".format(self.eid, self.default_limits))
 
     def get_limits(self):
         return self.low_limit, self.high_limit
@@ -70,9 +74,9 @@ class LCLSDevice(Device):
 
 
 class LCLSQuad(LCLSDevice):
-    def __init__(self, eid=None):
-        super(LCLSQuad, self).__init__(eid=eid)
-        self._can_edit_limits = False
+    def __init__(self, eid=None, mi=None):
+        super(LCLSQuad, self).__init__(eid=eid, mi=mi)
+        self._can_edit_limits = True
         if eid.endswith(':BACT') or eid.endswith(":BCTRL"):
             prefix = eid[:eid.rfind(':')+1]
         else:
@@ -81,6 +85,8 @@ class LCLSQuad(LCLSDevice):
         self.pv_read = "{}{}".format(prefix, "BACT")
         self.pv_low = "{}{}".format(prefix, "BCTRL.DRVL")
         self.pv_high = "{}{}".format(prefix, "BCTRL.DRVH")
+        print("Let's get the limits....")
+        self.update_limits_from_pv()
 
     def set_value(self, val):
         self.target = val

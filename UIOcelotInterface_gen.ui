@@ -620,6 +620,9 @@
                 <pointsize>18</pointsize>
                </font>
               </property>
+              <property name="toolTip">
+               <string>Scales the step size by this factor</string>
+              </property>
               <property name="decimals">
                <number>3</number>
               </property>
@@ -684,6 +687,9 @@
                 <pointsize>18</pointsize>
                </font>
               </property>
+              <property name="toolTip">
+               <string>This is only used if the device is not in the LenghtScale list. Try to create as a % of the limit range</string>
+              </property>
               <property name="text">
                <string>Use Initial Simplex/Step [step =(Max - Min) x RelStep[%]]</string>
               </property>
@@ -720,6 +726,9 @@
                  <font>
                   <pointsize>18</pointsize>
                  </font>
+                </property>
+                <property name="toolTip">
+                 <string>This is only used if the device is not in the LenghtScale list. Try to create as a % of the limit range</string>
                 </property>
                 <property name="locale">
                  <locale language="English" country="UnitedStates"/>
@@ -973,6 +982,9 @@
                 <pointsize>16</pointsize>
                </font>
               </property>
+              <property name="toolTip">
+               <string>Save current Ocelot configuration for later usage</string>
+              </property>
               <property name="text">
                <string>Save As</string>
               </property>
@@ -996,6 +1008,9 @@
                <font>
                 <pointsize>16</pointsize>
                </font>
+              </property>
+              <property name="toolTip">
+               <string>Load saved Ocelot configuration for usage</string>
               </property>
               <property name="text">
                <string>Load</string>
@@ -1023,6 +1038,9 @@
               </property>
               <property name="cursor">
                <cursorShape>ForbiddenCursor</cursorShape>
+              </property>
+              <property name="toolTip">
+               <string>Save the current state as the default when opening Ocelot</string>
               </property>
               <property name="text">
                <string>Rewrite Default</string>
@@ -1113,48 +1131,6 @@
           <string>Objective Function</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_11">
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="cb_use_predef">
-            <property name="font">
-             <font>
-              <pointsize>16</pointsize>
-             </font>
-            </property>
-            <property name="text">
-             <string>Use Predefined Objective Function</string>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="0" colspan="2">
-           <widget class="QPushButton" name="pb_edit_obj_func">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>45</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>18</pointsize>
-             </font>
-            </property>
-            <property name="cursor">
-             <cursorShape>ForbiddenCursor</cursorShape>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color: rgb(85, 255, 255); font-size: 18pt;</string>
-            </property>
-            <property name="text">
-             <string>Edit Objective Function</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="0">
            <layout class="QVBoxLayout" name="verticalLayout_15">
             <item>
@@ -1248,12 +1224,18 @@
             </item>
            </layout>
           </item>
-          <item row="0" column="1">
+          <item row="0" column="2">
            <layout class="QVBoxLayout" name="verticalLayout_16">
             <item>
              <widget class="QLineEdit" name="le_a">
               <property name="enabled">
                <bool>true</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
               </property>
               <property name="font">
                <font>
@@ -1270,6 +1252,12 @@
               <property name="enabled">
                <bool>true</bool>
               </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
@@ -1281,6 +1269,12 @@
              <widget class="QLineEdit" name="le_c">
               <property name="enabled">
                <bool>true</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
               </property>
               <property name="font">
                <font>
@@ -1294,6 +1288,12 @@
               <property name="enabled">
                <bool>true</bool>
               </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
@@ -1305,6 +1305,12 @@
              <widget class="QLineEdit" name="le_e">
               <property name="enabled">
                <bool>true</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
               </property>
               <property name="font">
                <font>
@@ -1318,12 +1324,21 @@
               <property name="enabled">
                <bool>true</bool>
               </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
                 <weight>50</weight>
                 <bold>false</bold>
                </font>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Option 1: Type a PV here.&lt;/p&gt;&lt;p&gt;Option 2:&lt;/p&gt;&lt;p&gt;- Uncheck the &amp;quot;Use predefined Objective Function&amp;quot; box&lt;/p&gt;&lt;p&gt;- Fill in PV A...E with PVs&lt;/p&gt;&lt;p&gt;- Use as Objective Function a formula such as:&lt;/p&gt;&lt;p&gt;---- np.mean(A-B)&lt;/p&gt;&lt;p&gt;---- np.mean(A)/np.stdev(B)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>A</string>
@@ -1332,6 +1347,12 @@
             </item>
             <item>
              <widget class="QSpinBox" name="sb_max_pen">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
@@ -1350,7 +1371,7 @@
             </item>
            </layout>
           </item>
-          <item row="1" column="1">
+          <item row="2" column="2">
            <layout class="QHBoxLayout" name="horizontalLayout_12">
             <item>
              <spacer name="horizontalSpacer_2">
@@ -1400,7 +1421,7 @@
             </item>
            </layout>
           </item>
-          <item row="2" column="0">
+          <item row="1" column="0">
            <widget class="QLabel" name="label_38">
             <property name="font">
              <font>
@@ -1417,8 +1438,63 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="cb_statistics"/>
+          <item row="1" column="2">
+           <widget class="QComboBox" name="cb_statistics">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>32</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="cb_use_predef">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="toolTip">
+             <string>If checked, it uses the Target function in the Python script given by Edit Objective Function button</string>
+            </property>
+            <property name="text">
+             <string>Use Predefined Objective Function</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pb_edit_obj_func">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>45</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>18</pointsize>
+             </font>
+            </property>
+            <property name="cursor">
+             <cursorShape>ForbiddenCursor</cursorShape>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(85, 255, 255); font-size: 18pt;</string>
+            </property>
+            <property name="text">
+             <string>Edit Objective Function</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -1433,6 +1509,9 @@
            <width>16777215</width>
            <height>200</height>
           </size>
+         </property>
+         <property name="toolTip">
+          <string>Useful to interrupt the scan in case a PV defined by &quot;Alarm 1&quot; goes out of range defined by limits.</string>
          </property>
          <property name="title">
           <string>Machine Status</string>
@@ -1773,6 +1852,9 @@
                 <width>16777215</width>
                 <height>16777215</height>
                </size>
+              </property>
+              <property name="toolTip">
+               <string>Use this to navigate the data points</string>
               </property>
               <property name="styleSheet">
                <string notr="true">QSlider::groove:horizontal{

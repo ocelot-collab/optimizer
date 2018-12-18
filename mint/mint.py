@@ -619,15 +619,15 @@ class Optimizer(Thread):
 
     def error_func(self, x):
         # 0.00025 is used for Simplex because of the fmin steps.
-        delta_x = x
-        if isinstance(self.minimizer, Simplex):
-            delta_x_scaled = delta_x/0.00025
-            x = self.x_init + delta_x_scaled*self.scaling_coef
+        delta_x = x*self.scaling_coef
 
         if self.normalization:
             delta_x_scaled = delta_x/0.00025*self.norm_scales
-            x = self.x_init + delta_x_scaled*self.scaling_coef
+            x = self.x_init + delta_x_scaled
+            print("X Init: ", self.x_init)
+            print("X: ", x)
 
+        
         if self.opt_ctrl.kill:
             #self.minimizer.kill = self.opt_ctrl.kill
             print('Killed from external process')

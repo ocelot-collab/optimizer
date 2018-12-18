@@ -89,6 +89,11 @@ class LCLSMachineInterface(MachineInterface):
         except:
             self.losspvs = []
             print(self.name, ' - WARNING: Could not read ', self.losses_filename)
+        self.get_energy()
+        self.get_charge_current()
+        self.get_beamrate()
+        self.get_losses()
+        
 
     @staticmethod
     def add_args(parser):
@@ -105,6 +110,10 @@ class LCLSMachineInterface(MachineInterface):
         parser.add_argument('--read-only', default=False, required=False, action='store_true',
                             help="Disable write operations to the process variables.")
 
+    def customize_ui(self, gui):
+        gui.ui.sb_max_pen.setVisible(False)
+        gui.ui.label_26.setVisible(False)        
+
     @staticmethod
     def get_params_folder():
         """
@@ -117,8 +126,8 @@ class LCLSMachineInterface(MachineInterface):
 
     def device_factory(self, pv):
         if pv.startswith("QUAD:"):
-            return LCLSQuad(pv)
-        d = LCLSDevice(eid=pv)
+            return LCLSQuad(pv, mi=self)
+        d = LCLSDevice(eid=pv, mi=self)
         return d
 
     def get_value(self, device_name):
@@ -195,10 +204,30 @@ class LCLSMachineInterface(MachineInterface):
         objective_func = gui.Form.objective_func
         objective_func_pv = objective_func.eid
 
+
+     	
         log_text = ""
         if len(objective_func.values) > 0:
-            log_text = "Gain (" + str(objective_func_pv) + "): " + str(round(objective_func.values[0], 4)) + " > " + str(
+            log_text = "Gain (" + str(objective_func_pv) + "): " + str(round(objective_func.values[0], 4)) + " -> " + str(
             round(objective_func.values[-1], 4))
+        log_text += "\nIterations: "+str(objective_func.niter)+"\n"
+        log_text += "Trim delay: "+str(gui.sb_tdelay.value())+"\n"
+        log_text += "Points Requested: "+str(objective_func.points)+"\n"
+        log_text += "Normalization Amp Coeff: "+str(gui.sb_scaling_coef.value())+"\n"
+        log_text += "Type of optimization: "+str(gui.cb_select_alg.currentText())+"\n"
+                    
+        try:
+            log_text += "Data location: "+self.last_filename
+            if(self.last_filename[-4:] != '.mat'):
+                log_text += ".mat"
+            log_text += "\n"
+        except:
+            pass
+        try:
+            log_text += "Log location: "+self.logpath+"\n"
+        except:
+            pass
+                            
         curr_time = datetime.now()
         timeString = curr_time.strftime("%Y-%m-%dT%H:%M:%S")
         log_entry = ElementTree.Element(None)
@@ -331,6 +360,7 @@ class LCLSMachineInterface(MachineInterface):
         :return: status (bool), error_msg (str)
         """
         try:
+            import mint.lcls.simlog as simlog
             import matlog
         except ImportError as ex:
             print(
@@ -424,7 +454,10 @@ class LCLSMachineInterface(MachineInterface):
         self.data["niter"] = objective_func.niter
 
         # save data
-        self.last_filename = matlog.save("OcelotScan", removeUnicodeKeys(self.data), path='default')  # self.save_path)
+        if self.read_only:
+            self.last_filename = simlog.save("OcelotScan", removeUnicodeKeys(self.data), path='default')
+        else:
+            self.last_filename = matlog.save("OcelotScan", removeUnicodeKeys(self.data), path='default')  # self.save_path)
 
         print('Saved scan data to ', self.last_filename)
 

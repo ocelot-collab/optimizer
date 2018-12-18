@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 
-def normscales(mi, devices, default_length_scale=1., verboseQ=False):
+def normscales(mi, devices, default_length_scale=1., verboseQ=True):
     """
     Method to load in the hyperparameters, or length scales, from a .npy file.
     Sorts data, ordering parameters with this objects pv list.
