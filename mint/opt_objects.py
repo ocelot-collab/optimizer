@@ -18,8 +18,8 @@ class MachineInterface(object):
         self._save_at_exit = True
         self._use_num_points = False
         #path = os.path.realpath(__file__)
-        path2optimizer = os.path.abspath(os.path.join(__file__ , "../.."))
-        self.config_dir = os.path.join(path2optimizer, "parameters")
+        self.path2optimizer = os.path.abspath(os.path.join(__file__ , "../.."))
+        self.config_dir = os.path.join(self.path2optimizer, "parameters")
 
     def save_at_exit(self):
         """

@@ -69,8 +69,8 @@ class MultinormalTarget(Target):
         self.mi.points = self.points
         print("Get Value of : ", self.points, " points.")
 
-        data = self.mi.get_value(self.eid)
-        print("Data: ", data)
+        data = self.mi.f(self.mi.x)
+        print("Data (", data.shape, ") : ", data)
 
         if self.stats is None:
             self.stats = stats.StatNone

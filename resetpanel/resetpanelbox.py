@@ -320,10 +320,11 @@ class ResetpanelBoxWindow(ResetpanelWindow):
             eng = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates)
             for i in range(2):
                 spin_box = QtGui.QDoubleSpinBox()
+                spin_box.setMaximumWidth(85)
                 if i == 0:
-                    spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
+                    spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 12px; background-color:#595959;")
                 else:
-                    spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
+                    spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 12px; background-color:#595959;")
                 spin_box.setLocale(eng)
                 spin_box.setDecimals(3)
                 spin_box.setMaximum(999999)
@@ -404,8 +405,10 @@ class ResetpanelBoxWindow(ResetpanelWindow):
             pv = self.pvs[row]
             state = self.ui.tableWidget.item(row, 5).checkState()
             if state == 2:
-                self.startValues[pv] = dev.get_value()
-                self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
+                val = dev.get_value()
+                if val is not None:
+                    self.startValues[pv] = val
+                    self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
         self.ui.updateReference.setText("Update Reference")
 
     def getPvsFromCbState(self):
