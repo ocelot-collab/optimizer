@@ -102,12 +102,12 @@ class OcelotInterfaceWindow(QFrame):
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
         self.ui.cb_select_alg.addItem(self.name_simplex)
-        self.ui.cb_select_alg.addItem(self.name_gauss)
-        self.ui.cb_select_alg.addItem(self.name_custom)
+        # self.ui.cb_select_alg.addItem(self.name_gauss)
+        # self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
         #self.ui.cb_select_alg.addItem(self.name_es)
-        if sklearn_version >= "0.18":
-            self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
+        # if sklearn_version >= "0.18":
+        #     self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
 
 
         #self.ui.pb_help.clicked.connect(lambda: os.system("firefox file://"+self.optimizer_path+"docs/build/html/index.html"))
@@ -385,7 +385,6 @@ class OcelotInterfaceWindow(QFrame):
         """
         self.scanStartTime = time.time()
 
-
         if self.ui.pb_start_scan.text() == "Stop optimization":
             # stop the optimization
             self.opt.opt_ctrl.stop()
@@ -399,7 +398,7 @@ class OcelotInterfaceWindow(QFrame):
             except Exception as ex:
                 print("ERROR start_scan: can not save to db. Exception was: ", ex)
                 traceback.print_exc()
-            del(self.opt)
+            del self.opt
             # Setting the button
             self.ui.pb_start_scan.setStyleSheet("color: rgb(85, 255, 127);")
             self.ui.pb_start_scan.setText("Start optimization")
@@ -418,7 +417,8 @@ class OcelotInterfaceWindow(QFrame):
                 return 0
         self.update_devices_plot(self.devices)
         self.update_plot_timer.start(100)
-        # set the Objective function from GUI or from file mint.obj_function.py (reloading)
+        # set the Objective function from GUI or from file mint.obj_function.py
+        # (reloading)
         self.set_obj_fun(update_objfunc_text=False)
         if self.ui.le_obf.text():
             self.objective_func.eid = self.ui.le_obf.text()
@@ -477,6 +477,9 @@ class OcelotInterfaceWindow(QFrame):
 
         # Optimizer initialization
         self.opt = mint.Optimizer()
+
+        self.opt.scaling_coef = self.ui.sb_scaling_coef.value()
+        print("Using Scaling Coeficient of: ", self.opt.scaling_coef)
 
         # solving minimization or maximization problem
         self.opt.maximization = self.ui.rb_maximize.isChecked()

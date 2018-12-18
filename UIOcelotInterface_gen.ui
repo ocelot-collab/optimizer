@@ -595,6 +595,48 @@
            </layout>
           </item>
           <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <widget class="QLabel" name="label_31">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(14, 109, 245);</string>
+              </property>
+              <property name="text">
+               <string>Scaling Coeficient</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="sb_scaling_coef">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+               </font>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="minimum">
+               <double>0.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>999.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>1.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
            <widget class="QCheckBox" name="cb_set_best_sol">
             <property name="font">
              <font>
@@ -603,6 +645,9 @@
             </property>
             <property name="text">
              <string>Set Best Solution After Optimization</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -633,6 +678,18 @@
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_18">
             <item>
+             <widget class="QCheckBox" name="cb_use_isim">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Use Initial Simplex/Step [step =(Max - Min) x RelStep[%]]</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <layout class="QHBoxLayout" name="horizontalLayout_8">
               <item>
                <widget class="QLabel" name="label_23">
@@ -645,15 +702,15 @@
                 <property name="font">
                  <font>
                   <pointsize>18</pointsize>
-                  <weight>75</weight>
-                  <bold>true</bold>
+                  <weight>50</weight>
+                  <bold>false</bold>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">color: rgb(14, 109, 245);</string>
+                 <string notr="true"/>
                 </property>
                 <property name="text">
-                 <string>Relative Step in % (Scaling Coefficient)</string>
+                 <string>Relative Step in %</string>
                 </property>
                </widget>
               </item>
@@ -680,23 +737,11 @@
                  <double>0.250000000000000</double>
                 </property>
                 <property name="value">
-                 <double>100.000000000000000</double>
+                 <double>5.000000000000000</double>
                 </property>
                </widget>
               </item>
              </layout>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="cb_use_isim">
-              <property name="font">
-               <font>
-                <pointsize>18</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Use Initial Simplex/Step [step =(Max - Min) x RelStep[%]]</string>
-              </property>
-             </widget>
             </item>
            </layout>
           </item>
@@ -793,7 +838,7 @@
             <item row="0" column="1">
              <layout class="QVBoxLayout" name="verticalLayout_2">
               <property name="spacing">
-               <number>-1</number>
+               <number>6</number>
               </property>
               <item>
                <widget class="QPushButton" name="pb_hyper_file">
@@ -1177,7 +1222,12 @@
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
                </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(14, 109, 245);</string>
               </property>
               <property name="text">
                <string>Objective Function:</string>

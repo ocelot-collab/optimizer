@@ -557,6 +557,7 @@ class Optimizer(Thread):
         self.normalization = False
         self.norm_coef = 0.05
         self.maximization = True
+        self.scaling_coef = 1.0
 
     def eval(self, seq=None, logging=False, log_file=None):
         """
@@ -617,30 +618,15 @@ class Optimizer(Thread):
         return self.norm_scales
 
     def error_func(self, x):
-        # Start with an array of 1s
-        length_scales = np.ones(len(self.devices))
-        print("Starting length scales as array of ones: ", length_scales)
-
-        # We need a tiny step for Simplex
+        # 0.00025 is used for Simplex because of the fmin steps.
+        delta_x = x
         if isinstance(self.minimizer, Simplex):
-            length_scales /= 0.00025
-            print("Simplex length scales adjusted (Divide by 0.00025): ", length_scales)
+            delta_x_scaled = delta_x/0.00025
+            x = self.x_init + delta_x_scaled*self.scaling_coef
 
-        # If we are normalizing, apply the norm_scales
         if self.normalization:
-            length_scales *= self.norm_scales
-            print("Normalization flag set... length scales adjusted with norm_scales (", self.norm_scales, ") : ", length_scales)
-
-        # If a norm_coef was defined, apply as well.
-        if self.norm_coef:
-            length_scales *= self.norm_coef
-            print(
-                "Scaling coeficient set... length scales adjusted with norm_coef (", self.norm_coef, ") : ",
-                length_scales)
-
-        print("delta_x = ", x, "delta_x_scaled = ", x*length_scales)
-        x = self.x_init + x * length_scales
-
+            delta_x_scaled = delta_x/0.00025*self.norm_scales
+            x = self.x_init + delta_x_scaled*self.scaling_coef
 
         if self.opt_ctrl.kill:
             #self.minimizer.kill = self.opt_ctrl.kill
