@@ -421,7 +421,7 @@ class TestDevice(Device):
         self.nsets = 0
         self.mi = None
 
-    def get_value(self):
+    def get_value(self, save=False):
         return self.test_value
 
     def set_value(self, value):
