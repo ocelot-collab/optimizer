@@ -70,6 +70,9 @@ class ESMin(Minimizer):
         self.ES = ES_min()
 
     def minimize(self, error_func, x):
+        self.ES.bounds = self.bounds
+        self.ES.max_iter = self.max_iter
+        self.ES.norm_coef = self.norm_coef
         self.ES.minimize(error_func, x)
         return
 
@@ -105,6 +108,17 @@ class Simplex(Minimizer):
             res = optimize.fmin(error_func, x, maxiter=self.max_iter, maxfun=self.max_iter, xtol=self.xtol, initial_simplex=isim)
 
         #print("finish seed")
+        return res
+
+
+class Powell(Minimizer):
+    def __init__(self):
+        super(Powell, self).__init__()
+        self.xtol = 1e-5
+        self.dev_steps = None
+
+    def minimize(self,  error_func, x):
+        res = optimize.minimize(error_func, x, method='Powell', tol=self.xtol)
         return res
 
 

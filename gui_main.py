@@ -352,6 +352,16 @@ class MainWindow(Ui_Form):
             for w in self.groupBox_2.findChildren(QWidget):
                 w.setEnabled(False)
 
+        if str(self.cb_select_alg.currentText()) in [self.Form.name_es]:
+            self.g_box_isim.setEnabled(True)
+            self.label_23.setEnabled(True)
+            self.sb_isim_rel_step.setEnabled(True)
+            self.g_box_isim.setTitle("Extremum Seeking")
+            self.g_box_isim.setStyleSheet('QGroupBox  {color: white;}')
+            #self.cb_use_isim.setCheckState(True)
+            self.cb_use_isim.setEnabled(False)
+            self.sb_isim_rel_step.setValue(5)
+
     def use_predef_fun(self):
         if self.cb_use_predef.checkState():
             self.le_a.setEnabled(False)

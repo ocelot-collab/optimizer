@@ -7,103 +7,88 @@ import stats.stats as stats
 
 class BESSYTarget(Target):
     def __init__(self, mi=None, eid='GDET:FEE1:241:ENRCHSTBR'):
+        """
+        :param mi: Machine interface
+        :param eid: ID
+        """
         super(BESSYTarget, self).__init__(eid=eid)
+
         self.mi = mi
-        self.debug = False
         self.kill = False
-        self.pen_max = 100
-        self.clean()
-        self.nreadings = 1
-        self.interval = 0.0
+        self.objective_acquisition = None
+        self.objective_mean = None
+        self.objective_stdev = None
 
-    def get_alarm(self):
-        """
-        Method to get alarm level (e.g. BLM value).
-
-        alarm level must be normalized: 0 is min, 1 is max
-
-        :return: alarm level
-        """
-        return 0
-
-    def get_value(self):
-        """
-        Method to get signal of target function (e.g. SASE signal).
-
-        :return: value
-        """
-        x57 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.57.I1/X.SA1")
-        y57 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.57.I1/Y.SA1")
-        x59 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.59.I1/X.SA1")
-        y59 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.59.I1/Y.SA1")
-        return -np.sqrt(x57 ** 2 + y57 ** 2 + x59 ** 2 + y59 ** 2)
-
-        # values = np.array([dev.get_value() for dev in self.devices])
-        # return 2*np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
-        # value = self.mi.get_value(self.eid)
-
-    def get_value_test(self):
-        """
-        For testing
-
-        :return:
-        """
-        values = np.array([dev.get_value() for dev in self.devices])
-        value = 2 * np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
-        value = value * (1. + (np.random.rand(1)[0] - 0.5) * 0.001)
-        return value
+        self.objective_acquisitions = []  # all the points
+        self.objective_means = []
+        self.std_dev = []
+        self.charge = []
+        self.current = []
+        self.losses = []
+        self.points = None
 
     def get_penalty(self):
-        """
-        Method to calculate the penalty on the basis of the value and alarm level.
-
-        penalty = -get_value() + alarm()
-
-
-        :return: penalty
-        """
-        sase = 0.
-        for i in range(self.nreadings):
-            sase += self.get_value()
-            time.sleep(self.interval)
-        sase = sase / self.nreadings
-        print("SASE", sase)
+        sase = self.get_value()
         alarm = self.get_alarm()
-        if self.debug: print('alarm:', alarm)
-        if self.debug: print('sase:', sase)
         pen = 0.0
         if alarm > 1.0:
             return self.pen_max
         if alarm > 0.7:
-            return alarm * self.pen_max / 2.
+            return alarm * 50.0
         pen += alarm
         pen -= sase
-        if self.debug: print('penalty:', pen)
-        self.niter += 1
-        # print("niter = ", self.niter)
         self.penalties.append(pen)
         self.times.append(time.time())
-        self.values.append(sase)
+        self.values.append(sase)  # statistic
+        self.objective_acquisitions.append(self.objective_acquisition)  # array of points
+        self.objective_means.append(self.objective_mean)
+        self.std_dev.append(std)
         self.alarms.append(alarm)
+        self.charge.append(charge)
+        self.current.append(current)
+        self.losses.append(losses)
+        self.niter += 1
         return pen
 
-    def get_spectrum(self):
-        return [0, 0]
+    def get_value(self):
+        """
+        Returns data for the ojective function (sase) from the selected detector PV.
 
-    def get_stat_params(self):
-        # spetrum = self.get_spectrum()
-        # ave = np.mean(spetrum[(2599 - 5 * 120):-1])
-        # std = np.std(spetrum[(2599 - 5 * 120):-1])
-        ave = self.get_value()
-        std = 0.1
-        return ave, std
+        At lcls the repetition is  120Hz and the readout buf size is 2800.
+        The last 120 entries correspond to pulse energies over past 1 second.
 
-    def get_energy(self):
-        return 3
+        Returns:
+                Float of SASE or other detecor measurement
+        """
+        datain = self.mi.get_value(self.eid)
+        if self.points is None:
+            self.points = 120
+        print("Get Value of : ", self.points, " points.")
+
+        if self.stats is None:
+            self.stats = stats.StatNone
+
+        try:
+            data = datain[-int(self.points):]
+            self.objective_acquisition = data
+            self.objective_mean = np.mean(self.objective_acquisition)
+            self.objective_stdev = np.std(self.objective_acquisition)
+            self.statistic = self.stats.compute(data)
+        except:  # if average fails use the scalar input
+            print("Detector is not a waveform PV, using scalar value")
+            self.objective_acquisition = datain
+            self.objective_mean = datain
+            self.objective_stdev = -1
+            self.statistic = datain
+
+       
+        return datain
 
     def clean(self):
-        self.niter = 0
-        self.penalties = []
-        self.times = []
-        self.alarms = []
-        self.values = []
+        Target.clean(self)
+        self.objective_acquisitions = []  # all the points
+        self.objective_means = []
+        self.std_dev = []
+        self.charge = []
+        self.current = []
+        self.losses = []

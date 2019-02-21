@@ -98,6 +98,7 @@ class OcelotInterfaceWindow(QFrame):
         self.name_custom = "Custom Minimizer"
         self.name_simplex_norm = "Simplex Norm."
         self.name_es = "Extremum Seeking"
+        self.name_powell = "Powell"
         # self.name4 = "Conjugate Gradient"
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
@@ -105,10 +106,10 @@ class OcelotInterfaceWindow(QFrame):
         # self.ui.cb_select_alg.addItem(self.name_gauss)
         # self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
-        #self.ui.cb_select_alg.addItem(self.name_es)
-        # if sklearn_version >= "0.18":
-        #     self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
-
+        self.ui.cb_select_alg.addItem(self.name_es)
+        #self.ui.cb_select_alg.addItem(self.name_powell)
+        if sklearn_version >= "0.18":
+            self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
 
         #self.ui.pb_help.clicked.connect(lambda: os.system("firefox file://"+self.optimizer_path+"docs/build/html/index.html"))
         self.ui.pb_help.clicked.connect(self.ui.open_help)
@@ -360,6 +361,8 @@ class OcelotInterfaceWindow(QFrame):
             minimizer = mint.Simplex()
         elif current_method == self.name_es:
             minimizer = mint.ESMin()
+        elif current_method == self.name_powell:
+            minimizer = mint.Powell()
         #simplex Method
         else:
             minimizer = mint.Simplex()
@@ -440,7 +443,7 @@ class OcelotInterfaceWindow(QFrame):
             minimizer.hyper_file = self.hyper_file
             minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
 
-        elif minimizer.__class__ == mint.Simplex:
+        elif minimizer.__class__ in [mint.Simplex, mint.Powell]:
             if self.ui.cb_use_isim.checkState():
                 minimizer.dev_steps = []
 
@@ -461,6 +464,16 @@ class OcelotInterfaceWindow(QFrame):
                             minimizer.dev_steps.append(d_lims * rel_step / 100.)
             else:
                 minimizer.dev_steps = None
+                
+        elif minimizer.__class__ in [mint.ESMin]:
+
+
+            bounds = []
+            for dev in self.devices:
+                bounds.append(dev.get_limits())
+            minimizer.bounds = bounds
+
+            minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
 
         elif minimizer.__class__ == mint.CustomMinimizer:
             minimizer.dev_steps = []

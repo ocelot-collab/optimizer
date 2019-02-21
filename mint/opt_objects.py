@@ -17,9 +17,9 @@ class MachineInterface(object):
         self.debug = False
         self._save_at_exit = True
         self._use_num_points = False
-        #path = os.path.realpath(__file__)
-        self.path2optimizer = os.path.abspath(os.path.join(__file__ , "../.."))
-        self.config_dir = os.path.join(self.path2optimizer, "parameters")
+        path2optimizer = os.path.abspath(os.path.join(__file__ , "../.."))
+        self.config_dir = os.path.join(path2optimizer, "parameters")
+        self.path2jsondir = os.path.join(os.path.abspath(os.path.join(__file__ , "../../..")), "data")
 
     def save_at_exit(self):
         """
@@ -200,9 +200,7 @@ class MachineInterface(object):
         """
         from utils import db as utils_db
 
-        path = os.path.join('', os.path.split(os.path.realpath(__file__))[:-1])
-        config_dir = os.path.join(path, "parameters")
-        dbname = os.path.join(config_dir, "test.db")  # "../parameters/test.db"
+        dbname = os.path.join(self.config_dir, "test.db")  # "../parameters/test.db"
 
         if objective_func is None:
             return False, "Objective Function required to save data."
@@ -279,12 +277,12 @@ class MachineInterface(object):
         dump2json["obj_values"] = objective_func.values
         dump2json["obj_times"] = objective_func.times
         dump2json["maximization"] = maximization
-        #path = os.getcwd()
-        #indx = path.find("ocelot")
-        #path = path[:indx]
-        print("JSON", path)
-        filename = os.path.join(path, "data", datetime.now().strftime("%Y-%m-%d %H-%M-%S") + ".json")
-        #print(filename)
+
+
+        if not os.path.exists(self.path2jsondir):
+            os.makedirs(self.path2jsondir)
+
+        filename = os.path.join(self.path2jsondir, datetime.now().strftime("%Y-%m-%d %H-%M-%S") + ".json")
         try:
             with open(filename, 'w+') as f:
                 json.dump(dump2json, f)
@@ -421,7 +419,7 @@ class TestDevice(Device):
         self.nsets = 0
         self.mi = None
 
-    def get_value(self):
+    def get_value(self, save=False):
         return self.test_value
 
     def set_value(self, value):
