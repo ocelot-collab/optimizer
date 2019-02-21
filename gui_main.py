@@ -152,16 +152,24 @@ class MainWindow(Ui_Form):
 
         table["algorithm"] = str(self.cb_select_alg.currentText())
         table["maximization"] = self.rb_maximize.isChecked()
+
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(filename)
+
         with open(filename, 'w') as f:
             json.dump(table, f)
         # pickle.dump(table, filename)
         print("SAVE State")
 
     def restore_state(self, filename):
-        # try:
-        with open(filename, 'r') as f:
-            # data_new = pickle.load(f)
-            table = json.load(f)
+        try:
+            with open(filename, 'r') as f:
+                # data_new = pickle.load(f)
+                table = json.load(f)
+        except Exception as ex:
+            print("Restore State failed for file: {}. Exception was: {}".format(filename, ex))
+            return
+
 
         # Build the PV list from dev PVs or selected source
         pvs = table["id"]
@@ -260,8 +268,8 @@ class MainWindow(Ui_Form):
     def get_hyper_file(self):
         #filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters', filter="txt (*.npy *.)")
         filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters',
-                                                     self.Form.optimizer_path + "parameters", "txt (*.npy)",
-                                                     QtGui.QFileDialog.DontUseNativeDialog)
+                                                     self.Form.optimizer_path + "parameters", "txt (*.npy)"
+                                                     )
         if filename:
             self.Form.hyper_file = str(filename)
             self.pb_hyper_file.setText(self.Form.hyper_file)
@@ -335,6 +343,14 @@ class MainWindow(Ui_Form):
             self.cb_use_isim.setEnabled(False)
             self.sb_isim_rel_step.setValue(5)
 
+        if str(self.cb_select_alg.currentText()) in [self.Form.name_gauss, self.Form.name_gauss_sklearn]:
+            self.groupBox_2.setEnabled(True)
+            for w in self.groupBox_2.findChildren(QWidget):
+                w.setEnabled(True)
+        else:
+            self.groupBox_2.setEnabled(False)
+            for w in self.groupBox_2.findChildren(QWidget):
+                w.setEnabled(False)
 
         if str(self.cb_select_alg.currentText()) in [self.Form.name_es]:
             self.g_box_isim.setEnabled(True)
@@ -353,12 +369,12 @@ class MainWindow(Ui_Form):
             self.le_c.setEnabled(False)
             self.le_d.setEnabled(False)
             self.le_e.setEnabled(False)
-            self.le_obf.setEnabled(False)
+            # self.le_obf.setEnabled(False)
 
             self.label_16.setEnabled(False)
             self.label_19.setEnabled(False)
             self.label_20.setEnabled(False)
-            self.label_21.setEnabled(False)
+            # self.label_21.setEnabled(False)
             self.label_28.setEnabled(False)
             self.label_29.setEnabled(False)
 
@@ -371,12 +387,12 @@ class MainWindow(Ui_Form):
             self.le_c.setEnabled(True)
             self.le_d.setEnabled(True)
             self.le_e.setEnabled(True)
-            self.le_obf.setEnabled(True)
+            # self.le_obf.setEnabled(True)
 
             self.label_16.setEnabled(True)
             self.label_19.setEnabled(True)
             self.label_20.setEnabled(True)
-            self.label_21.setEnabled(True)
+            # self.label_21.setEnabled(True)
             self.label_28.setEnabled(True)
             self.label_29.setEnabled(True)
 

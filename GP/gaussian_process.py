@@ -1,12 +1,15 @@
+"""
+Written by S. Tomin, 2017
+"""
 import numpy as np
 from matplotlib import pyplot as plt
-
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 from scipy import optimize
+from copy import deepcopy
 import time
+import math
 import matplotlib.cm as cm
-
 np.random.seed(1)
 
 class GP:
@@ -24,15 +27,11 @@ class GP:
         # ConstantKernel
         self.ck_const_value = 1.0
         self.ck_const_value_bounds = (1e-05, 100000.0)
-
         self.n_restarts_optimizer = 10
-
         self.max_iter = 40
         self.pen_max = 100
-
         self.ytol = 0.001
         self.xtol = 0.001
-
         self.opt_ctrl = None
 
     def append_new_data(self, x_new, y_obs, sigma_y_obs):
@@ -40,7 +39,7 @@ class GP:
         #if np.size(x_cur) == 1:
         #    x_cur = [x_cur]
         #self.x_obs = np.concatenate((self.x_obs, x_new), axis=0)
-        self.x_obs = np.append(self.x_obs, [x_new], axis=0)
+        self.x_obs = np.append(self.x_obs, [abs(x_new)], axis=0)
         self.y_obs = np.append(self.y_obs, y_obs)
         self.y_sigma_obs = np.append(self.y_sigma_obs, sigma_y_obs)
         #print(self.y_sigma_init)
@@ -51,7 +50,6 @@ class GP:
         """
         RBF(length_scale=1.0, length_scale_bounds=(1e-05, 100000.0))
         k(x_i, x_j) = exp(-1 / 2 d(x_i / length_scale, x_j / length_scale)^2)
-
         :return:
         """
         # Instanciate a Gaussian Process model
@@ -61,11 +59,11 @@ class GP:
         if self.sigma_y != 0:
             self.alpha = (self.y_sigma_obs / self.y_obs) ** 2
         else:
-            self.alpha = 1e-5
+            self.alpha = 1e-10
         self.gp = GaussianProcessRegressor(kernel=kernel, alpha=self.alpha,
                                            n_restarts_optimizer=self.n_restarts_optimizer)
-
         # Fit to data using Maximum Likelihood Estimation of the parameters
+        #print('self.x and self.y', self.x_obs, self.y_obs)
         self.gp.fit(self.x_obs, self.y_obs)
 
     #def find_max(self):
@@ -96,7 +94,6 @@ class GP:
 
     def acquire(self):
         # Make the prediction on the meshed x-axis (ask for MSE as well)
-
         y_pred, sigma = self.gp.predict(self.x_search, return_std=True)
         x = self.x_search[np.argmin(y_pred)]
         #res = optimize.fmin(func, x)
@@ -130,7 +127,8 @@ class GP:
 def f(x):
     """The function to predict."""
     sigma = 2
-    y = -np.exp(-np.sum((np.ones(np.size(x))*9 - x)**2)/(2*sigma**2))
+    #y = -np.exp(-np.sum((np.ones(np.size(x))*9 - x)**2)/(2*sigma**2))
+    y = math.sin(-np.sum((np.ones(np.size(x))*9 - x)**2)/(2*sigma**2))
 
     return y
 
@@ -189,26 +187,26 @@ def test():
     print(gp.x_search, X, X[-1])
     x = gp.minimize(error_func=f, x=X[-1])
     print(x)
-    #for i in range(15):
-    #    fig, ax = plt.subplots()
-    #    gp.fit()
-    #
-    #    x_cur = gp.acquire()
-    #    y_cur = f(x_cur)
-    #
-    #    sigma_y_cur = sigma_y[0]
-    #    print("next", x_cur, y_cur, sigma_y[0])
-    #    gp.append_new_data(x_cur, y_cur, sigma_y_cur)
-    #
-    #    y_pred, sigma = gp.gp.predict(gp.x_search, return_std=True)
-    #    ax.plot( gp.x_obs[:,0], gp.x_obs[:,1], 'k.-', markersize=10)
-    #    im = ax.imshow(y_pred.reshape(n), extent=[0, 10, 10, 0], cmap=cm.RdYlGn,  interpolation='bilinear')
-    #    fig.colorbar(im)
-    #    plt.show()
+    for i in range(15):
+        fig, ax = plt.subplots()
+        gp.fit()
+
+        x_cur = gp.acquire()
+        y_cur = f(x_cur)
+
+        sigma_y_cur = sigma_y[0]
+        print("next", x_cur, y_cur, sigma_y[0])
+        gp.append_new_data(x_cur, y_cur, sigma_y_cur)
+
+        y_pred, sigma = gp.gp.predict(gp.x_search, return_std=True)
+        ax.plot( gp.x_obs[:,0], gp.x_obs[:,1], 'k.-', markersize=10)
+        im = ax.imshow(y_pred.reshape(n), extent=[0, 10, 10, 0], cmap=cm.RdYlGn,  interpolation='bilinear')
+        fig.colorbar(im)
+        plt.show()
 
 def one_d():
 
-    X = np.arange(0, 10, 0.1)
+    X = np.arange(-10, 10, 0.1)
     y = np.array([f(x) for x in X])
     fig, ax = plt.subplots()
     ax.plot(X, y)

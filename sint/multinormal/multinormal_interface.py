@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function
-
+import os
 import numpy as np
 from collections import OrderedDict
 
@@ -12,6 +12,9 @@ class MultinormalInterface(MachineInterface):
 
     def __init__(self, args=None):
         super(MultinormalInterface, self).__init__(args)
+        self.config_dir = os.path.join(self.config_dir,
+                                       "multinormal")  # <ocelot>/parameters/lcls
+        self.points = 1
         self._use_num_points = True
 
         self.ebeam_energy = 7.  # GeV
@@ -34,21 +37,15 @@ class MultinormalInterface(MachineInterface):
         self.sigNoiseScaleFactor = args.get('sigNoiseScaleFactor', 0.109)  # seems like something typical is amp_noise / sqrt(amp_signal) ~= 0.193/np.sqrt(3.113) = 0.109
         self.noiseScaleFactor = args.get('noiseScaleFactor', 1.)  # easy to use this as a noise toggle
 
-        self.numSamples = 1.
         self.numBatchSamples = 1.
         self.SNRgoal = 0  # specify SNR goal; if 0, then numSamples is unchanged
         self.maxNumSamples = 30. * 120.  # a limit on how long people would want to wait if changing numSamples to achieve the SNRgoal
 
-        self.last_numSamples = self.numSamples
+        self.last_numSamples = self.points
         self.last_SNR = self.SNRgoal
 
         # making this its own function in case we want to call again later
         self.store_moments(params[0], params[1], params[2])
-        print("******* DEBUG ***********")
-        print(" X: ")
-        print(self.x)
-        print(" Y: ")
-        print(self.y)
 
     @staticmethod
     def add_args(parser):
@@ -98,6 +95,9 @@ class MultinormalInterface(MachineInterface):
         """
         gui.hyper_file = "devmode"
         gui.ui.pb_hyper_file.setText(gui.hyper_file)
+
+        # Seed File
+        gui.ui.lineEdit_4.setText("parameters/simSeed.mat")
         self.display_tab = MultinormalDisplay(parent=gui, mi=self)
         tab_widget = gui.ui.tabWidget
         tab_widget.addTab(self.display_tab, "Simulation Mode")
@@ -245,18 +245,19 @@ class MultinormalInterface(MachineInterface):
         # figure out the number of samples needed to achieve the SNRgoal
         if (self.SNRgoal > 0 and self.noiseScaleFactor > 0):
             # analytic way
-            self.numSamples = min(
+            self.points = min(
                 [(self.SNRgoal * self.stdev / self.mean) ** 2.,
                  self.maxNumSamples])
-            self.numSamples = max(
-                [np.ceil(self.numSamples / self.numBatchSamples),
+            self.points = max(
+                [np.ceil(self.points / self.numBatchSamples),
                  1.]) * self.numBatchSamples
-            self.points = self.numSamples  # for compatibility with machine interface api
+            self.points = self.points  # for compatibility with machine interface api
 
         # perturb mean by nsample noise
-        self.y = np.array(
-            [self.mean + np.random.normal(0., self.stdev, self.mean.shape)
-             for i in range(int(self.points))])
+        # self.y = np.array(
+        #     [self.mean + np.random.normal(0., self.stdev, self.mean.shape)
+        #      for i in range(int(self.points))])
+        self.y = np.random.normal(self.mean[0][0], self.stdev[0][0], self.points)
 
         return np.array(self.y, ndmin=2)
 
