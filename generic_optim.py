@@ -15,6 +15,7 @@ import argparse
 import sklearn
 import functools
 import inspect
+import traceback
 
 sklearn_version = sklearn.__version__
 
@@ -26,8 +27,9 @@ print("PATH", os.path.realpath(__file__))
 # for pyqtgraph import
 #sys.path.append(path[:indx]+"ocelot")
 
-from PyQt5.QtWidgets import (QApplication, QFrame, QGroupBox, QLabel, QComboBox, QPushButton, QSpacerItem,
-                             QVBoxLayout, QDesktopWidget)
+from PyQt5.QtWidgets import (QApplication, QFrame, QGroupBox, QLabel, QComboBox,
+                             QPushButton, QSpacerItem, QVBoxLayout, QDesktopWidget,
+                             QFormLayout, QLineEdit)
 import platform
 import pyqtgraph as pg
 if sys.version_info[0] == 2:
@@ -64,7 +66,7 @@ class OcelotInterfaceWindow(QFrame):
         Make the timer object that updates GUI on clock cycle during a scan.
         """
         # PATHS
-        self.plot1_curves = dict()
+        self.plots_dict = dict()
         self.optimizer_args = None
         self.parse_arguments()
         self.dev_mode = self.optimizer_args.devmode
@@ -101,14 +103,13 @@ class OcelotInterfaceWindow(QFrame):
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
         self.ui.cb_select_alg.addItem(self.name_simplex)
-        #self.ui.cb_select_alg.addItem(self.name_gauss)
-        self.ui.cb_select_alg.addItem(self.name_custom)
+        # self.ui.cb_select_alg.addItem(self.name_gauss)
+        # self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
         self.ui.cb_select_alg.addItem(self.name_es)
         #self.ui.cb_select_alg.addItem(self.name_powell)
         if sklearn_version >= "0.18":
             self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
-
 
         #self.ui.pb_help.clicked.connect(lambda: os.system("firefox file://"+self.optimizer_path+"docs/build/html/index.html"))
         self.ui.pb_help.clicked.connect(self.ui.open_help)
@@ -116,7 +117,18 @@ class OcelotInterfaceWindow(QFrame):
         self.assemble_preset_box()
         self.assemble_quick_add_box()
 
-        if not self.mi.use_num_points():
+        if self.mi.use_num_points():
+            # Get rid of Interval Between Readings
+            self.ui.label_6.setVisible(False)
+            self.ui.sb_ddelay.setVisible(False)
+
+            # Get rid of number of readings
+            self.ui.label_30.setVisible(False)
+            self.ui.sb_nreadings.setVisible(False)
+
+            # Get rid of Cycle Period
+            self.ui.label_7.setVisible(False)
+        else:
             self.ui.label_datapoints.setVisible(False)
             self.ui.sb_datapoints.setVisible(False)
 
@@ -124,7 +136,7 @@ class OcelotInterfaceWindow(QFrame):
 
         self.objective_func_pv = "test_obj"
 
-        self.addPlots()
+        self.setup_plots()
 
         # database
 
@@ -157,9 +169,12 @@ class OcelotInterfaceWindow(QFrame):
         self.opt_control.m_status = self.m_status
 
         #timer for plots, starts when scan starts
-        self.multiPvTimer = QtCore.QTimer()
-        self.multiPvTimer.timeout.connect(self.getPlotData)
+        self.update_plot_timer = QtCore.QTimer()
+        self.update_plot_timer.timeout.connect(self.update_plots)
+        self.update_plots()
 
+        self.ui.browser_data_slider.valueChanged.connect(self.browser_slider_changed)
+        self.ui.browser_restore_btn.clicked.connect(self.browser_restore_clicked)
         self.mi.customize_ui(self)
 
     def parse_arguments(self):
@@ -182,6 +197,141 @@ class OcelotInterfaceWindow(QFrame):
         if len(others) != 0:
             self.optimizer_args = parser_mi.parse_args(others, namespace=self.optimizer_args)
 
+    def setup_plots(self):
+        self.setup_objhist_plot()
+        self.setup_obj_plot('plot_obj')
+        self.setup_obj_plot('plot_obj_browser')
+        self.setup_devices_plot('plot_dev')
+        self.setup_devices_plot('plot_dev_browser')
+
+        layout = QVBoxLayout()
+        self.ui.widget_2.setLayout(layout)
+        layout.addWidget(self.plots_dict['plot_obj']['plot'])
+
+        layout = QVBoxLayout()
+        self.ui.browser_obj_plot_panel.setLayout(layout)
+        layout.addWidget(self.plots_dict['plot_obj_browser']['plot'])
+
+        layout = QVBoxLayout()
+        self.ui.widget_3.setLayout(layout)
+        layout.addWidget(self.plots_dict['plot_dev']['plot'])
+
+        layout = QVBoxLayout()
+        self.ui.browser_dev_plot_panel.setLayout(layout)
+        layout.addWidget(self.plots_dict['plot_dev_browser']['plot'])
+
+        layout = QVBoxLayout()
+        self.ui.browser_objhist_plot_panel.setLayout(layout)
+        layout.addWidget(self.plots_dict['plot_objhist_browser']['plot'])
+
+        headers = ["Variable", "Value"]
+        table = self.ui.browser_data_table
+        table.setColumnCount(len(headers))
+        table.setHorizontalHeaderLabels(headers)
+        table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)  # No user edits on talbe
+        table.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        table.setRowCount(0)
+
+        self.setup_region('plot_obj_browser')
+        self.setup_region('plot_dev_browser')
+
+    def setup_region(self, name):
+        plot = self.plots_dict[name]['plot']
+        self.plots_dict[name]['region'] = pg.LinearRegionItem((0,0))
+        region = self.plots_dict[name]['region']
+        region.setMovable(False)
+        # region.setZValue(-10)
+        plot.addItem(region)
+
+    def setup_objhist_plot(self):
+        name = 'plot_objhist_browser'
+        self.plots_dict[name] = dict()
+        plot_curves = dict()
+
+        plot = pg.PlotWidget(title="Objective Function Histogram Monitor", labels={'left': 'Count', 'bottom':'Data'})
+        plot.showGrid(1, 1, 1)
+        plot.getAxis('left').enableAutoSIPrefix(enable=False) # stop the auto unit scaling on y axes
+
+        color = self.randColor()
+        pen = pg.mkPen(color, width=3)
+        plot_curves['histogram'] = pg.PlotCurveItem(x=[0,1], y=[0], pen=pen, antialias=True, name='histogram', stepMode = True, fillLevel = 0, brush = (0, 0, 255, 150))
+        plot.addItem(plot_curves['histogram'])
+
+        self.plots_dict[name]['plot'] = plot
+        self.plots_dict[name]['legend'] = None
+        self.plots_dict[name]['curves'] = plot_curves
+
+    def setup_obj_plot(self, name):
+        self.plots_dict[name] = dict()
+        plot_curves = dict()
+
+        plot = pg.PlotWidget(title="Objective Function Monitor", labels={'left': str(self.objective_func_pv), 'bottom':"Time (seconds)"})
+        plot.showGrid(1, 1, 1)
+        plot.getAxis('left').enableAutoSIPrefix(enable=False) # stop the auto unit scaling on y axes
+
+        legend = customLegend(offset=(75, 20))
+        legend.setParentItem(plot.graphicsItem())
+
+        default_colors = [QtGui.QColor(255, 51, 51),
+                          QtGui.QColor(51, 255, 51),
+                          QtGui.QColor(255, 255, 51),
+                          QtGui.QColor(178, 102, 255)]
+
+        idx = 0
+        for plot_item, item_label in self.mi.get_plot_attrs():
+            # set the first 4 to have the same default colors
+            if idx < 4:
+                color = default_colors[idx]
+            else:
+                color = self.randColor()
+
+            # create the obj func line object
+            color = self.randColor()
+            pen = pg.mkPen(color, width=3)
+            plot_curves[plot_item] = pg.PlotCurveItem(x=[], y=[], pen=pen, antialias=True, name=plot_item)
+            plot.addItem(plot_curves[plot_item])
+            legend.addItem(plot_curves[plot_item], item_label, color=str(color.name()))
+            idx += 1
+
+        self.plots_dict[name]['plot'] = plot
+        self.plots_dict[name]['legend'] = legend
+        self.plots_dict[name]['curves'] = plot_curves
+
+    def setup_devices_plot(self, name):
+        self.plots_dict[name] = dict()
+
+        #setup plot 2 for device monitor
+        plot = pg.PlotWidget(title="Device Monitor", labels={'left': "Device (Current - Start)", 'bottom': "Time (seconds)"})
+        plot.showGrid(1, 1, 1)
+        plot.getAxis('left').enableAutoSIPrefix(enable=False) # stop the auto unit scaling on y axes
+
+        #legend for plot 2
+        legend = customLegend(offset=(75, 20))
+        legend.setParentItem(plot.graphicsItem())
+
+        self.plots_dict[name]['plot'] = plot
+        self.plots_dict[name]['legend'] = legend
+        self.plots_dict[name]['curves'] = dict()
+
+    def browser_restore_clicked(self):
+        confirm_msg = "Are you sure you want to restore the selected values?"
+        reply = QtGui.QMessageBox.question(self, 'Message',
+                                           confirm_msg, QtGui.QMessageBox.Yes,
+                                           QtGui.QMessageBox.No)
+
+        if reply != QtGui.QMessageBox.Yes:
+            return
+
+        index = self.ui.browser_data_slider.value()
+        print("***** Restoring Devices to value at index: ", index)
+        for dev in self.devices:
+            try:
+                val = dev.values[index]
+                print("Restore: {} to value: {}".format(dev.eid, val))
+                dev.set_value(val)
+            except IndexError:
+                print("Restore: {} failed. Index Error.".format(dev.eid))
+
     def statistics_select(self, value):
         if self.objective_func is not None:
             self.objective_func.stats = self.ui.cb_statistics.currentData()
@@ -198,6 +348,7 @@ class OcelotInterfaceWindow(QFrame):
         #GP Method
         if current_method == self.name_gauss:
             minimizer = mint.GaussProcess()
+            minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:
             minimizer = mint.GaussProcessSKLearn()
@@ -237,20 +388,21 @@ class OcelotInterfaceWindow(QFrame):
         """
         self.scanStartTime = time.time()
 
-
         if self.ui.pb_start_scan.text() == "Stop optimization":
             # stop the optimization
             self.opt.opt_ctrl.stop()
-
+            self.opt.join()
             self.m_status.is_ok = lambda: True
+
             # Save the optimization parameters to the database
-            try:
-                ret, msg = self.save2db()
-                if not ret:
-                    self.error_box(message=msg)
-            except Exception as ex:
-                print("ERROR start_scan: can not save to db. Exception was: ", ex)
-            del(self.opt)
+            #try:
+            ret, msg = self.save2db()
+            if not ret:
+               self.error_box(message=msg)
+            #except Exception as ex:
+            #    print("ERROR start_scan: can not save to db. Exception was: ", ex)
+            #    traceback.print_exc()
+            del self.opt
             # Setting the button
             self.ui.pb_start_scan.setStyleSheet("color: rgb(85, 255, 127);")
             self.ui.pb_start_scan.setText("Start optimization")
@@ -267,27 +419,29 @@ class OcelotInterfaceWindow(QFrame):
             if dev.check_limits(val):
                 self.error_box(message="Check the Limits")
                 return 0
-        self.setUpMultiPlot(self.devices)
-        self.multiPvTimer.start(100)
-
-        # set the Objective function from GUI or from file mint.obj_function.py (reloading)
-        self.set_obj_fun()
-
+        self.update_devices_plot(self.devices)
+        self.update_plot_timer.start(100)
+        # set the Objective function from GUI or from file mint.obj_function.py
+        # (reloading)
+        self.set_obj_fun(update_objfunc_text=False)
+        if self.ui.le_obf.text():
+            self.objective_func.eid = self.ui.le_obf.text()
         self.objective_func_pv = self.objective_func.eid
 
         if self.mi.use_num_points():
             self.objective_func.points = self.ui.sb_datapoints.value()
 
-        self.updatePlotLabels()
+        self.update_plot_obj_labels()
         # Set minimizer - the optimization method (Simplex, GP, ...)
         minimizer = self.scan_method_select()
 
         # configure the Minimizer
+        minimizer.mi = self.mi
         if minimizer.__class__ in [mint.GaussProcess, mint.GaussProcessSKLearn]:
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
             minimizer.seed_timeout = self.ui.sb_tdelay.value()
             minimizer.hyper_file = self.hyper_file
-            minimizer.norm_coef = self.ui.sb_isim_rel_step.value()/ 100.
+            minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
 
         elif minimizer.__class__ in [mint.Simplex, mint.Powell]:
             if self.ui.cb_use_isim.checkState():
@@ -338,10 +492,13 @@ class OcelotInterfaceWindow(QFrame):
         # Optimizer initialization
         self.opt = mint.Optimizer()
 
+        self.opt.scaling_coef = self.ui.sb_scaling_coef.value()
+        print("Using Scaling Coeficient of: ", self.opt.scaling_coef)
+
         # solving minimization or maximization problem
         self.opt.maximization = self.ui.rb_maximize.isChecked()
 
-        if self.ui.cb_select_alg.currentText() == self.name_simplex_norm:
+        if self.ui.cb_select_alg.currentText() in [self.name_simplex_norm]:
             self.opt.normalization = True
             self.opt.norm_coef = self.ui.sb_isim_rel_step.value()*0.01
             print("OPT", self.opt.norm_coef)
@@ -430,7 +587,7 @@ class OcelotInterfaceWindow(QFrame):
             self.ui.widget_2.setStyleSheet("background-color:323232;")
             self.ui.widget_3.setStyleSheet("background-color:323232;")
 
-    def set_obj_fun(self):
+    def set_obj_fun(self, update_objfunc_text=True):
         """
         Method to set objective function from the GUI (channels A,B,C) or reload module obj_function.py
 
@@ -458,6 +615,8 @@ class OcelotInterfaceWindow(QFrame):
 
             print("Target Class: ", tclass)
             self.objective_func = tclass(mi=self.mi)
+            if update_objfunc_text:
+                self.ui.le_obf.setText(self.objective_func.eid)
             self.objective_func.devices = []
             self.objective_func.stats = self.ui.cb_statistics.currentData()
         else:
@@ -553,107 +712,141 @@ class OcelotInterfaceWindow(QFrame):
 
         self.m_status.is_ok = is_ok
 
-
-    def getPlotData(self):
+    def update_plots(self):
         """
         Collects data and updates plot on every GUI clock cycle.
         """
         #get times, penalties obj func data from the machine interface
         if len(self.objective_func.times) == 0:
+            self.ui.browser_data_slider.setEnabled(False)
             return
 
+        self.ui.browser_data_slider.setEnabled(True)
+
+
+        scan_running = self.ui.pb_start_scan.text() == "Stop optimization"
+        self.ui.browser_restore_btn.setEnabled(not scan_running)
+
+        if self.ui.browser_data_table.rowCount() == 0:
+            self.browser_data_changed(0)
+
         x = np.array(self.objective_func.times) - self.objective_func.times[0]
+        self.ui.browser_data_slider.setMaximum(len(x)-1)
 
         for plot_item, _ in self.mi.get_plot_attrs():
-            pg_plot_curve = self.plot1_curves[plot_item]
+            for plot_name in ['plot_obj', 'plot_obj_browser']:
+                line = self.plots_dict[plot_name]['curves'][plot_item]
+                try:
+                    y_data = getattr(self.objective_func, plot_item, None)
+                    y_data = np.array(y_data)
+                    if y_data is None:
+                        continue
+                    if y_data.size != x.size:
+                        return
+                    line.setData(x=x, y=y_data)
+                except Exception as ex:
+                    print("No data to plot for: ", plot_item, ". Exception was: ", ex)
+
+        #plot data for all devices being scanned
+        for dev in self.devices:
+            for plot_name in ['plot_dev', 'plot_dev_browser']:
+                if len(dev.times) == 0:
+                    return
+                y = np.array(dev.values) - self.multiPlotStarts[dev.eid]
+                x = np.array(dev.times) - np.array(dev.times)[0]
+                line = self.plots_dict[plot_name]['curves'][dev.eid]
+                line.setData(x=x, y=y)
+
+    def browser_slider_changed(self, index):
+        self.browser_data_changed(index)
+
+    def browser_data_changed(self, index, region=False):
+        x = np.array(self.objective_func.times) - self.objective_func.times[0]
+        if not region:
+            for plot_name in ['plot_dev_browser', 'plot_obj_browser']:
+                region = self.plots_dict[plot_name]['region']
+                index_val = x[index]
+                region.setBounds([index_val, index_val])
+
+        histogram_data_key = 'values'
+        if hasattr(self.objective_func, 'objective_acquisitions'):
+            histogram_data_key = 'objective_acquisitions'
+
+        try:
+            val = getattr(self.objective_func, histogram_data_key)[index]
+            hist, bins = np.histogram(val, bins='auto')
+            line = self.plots_dict['plot_objhist_browser']['curves']['histogram']
+            line.setData(x=bins, y=hist)
+        except Exception as ex:
+            print("No data to plot histogram. Exception was: ", ex)
+
+        table = self.ui.browser_data_table
+        table.setRowCount(len(self.devices) + len(self.mi.get_plot_attrs()))
+        table_data = []
+
+        for plot_item, display_name in self.mi.get_plot_attrs():
             try:
                 y_data = getattr(self.objective_func, plot_item, None)
                 y_data = np.array(y_data)
                 if y_data is None:
                     continue
-                if y_data.size != x.size:
-                    return
-                pg_plot_curve.setData(x=x, y=y_data)
+                table_data.append((display_name, y_data[index]))
             except Exception as ex:
-                print("No data to plot for: ", plot_item, ". Exception was: ", ex)
+                print("No data to plot for: ", plot_item, ". Exception was: ",
+                      ex)
 
-        #plot data for all devices being scanned
         for dev in self.devices:
-            if len(dev.times) == 0:
-                return
-            y = np.array(dev.values) - self.multiPlotStarts[dev.eid]
-            x = np.array(dev.times) - np.array(dev.times)[0]
-            line = self.multilines[dev.eid]
-            line.setData(x=x, y=y)
+            if index > len(dev.values)-1:
+                continue
+            y = np.array(dev.values)
+            table_data.append((dev.eid, y[index]))
 
-    def updatePlotLabels(self):
-        self.plot1.plotItem.setLabels(**{'left': str(self.objective_func_pv), 'bottom': "Time (seconds)"})
+        for row, data in enumerate(table_data):
+            label, value = data
+            table.setItem(row, 0, QtGui.QTableWidgetItem(str(label)))
+            table.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
 
-    def addPlots(self):
-        """
-        Initializes the GUIs plots and labels on startup.
-        """
-        #self.objective_func_pv = "test_obj"
-        #setup plot 1 for obj func monitor
-        self.plot1 = pg.PlotWidget(title="Objective Function Monitor", labels={'left': str(self.objective_func_pv), 'bottom':"Time (seconds)"})
-        self.plot1.showGrid(1, 1, 1)
-        self.plot1.getAxis('left').enableAutoSIPrefix(enable=False) # stop the auto unit scaling on y axes
-        layout = QtGui.QGridLayout()
-        self.ui.widget_2.setLayout(layout)
-        layout.addWidget(self.plot1, 0, 0)
+    def update_plot_obj_labels(self):
+        for plot_name in ['plot_obj', 'plot_obj_browser']:
+            plot = self.plots_dict[plot_name]['plot']
+            plot.plotItem.setLabels(**{'left': str(self.objective_func_pv),
+                                       'bottom': "Time (seconds)"})
 
-        self.plot1_curves = dict()
-        self.leg1 = customLegend(offset=(75, 20))
-        self.leg1.setParentItem(self.plot1.graphicsItem())
-        for plot_item, item_label in self.mi.get_plot_attrs():
-            # create the obj func line object
-            color = self.randColor()
-            pen = pg.mkPen(color, width=3)
-            self.plot1_curves[plot_item] = pg.PlotCurveItem(x=[], y=[], pen=pen, antialias=True, name=plot_item)
-            self.plot1.addItem(self.plot1_curves[plot_item])
-            self.leg1.addItem(self.plot1_curves[plot_item], item_label, color=str(color.name()))
-
-        #setup plot 2 for device monitor
-        self.plot2 = pg.PlotWidget(title="Device Monitor", labels={'left': "Device (Current - Start)", 'bottom': "Time (seconds)"})
-        self.plot2.showGrid(1, 1, 1)
-        self.plot2.getAxis('left').enableAutoSIPrefix(enable=False) # stop the auto unit scaling on y axes
-        layout = QtGui.QGridLayout()
-        self.ui.widget_3.setLayout(layout)
-        layout.addWidget(self.plot2, 0, 0)
-
-        #legend for plot 2
-        self.leg2 = customLegend(offset=(75, 20))
-        self.leg2.setParentItem(self.plot2.graphicsItem())
-
-    def setUpMultiPlot(self, devices):
+    def update_devices_plot(self, devices):
         """
         Reset plots when a new scan is started.
         """
-        self.plot2.clear()
-        self.multilines      = {}
-        self.multiPvData     = {}
         self.multiPlotStarts = {}
-        x = []
-        y = []
-        self.leg2.scene().removeItem(self.leg2)
-        self.leg2 = customLegend(offset=(50, 10))
-        self.leg2.setParentItem(self.plot2.graphicsItem())
 
-        default_colors = [QtGui.QColor(255, 51, 51), QtGui.QColor(51, 255, 51), QtGui.QColor(255, 255, 51),QtGui.QColor(178, 102, 255)]
-        for i, dev in enumerate(devices):
+        for idx, plot_name in enumerate(['plot_dev', 'plot_dev_browser']):
+            plot = self.plots_dict[plot_name]['plot']
+            plot.clear()
+            x = []
+            y = []
+            leg = self.plots_dict[plot_name]['legend']
+            leg.scene().removeItem(leg)
+            leg = customLegend(offset=(50, 10))
+            leg.setParentItem(plot.graphicsItem())
+            self.plots_dict[plot_name]['legend'] = leg
 
-            #set the first 4 devices to have the same default colors
-            if i < 4:
-                color = default_colors[i]
-            else:
-                color = self.randColor()
+            default_colors = [QtGui.QColor(255, 51, 51), QtGui.QColor(51, 255, 51), QtGui.QColor(255, 255, 51),QtGui.QColor(178, 102, 255)]
+            for i, dev in enumerate(devices):
 
-            pen=pg.mkPen(color, width=2)
-            self.multilines[dev.eid] = pg.PlotCurveItem(x, y, pen=pen, antialias=True, name=str(dev.eid))
-            self.multiPvData[dev.eid] = []
-            self.multiPlotStarts[dev.eid] = dev.get_value()
-            self.plot2.addItem(self.multilines[dev.eid])
-            self.leg2.addItem(self.multilines[dev.eid], dev.eid, color=str(color.name()))
+                #set the first 4 devices to have the same default colors
+                if i < 4:
+                    color = default_colors[i]
+                else:
+                    color = self.randColor()
+
+                pen=pg.mkPen(color, width=2)
+                item = pg.PlotCurveItem(x, y, pen=pen, antialias=True, name=str(dev.eid))
+                if idx == 0:
+                    self.multiPlotStarts[dev.eid] = dev.get_value()
+                plot.addItem(item)
+                leg.addItem(item, dev.eid, color=str(color.name()))
+                self.plots_dict[plot_name]['curves'][dev.eid] = item
+
+        self.setup_region('plot_dev_browser')
 
     def randColor(self):
         """
@@ -700,19 +893,30 @@ class OcelotInterfaceWindow(QFrame):
             pvs = cb_quick_list.currentData()
             resetpanel_box.addPv(pvs, force_active=True)
 
+        def add_from_txt(le):
+            pv = le.text()
+            if pv:
+                resetpanel_box.addPv(pv, force_active=True)
+
         def clear_list():
             resetpanel_box.pvs = []
             resetpanel_box.devices = []
             resetpanel_box.ui.tableWidget.setRowCount(0)
 
+        layout_buttons = QVBoxLayout()
+
+
         pb_clear_dev = QPushButton(resetpanel_box)
         pb_clear_dev.setText("Clear Devices")
         pb_clear_dev.setMaximumWidth(100)
         pb_clear_dev.clicked.connect(clear_list)
+
         pb_add_dev = QPushButton(resetpanel_box)
         pb_add_dev.setText("Add Devices")
+        pb_add_dev.setStyleSheet("color: orange")
         pb_add_dev.clicked.connect(add_to_list)
         pb_add_dev.setMaximumWidth(100)
+
         lb_from_list = QLabel()
         lb_from_list.setText("From List: ")
         lb_from_list.setMaximumWidth(75)
@@ -722,10 +926,25 @@ class OcelotInterfaceWindow(QFrame):
         for display, itms in devs.items():
             cb_quick_list.addItem(display, itms)
 
-        layout_quick_add.addWidget(pb_clear_dev)
-        layout_quick_add.addWidget(pb_add_dev)
-        layout_quick_add.addWidget(lb_from_list)
-        layout_quick_add.addWidget(cb_quick_list)
+        if len(devs.items()) >= 1:
+            cb_quick_list.setCurrentIndex(1)
+
+        lb_manually = QLabel()
+        lb_manually.setText("Or Manually Enter: ")
+        lb_manually.setMaximumWidth(75)
+        le_manually = QLineEdit()
+        le_manually.setMinimumWidth(200)
+        le_manually.returnPressed.connect(functools.partial(add_from_txt, le_manually))
+
+        layout_buttons.addWidget(pb_add_dev)
+        layout_buttons.addWidget(pb_clear_dev)
+
+        frm_layout = QFormLayout()
+        frm_layout.addRow(lb_from_list, cb_quick_list)
+        frm_layout.addRow(lb_manually, le_manually)
+
+        layout_quick_add.addLayout(layout_buttons)
+        layout_quick_add.addLayout(frm_layout)
 
     def assemble_preset_box(self):
         print("Assembling Preset Box")
