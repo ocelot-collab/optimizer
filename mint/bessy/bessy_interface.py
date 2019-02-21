@@ -44,9 +44,11 @@ class BESSYMachineInterface(MachineInterface):
 
     def __init__(self, args=None):
         super(BESSYMachineInterface, self).__init__(args)
-        self._save_at_exit = False
+        self._save_at_exit = True
         self._use_num_points = True
-
+ 
+        path2root = os.path.abspath(os.path.join(__file__ , "../../../.."))
+        self.config_dir = os.path.join(path2root, "config_optim")
         if 'epics' not in sys.modules:
             raise Exception('No module named epics. LCLSMachineInterface will not work. Try simulation mode instead.')
 
@@ -77,7 +79,6 @@ class BESSYMachineInterface(MachineInterface):
         :param device_name: (str) PV name used in caput
         :return: (object) Data from the PV. Variable data type depending on PV type
         """
-
         pv = self.pvs.get(device_name, None)
         if pv is None:
             self.pvs[device_name] = epics.PV(device_name)
@@ -111,7 +112,7 @@ class BESSYMachineInterface(MachineInterface):
 
         :return: (float)
         """
-        return self.get_value("BEND:DMP1:400:BDES")
+        return 1.7# self.get_value("BEND:DMP1:400:BDES")
 
     def get_charge(self):
         """
@@ -120,7 +121,7 @@ class BESSYMachineInterface(MachineInterface):
         :return: (float)
         """
         charge = self.get_value('SIOC:SYS0:ML00:CALC252')
-        return charge
+        return 0.5# charge
 
     def get_charge_current(self):
         """
@@ -178,8 +179,7 @@ class BESSYMachineInterface(MachineInterface):
         :return: dict
         """
         devs = OrderedDict([
-            ("IN20 M. Quads", ["QUAD:IN20:361:BCTRL", "QUAD:IN20:371:BCTRL", "QUAD:IN20:425:BCTRL",
-                               "QUAD:IN20:441:BCTRL", "QUAD:IN20:511:BCTRL", "QUAD:IN20:525:BCTRL"]),
+            ("TEMP", ["WFGENC2S7G:setVolt"]),
             ("LI21 M. Quads", ["QUAD:LI21:201:BCTRL", "QUAD:LI21:211:BCTRL", "QUAD:LI21:271:BCTRL",
                                "QUAD:LI21:278:BCTRL"]),
             ("LI26 201-501", ["QUAD:LI26:201:BCTRL", "QUAD:LI26:301:BCTRL", "QUAD:LI26:401:BCTRL",
@@ -195,14 +195,14 @@ class BESSYMachineInterface(MachineInterface):
         ])
         return devs
 
-    def get_plot_attrs(self):
+    def get_plot_attrs_(self):
         """
         Returns a list of tuples in which the first element is the attributes to be fetched from Target class
         to present at the Plot 1 and the second element is the label to be used at legend.
 
         :return: (list) Attributes from the Target class to be used in the plot.
         """
-        return [("values", "statistics"), ("objective_means", "mean")]
+        return [("values"), ("objective_means", "mean")]
 
     def write_data(self, method_name, objective_func, devices=[], maximization=False, max_iter=0):
         """
@@ -216,105 +216,4 @@ class BESSYMachineInterface(MachineInterface):
 
         :return: status (bool), error_msg (str)
         """
-        try:
-            import matlog
-        except ImportError as ex:
-            print(
-                "Error importing matlog, reverting to simlog. The error was: ",
-                ex)
-            import mint.lcls.simlog as matlog
-
-        def byteify(input):
-            if isinstance(input, dict):
-                return {byteify(key): byteify(value)
-                        for key, value in input.iteritems()}
-            elif isinstance(input, list):
-                return [byteify(element) for element in input]
-            elif isinstance(input, unicode):
-                return input.encode('utf-8')
-            else:
-                return input
-
-        def removeUnicodeKeys(input_dict):  # implemented line 91
-            return dict([(byteify(e[0]), e[1]) for e in input_dict.items()])
-
-        print(self.name + " - Write Data: ", method_name)
-        try:  # if GP is used, the model is saved via saveModel first
-            self.data
-        except:
-            self.data = {}  # dict of all devices deing scanned
-
-        objective_func_pv = objective_func.eid
-
-        self.data[objective_func_pv] = []  # detector data array
-        self.data['DetectorAll'] = []  # detector acquisition array
-        self.data['DetectorStat'] = []  # detector mean array
-        self.data['DetectorStd'] = []  # detector std array
-        self.data['timestamps'] = []  # timestamp array
-        self.data['charge'] = []
-        self.data['current'] = []
-        self.data['stat_name'] = []
-        # end try/except
-        self.data['pv_list'] = [dev.eid for dev in devices]  # device names
-        for dev in devices:
-            self.data[dev.eid] = []
-        for dev in devices:
-            vals = len(dev.values)
-            self.data[dev.eid].append(dev.values)
-        if vals < len(objective_func.values):  # first point is duplicated for some reason so dropping
-            objective_func.values = objective_func.values[1:]
-            objective_func.objective_means = objective_func.objective_means[1:]
-            objective_func.objective_acquisitions = objective_func.objective_acquisitions[1:]
-            objective_func.times = objective_func.times[1:]
-            objective_func.std_dev = objective_func.std_dev[1:]
-            objective_func.charge = objective_func.charge[1:]
-            objective_func.current = objective_func.current[1:]
-            try:
-                objective_func.losses = objective_func.losses[1:]
-            except:
-                pass
-            objective_func.niter -= 1
-        self.data[objective_func_pv].append(objective_func.objective_means)  # this is mean for compat
-        self.data['DetectorAll'].append(objective_func.objective_acquisitions)
-        self.data['DetectorStat'].append(objective_func.values)
-        self.data['DetectorStd'].append(objective_func.std_dev)
-        self.data['timestamps'].append(objective_func.times)
-        self.data['charge'].append(objective_func.charge)
-        self.data['current'].append(objective_func.current)
-        self.data['stat_name'].append(objective_func.stats.display_name)
-        for ipv in range(len(self.losspvs)):
-            self.data[self.losspvs[ipv]] = [a[ipv] for a in objective_func.losses]
-
-        self.detValStart = self.data[objective_func_pv][0]
-        self.detValStop = self.data[objective_func_pv][-1]
-
-        # replace with matlab friendly strings
-        for key in self.data:
-            key2 = key.replace(":", "_")
-            self.data[key2] = self.data.pop(key)
-
-        # extra into to add into the save file
-        self.data["MachineInterface"] = self.name
-        try:
-            self.data["epicsname"] = epics.name  # returns fakeepics if caput has been disabled
-        except:
-            pass
-        self.data["BEND_DMP1_400_BDES"] = self.get_value("BEND:DMP1:400:BDES")
-        self.data["Energy"] = self.get_energy()
-        self.data["ScanAlgorithm"] = str(method_name)  # string of the algorithm name
-        self.data["ObjFuncPv"] = str(objective_func_pv)  # string identifing obj func pv
-        self.data['DetectorMean'] = str(
-            objective_func_pv.replace(":", "_"))  # reminder to look at self.data[objective_func_pv]
-        # TODO: Ask Joe if this is really needed...
-        #self.data["NormAmpCoeff"] = norm_amp_coeff
-        self.data["niter"] = objective_func.niter
-
-        # save data
-        self.last_filename = matlog.save("OcelotScan", removeUnicodeKeys(self.data), path='default')  # self.save_path)
-
-        print('Saved scan data to ', self.last_filename)
-
-        # clear for next run
-        self.data = dict()
-
-        return True, ""
+        pass
