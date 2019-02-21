@@ -78,8 +78,8 @@ class OGP(object):
             self.covar = covar
             self.covar_params = hyperparams[:2]
         else:
-            print 'Unknown covariance function'
-            raise
+            print ('Unknown covariance function')
+            raise Exception("Unknown covariance function")
 
         self.noise_var = np.exp(hyperparams[2]) # variance -- not stdev
 
@@ -137,7 +137,7 @@ class OGP(object):
             # expand model
             if self.verboseQ: 
                 print("OGP - INFO: Expanding full model")
-                print 'self._fullParamUpdate(',x_new, k_x, k, K1, K2, gamma, hatE,')'
+                print ('self._fullParamUpdate(',x_new, k_x, k, K1, K2, gamma, hatE,')')
             self._fullParamUpdate(x_new, k_x, k, K1, K2, gamma, hatE)
 
         # reduce model according to maxBV constraint
@@ -443,7 +443,7 @@ class OGP(object):
         elif(nu==2.5):
             poly = 1 + np.sqrt(5.0)*dist + (5.0/3.0)*dist_sq
         else:
-            print 'Invalid nu (only 1.5 and 2.5 supported)'
+            print ('Invalid nu (only 1.5 and 2.5 supported)')
 
         K = coeff * poly * np.exp(-np.sqrt(2*nu)*dist)
 

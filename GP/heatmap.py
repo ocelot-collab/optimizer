@@ -46,7 +46,7 @@ def plotheatmap(function, fargs, rangex, rangey, ngrid=25, xlabel='Device 1', yl
     if(np.sum(Z)==0):
         Zshape = np.shape(Z)
         Z = Z + 1.e-6 * np.random.randn(Zshape[0], Zshape[1])
-        print 'WARNING: z-values are all zero so adding a small random field to it'
+        print ('WARNING: z-values are all zero so adding a small random field to it')
     
     # Create a simple contour plot with labels using default colors.  The
     # inline argument to clabel will control whether the labels are draw
