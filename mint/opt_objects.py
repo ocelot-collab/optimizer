@@ -430,6 +430,15 @@ class TestDevice(Device):
 
 
 class Target(object):
+    """
+    The class calculates of the penalty of the optimized function.
+    Example:
+    --------
+    goal is SASE maximization:
+    penalty = - sase_value + alarm_value
+    penalty goes down -> SASE goes up.
+
+    """
     def __init__(self, eid=None):
         """
 
@@ -455,10 +464,7 @@ class Target(object):
     def get_penalty(self):
         """
         Method to calculate the penalty on the basis of the value and alarm level.
-        OLD: penalty = -get_value() + alarm()
-
-        NEW: penalty = get_value() - alarm()
-
+        penalty = -get_value() + alarm()
 
         :return: penalty
         """

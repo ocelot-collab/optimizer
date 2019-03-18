@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'UIOcelotInterface_gen.ui'
 #
-# Created by: PyQt5 UI code generator 5.9.1
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -647,23 +647,23 @@ class Ui_Form(object):
         self.horizontalLayout_12.setObjectName("horizontalLayout_12")
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_12.addItem(spacerItem)
+        self.rb_minimize = QtWidgets.QRadioButton(self.groupBox_7)
+        font = QtGui.QFont()
+        font.setPointSize(16)
+        self.rb_minimize.setFont(font)
+        self.rb_minimize.setObjectName("rb_minimize")
+        self.buttonGroup = QtWidgets.QButtonGroup(Form)
+        self.buttonGroup.setObjectName("buttonGroup")
+        self.buttonGroup.addButton(self.rb_minimize)
+        self.horizontalLayout_12.addWidget(self.rb_minimize)
         self.rb_maximize = QtWidgets.QRadioButton(self.groupBox_7)
         font = QtGui.QFont()
         font.setPointSize(16)
         self.rb_maximize.setFont(font)
         self.rb_maximize.setChecked(True)
         self.rb_maximize.setObjectName("rb_maximize")
-        self.buttonGroup = QtWidgets.QButtonGroup(Form)
-        self.buttonGroup.setObjectName("buttonGroup")
         self.buttonGroup.addButton(self.rb_maximize)
         self.horizontalLayout_12.addWidget(self.rb_maximize)
-        self.rb_minimize = QtWidgets.QRadioButton(self.groupBox_7)
-        font = QtGui.QFont()
-        font.setPointSize(16)
-        self.rb_minimize.setFont(font)
-        self.rb_minimize.setObjectName("rb_minimize")
-        self.buttonGroup.addButton(self.rb_minimize)
-        self.horizontalLayout_12.addWidget(self.rb_minimize)
         self.gridLayout_11.addLayout(self.horizontalLayout_12, 2, 2, 1, 1)
         self.label_38 = QtWidgets.QLabel(self.groupBox_7)
         font = QtGui.QFont()
@@ -1065,8 +1065,8 @@ class Ui_Form(object):
         self.label_26.setText(_translate("Form", "Max Penalty"))
         self.le_obf.setToolTip(_translate("Form", "<html><head/><body><p>Option 1: Type a PV here.</p><p>Option 2:</p><p>- Uncheck the &quot;Use predefined Objective Function&quot; box</p><p>- Fill in PV A...E with PVs</p><p>- Use as Objective Function a formula such as:</p><p>---- np.mean(A-B)</p><p>---- np.mean(A)/np.stdev(B)</p></body></html>"))
         self.le_obf.setText(_translate("Form", "A"))
-        self.rb_maximize.setText(_translate("Form", "Minimize Signal"))
-        self.rb_minimize.setText(_translate("Form", "Maximize Signal"))
+        self.rb_minimize.setText(_translate("Form", "Minimize Signal"))
+        self.rb_maximize.setText(_translate("Form", "Maximize Signal"))
         self.label_38.setText(_translate("Form", "Statistical Method:"))
         self.cb_use_predef.setToolTip(_translate("Form", "If checked, it uses the Target function in the Python script given by Edit Objective Function button"))
         self.cb_use_predef.setText(_translate("Form", "Use Predefined Objective Function"))
@@ -1091,3 +1091,13 @@ class Ui_Form(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab4), _translate("Form", "Data Browser"))
 
 from resetpanel.resetpanelbox import ResetpanelBoxWindow
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Form = QtWidgets.QWidget()
+    ui = Ui_Form()
+    ui.setupUi(Form)
+    Form.show()
+    sys.exit(app.exec_())
+
