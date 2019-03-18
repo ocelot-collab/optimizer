@@ -184,7 +184,7 @@ class MachineInterface(object):
 
         :return: (list) Attributes from the Target class to be used in the plot.
         """
-        return [("penalties", "penalties")]
+        return [("values", "values")]
 
     def write_data(self, method_name, objective_func, devices=[], maximization=False, max_iter=0):
         """
@@ -447,6 +447,7 @@ class Target(object):
         self.interval = 0.0
         self.stats = None
         self.points = None
+        self.mi = None
 
     def get_value(self):
         return 0
@@ -473,8 +474,8 @@ class Target(object):
             alarm = self.pen_max
         if alarm > 0.7:
             alarm = self.pen_max / 2.
-        pen -= alarm
-        pen += sase
+        pen += alarm
+        pen -= sase
         self.niter += 1
         # print("niter = ", self.niter)
         self.penalties.append(pen)
