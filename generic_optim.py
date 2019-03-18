@@ -143,6 +143,8 @@ class OcelotInterfaceWindow(QFrame):
         self.scan_params = None
         self.hyper_file = "../parameters/hyperparameters.npy"
 
+        self.set_obj_fun()
+
         self.ui.pb_start_scan.clicked.connect(self.start_scan)
         self.ui.pb_edit_obj_func.clicked.connect(self.run_editor)
         self.ui.cb_use_predef.stateChanged.connect(self.set_obj_fun)
@@ -160,7 +162,7 @@ class OcelotInterfaceWindow(QFrame):
         obj_func_file = self.mi.get_obj_function_module().__file__
         self.path_to_obj_func = obj_func_file if not obj_func_file.endswith("pyc") else obj_func_file[:-1]
 
-        self.set_obj_fun()
+
         self.m_status = mint.MachineStatus()
         self.set_m_status()
 
@@ -662,6 +664,7 @@ class OcelotInterfaceWindow(QFrame):
             self.objective_func = Target(eid=a_str)
             self.objective_func.devices = []
             self.objective_func.get_value = get_value_exp
+            self.objective_func.mi = self.mi
 
         # set maximum penalty
         self.objective_func.pen_max = self.ui.sb_max_pen.value()
