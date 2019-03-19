@@ -102,8 +102,8 @@ class BayesOpt:
         self.kill = False
         self.ndim = np.array(start_dev_vals).size
         self.multiprocessingQ = True # speed up acquisition function optimization
-        # if os.name == 'nt': # multiprocessing doesn't work on windows
-            # self.multiprocessingQ = False
+        if os.name in ['nt', 'posix']: # multiprocessing doesn't work on Mac and probably windows
+            self.multiprocessingQ = False
         print("Bayesian optimizer set to use ", acq_func, " acquisition function")
 
         # DELETE AFTER PUSHING mint.GaussProcess.preprocess stuff into here

@@ -2,6 +2,7 @@
 from __future__ import absolute_import, print_function
 import numpy as np
 import multiprocessing as mp
+import time
 
 # handle 'IOError: [Errno 4] Interrupted system call' errors from multiprocessing.Queue.get
 #https://stackoverflow.com/questions/14136195/what-is-the-proper-way-to-handle-in-python-ioerror-errno-4-interrupted-syst
@@ -328,8 +329,7 @@ try:
     from scipy.special import erfinv
     #from hammersley import hammersley
     from GP.chaospy_sequences import create_hammersley_samples
-        
-    def eworker(f,x,fargs,out_q):
+    def eworker(f, x, fargs, out_q):
         # worker invoked in a process puts the results in the output queue out_q
         res = f(x, *fargs)
         out_q.put(np.hstack((x, res[0][0])))
@@ -391,14 +391,13 @@ try:
                     ihigh = min(nrun,(b+1)*nprocs)
                         
                     #print 'launching processes'
-
                     for i in range(ilow, ihigh):
                         p = mp.Process(
                                 target=worker,
                                 args=args[i]+tuple([queues[i-ilow]]))
                         procs.append(p)
                         p.start()
-                        
+
                     #print 'collecting results'
                         
                     if len(res):

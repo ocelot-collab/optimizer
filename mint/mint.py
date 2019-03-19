@@ -214,7 +214,9 @@ class GaussProcess(Minimizer):
             p_X = self.prior_data.iloc[:, :-1]
             p_Y = self.prior_data.iloc[:, -1]
             num = len(self.prior_data.index)
-            self.model.fit(p_X, p_Y, min(self.m, num))
+            #self.model.fit(p_X, p_Y, min(self.m, num))
+            self.model.fit(p_X, p_Y)
+
 
         print("mintGP: self.prior_data = ", self.prior_data)
         print("mintGP: self.bounds = ", self.bounds)
@@ -633,7 +635,6 @@ class Optimizer(Thread):
 
     def error_func(self, x):
         # 0.00025 is used for Simplex because of the fmin steps.
-        print("DEBUG", x)
         delta_x = x*self.scaling_coef
 
         if self.normalization:
