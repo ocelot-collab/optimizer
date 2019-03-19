@@ -11,6 +11,12 @@ import time
 import os
 import errno
 
+# Fix Python 2.x.
+try:
+    UNICODE_EXISTS = bool(type(unicode))
+except NameError:
+    unicode = str
+
 
 # scipy.savemat doesn't play well with unicode in Windows so let's make it ascii
 def byteify(input):
