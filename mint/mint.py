@@ -662,9 +662,9 @@ class Optimizer(Thread):
         print('sleeping ' + str(self.timeout))
         time.sleep(self.timeout)
 
-        coef = 1
+        coef = -1
         if self.maximization:
-            coef = -1
+            coef = 1
 
         pen = coef*self.target.get_penalty()
         print('penalty:', pen)

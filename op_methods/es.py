@@ -35,6 +35,7 @@ class ES_min:
         or simulation output, then computes the cost and then returns
         -1 * power for minimization
         """
+        x = np.array(x)
         self.error_func = error_func
         
         # length of x

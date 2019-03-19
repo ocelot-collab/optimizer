@@ -1,13 +1,13 @@
 # -*- coding: iso-8859-1 -*-
-
+from __future__ import absolute_import, print_function
 import os
 import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
-from OnlineGP import OGP
-from DKL.dknet import NNRegressor
-from DKL.dknet.layers import Dense, CovMat
-from DKL.dknet.optimizers import Adam
-from GP_utils import SPGP_likelihood_4scipy
+from GP.OnlineGP import OGP
+from GP.DKL.dknet import NNRegressor
+from GP.DKL.dknet.layers import Dense, CovMat
+from GP.DKL.dknet.optimizers import Adam
+from GP.GP_utils import SPGP_likelihood_4scipy
 
 # the DKLGP class
 #        - uses neural networks to embed input data x -> z before feeding into GP
