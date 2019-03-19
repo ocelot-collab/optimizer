@@ -35,6 +35,12 @@ except ImportError:
     # Ignore the error since maybe no one is trying to use it... we will raise on the ctor.
     pass
 
+# Fix Python 2.x.
+try:
+    UNICODE_EXISTS = bool(type(unicode))
+except NameError:
+    unicode = lambda s: str(s)
+
 from mint.opt_objects import MachineInterface
 from mint.lcls.lcls_devices import LCLSQuad, LCLSDevice
 

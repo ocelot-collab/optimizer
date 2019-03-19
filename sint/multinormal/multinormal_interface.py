@@ -7,6 +7,12 @@ from mint.opt_objects import MachineInterface
 from sint.multinormal.multinormal_devices import MultinormalDevice
 from sint.multinormal.multinormal_ui import MultinormalDisplay
 
+# Fix Python 2.x.
+try:
+    UNICODE_EXISTS = bool(type(unicode))
+except NameError:
+    unicode = lambda s: str(s)
+
 class MultinormalInterface(MachineInterface):
     name = "MultinormalInterface"
 
