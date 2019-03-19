@@ -106,7 +106,7 @@ class OcelotInterfaceWindow(QFrame):
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
         self.ui.cb_select_alg.addItem(self.name_simplex)
-        # self.ui.cb_select_alg.addItem(self.name_gauss)
+        self.ui.cb_select_alg.addItem(self.name_gauss)
         # self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
         self.ui.cb_select_alg.addItem(self.name_es)

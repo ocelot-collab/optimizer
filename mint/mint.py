@@ -633,6 +633,7 @@ class Optimizer(Thread):
 
     def error_func(self, x):
         # 0.00025 is used for Simplex because of the fmin steps.
+        print("DEBUG", x)
         delta_x = x*self.scaling_coef
 
         if self.normalization:

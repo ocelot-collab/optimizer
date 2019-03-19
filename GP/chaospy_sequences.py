@@ -687,7 +687,8 @@ def create_van_der_corput_samples(idx, number_base=2):
     active = numpy.ones(len(idx), dtype=bool)
     while numpy.any(active):
         out[active] += (idx[active] % number_base)/base
-        idx /= number_base
+        idx = idx / number_base
+        idx = idx.astype(int)
         base *= number_base
         active = idx > 0
     return out

@@ -1,4 +1,5 @@
 # -*- coding: iso-8859-1 -*-
+from __future__ import absolute_import, print_function
 import numpy as np
 import multiprocessing as mp
 
@@ -326,7 +327,7 @@ try:
     
     from scipy.special import erfinv
     #from hammersley import hammersley
-    from chaospy_sequences import create_hammersley_samples
+    from GP.chaospy_sequences import create_hammersley_samples
         
     def eworker(f,x,fargs,out_q):
         # worker invoked in a process puts the results in the output queue out_q
