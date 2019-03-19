@@ -2,7 +2,7 @@
 Objective function and devices
 S.Tomin, 2017
 """
-
+from __future__ import absolute_import, print_function
 import os
 import numpy as np
 import time
@@ -307,7 +307,7 @@ class MachineInterface(object):
 
         :return: module
         """
-        import opt_objects
+        from mint import opt_objects
         return opt_objects
 
     def get_quick_add_devices(self):
