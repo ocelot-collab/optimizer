@@ -39,7 +39,7 @@ except ImportError:
 try:
     UNICODE_EXISTS = bool(type(unicode))
 except NameError:
-    unicode = lambda s: str(s)
+    unicode = str
 
 from mint.opt_objects import MachineInterface
 from mint.lcls.lcls_devices import LCLSQuad, LCLSDevice

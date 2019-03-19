@@ -11,7 +11,7 @@ from sint.multinormal.multinormal_ui import MultinormalDisplay
 try:
     UNICODE_EXISTS = bool(type(unicode))
 except NameError:
-    unicode = lambda s: str(s)
+    unicode = str
 
 class MultinormalInterface(MachineInterface):
     name = "MultinormalInterface"
