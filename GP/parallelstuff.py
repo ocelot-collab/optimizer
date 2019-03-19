@@ -1,5 +1,4 @@
 # -*- coding: iso-8859-1 -*-
-from future.utils import raise_from
 import numpy as np
 import multiprocessing as mp
 
