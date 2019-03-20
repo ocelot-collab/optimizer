@@ -11,13 +11,13 @@ try:
 except:
     pass # Show message on Constructor if we try to use it.
 
+import os
 import sys
 import numpy as np
 import subprocess
 import base64
-from threading import Lock
 from mint.opt_objects import MachineInterface, Device
-
+from collections import OrderedDict
 
 class AlarmDevice(Device):
     """
@@ -31,14 +31,16 @@ class XFELMachineInterface(MachineInterface):
     """
     Machine Interface for European XFEL
     """
-    def __init__(self):
-        super(XFELMachineInterface, self).__init__()
+    name = 'XFELMachineInterface'
+
+    def __init__(self, args=None):
+        super(XFELMachineInterface, self).__init__(args)
         if 'pydoocs' not in sys.modules:
             print('error importing doocs library')
-        self.logbook = "xfellog"
+        self.logbook_name = "xfellog"
 
-        self.mutex = Lock()
-
+        path2root = os.path.abspath(os.path.join(__file__ , "../../../.."))
+        self.config_dir = os.path.join(path2root, "config_optim_new")
     def get_value(self, channel):
         """
         Getter function for XFEL.
@@ -81,7 +83,7 @@ class XFELMachineInterface(MachineInterface):
         severity = kwargs.get('severity', '')
         text = kwargs.get('text', '')
         image = kwargs.get('image', None)
-        elog = self.logbook
+        elog = self.logbook_name
 
         # The DOOCS elog expects an XML string in a particular format. This string
         # is beeing generated in the following as an initial list of strings.
@@ -128,17 +130,82 @@ class XFELMachineInterface(MachineInterface):
             succeded = False
         return succeded
 
+    def get_obj_function_module(self):
+        from mint.xfel import xfel_obj_function
+        return xfel_obj_function
+
+    def get_preset_settings(self):
+        """
+        Return the preset settings to be assembled as Push Buttons at the user interface for quick load of settings.
+
+        :return: (dict) Dictionary with Key being the group name and as value an array of dictionaries following the
+        format:
+            {"display": "Text of the PushButton", "filename": "my_file.json"}
+        """
+        presets = {
+            "SASE Optimization": [
+                {"display": "1. Launch orbit SASE1", "filename": "sase1_1.json"},
+                {"display": "2. Match Quads SASE1", "filename": "sase1_2.json"},
+            ],
+            "Dispersion Minimization": [
+                {"display": "1. I1 Horizontal", "filename": "disp_1.json"},
+                {"display": "2. I1 Vertical", "filename": "disp_2.json"},
+            ]
+        }
+        return presets
+
+    def get_quick_add_devices(self):
+        """
+        Return a dictionary with:
+        {
+        "QUADS1" : ["...", "..."],
+        "QUADS2": ["...", "..."]
+        }
+
+        That is converted into a combobox which allow users to easily populate the devices list
+
+        :return: dict
+        """
+
+
+        devs = OrderedDict([
+            ("Launch SASE1", ["XFEL.MAGNETS/MAGNET.ML/CFX.2162.T2/CURRENT.SP",
+                               "XFEL.MAGNETS/MAGNET.ML/CFX.2219.T2/CURRENT.SP",
+                               "XFEL.MAGNETS/MAGNET.ML/CFY.2177.T2/CURRENT.SP",
+                               "XFEL.MAGNETS/MAGNET.ML/CFY.2207.T2/CURRENT.SP"]),
+
+            ("Match Quads SASE1", ["XFEL.MAGNETS/MAGNET.ML/CFX.2162.T2/CURRENT.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CFX.2219.T2/CURRENT.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CFY.2177.T2/CURRENT.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CFY.2207.T2/CURRENT.SP"]),
+            ("I1 Hor. Disp.", ["XFEL.MAGNETS/MAGNET.ML/CBB.62.I1D/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.90.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.95.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.65.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.51.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIX.102.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CX.39.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/BL.50I.I1/KICK_DEG.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/BL.50II.I1/KICK_DEG.SP"]),
+            ("I1 Ver. Disp.", ["XFEL.MAGNETS/MAGNET.ML/CIY.92.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CIY.72.I1/KICK_MRAD.SP",
+                                "XFEL.MAGNETS/MAGNET.ML/CY.39.I1/KICK_MRAD.SP"])
+        ])
+        return devs
 # test interface
 
 
-class TestMachineInterface(MachineInterface):
+class TestMachineInterface(XFELMachineInterface):
     """
     Machine interface for testing
     """
-    def __init__(self):
-        super(TestMachineInterface, self).__init__()
+    name = 'TestMachineInterface'
+
+    def __init__(self, args):
+        super(TestMachineInterface, self).__init__(args)
         self.data = 1.
         pass
+
     def get_alarms(self):
         return np.random.rand(4)#0.0, 0.0, 0.0, 0.0]
 
@@ -202,3 +269,9 @@ class TestMachineInterface(MachineInterface):
         # TODO: @sergey.tomin Figure out what to do for logbook at the TestMachineInterface
         print('Send to Logbook not implemented for TestMachineInterface.')
         return True
+
+    def get_obj_function_module(self):
+        from mint.xfel import xfel_obj_function
+        return xfel_obj_function
+
+

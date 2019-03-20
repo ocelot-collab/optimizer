@@ -11,22 +11,19 @@ import time
 
 class ES_min: 
     def __init__(self):
-        #super(ES_min, self).__init__() 
 
-        k = 100.0
-        alpha = 2*0.1
-        
-        k = 2.0
-        alpha = 0.1*1.0
-        w0 = 200.0
-        alphaES = 10*0.1
-        
-        self.k = k
-        self.alpha = alpha
-        self.alphaES = alphaES
+        self.norm_coef = 0.05
+
+
+        w0 = 500.0
+
+
+        self.kES = 0.5
+        self.alphaES = 1
         self.w0 = w0
-        self.dtES = 2*np.pi/(10*w0)
-        self.max_iter = 300
+        self.dtES = 2*np.pi/(10*1.75*w0)
+        self.max_iter = 500
+        self.bounds = [] # [[min, max], [], []] # n = len(x)
         
         
     def minimize(self, error_func, x):
@@ -38,71 +35,52 @@ class ES_min:
         or simulation output, then computes the cost and then returns
         -1 * power for minimization
         """
+        x = np.array(x)
         self.error_func = error_func
         
         # length of x
         self.nparams = len(x)
         
         # ES frequencies
-        self.wES = self.w0*(0.5*(1+np.arange(self.nparams))/(self.nparams+0.0)+1)
+        self.wES = self.w0*(0.75*(1+np.arange(self.nparams))/(self.nparams+0.0)+1)
         
         # Set upper and lower bounds
-        self.pmax = x + np.abs(x)*1.1
-        self.pmin = x - np.abs(x)*0.9
+        #self.pmax = x + np.abs(x)*0.1
+        #self.pmin = x - np.abs(x)*0.1
         
-        self.pmax = 5+0*np.arange(self.nparams)
-        self.pmin = -5+0*np.arange(self.nparams)
+        # Set upper and lower bounds
+        #self.pmax = np.array(x) + np.array([2, 2,2, 100, 10000])
+        #self.pmin = np.array(x) - np.array([2, 2,2, 100, 10000])
+        print("bounds = ", self.bounds)
+        self.pmax = np.array([bound[1] for bound in self.bounds])
+        self.pmin = np.array([bound[0] for bound in self.bounds])
+        print(self.pmax, self.pmin)
+        for i, xi in enumerate(x):
+            pmax = self.pmax[i]
+            pmin = self.pmin[i]
+            if pmax == pmin:
+                delta = np.abs(xi)*0.1
+                delta = 0.1 if delta == 0 else delta  
+                self.pmax[i] = xi + delta
+                self.pmin[i] = xi - delta
+        print("test = ", self.norm_coef, self.pmax - self.pmin, self.wES,(self.alphaES/self.wES)**0.5 )
+        self.alphaES = (self.norm_coef * 2)**2*self.wES/4
         
-        # Use first 2 steps to get a rough understanding of sensitivity
 
-        [self.dc, self.dp, self.dcdp, self.kES, pnew] = self.ES_sensitivity(x)
-    
         cost_val = error_func(x)
-        
-        
-        # Normalize parameters within [-1 1]
-        pnorm = self.ES_normalize(pnew)
-        
-        naves = 10
-        dp_track = 0.0+0.0*np.reshape(np.arange(len(x)*naves),[naves,len(x)])
-        dc_track = 0.0+0.0*np.arange(naves)
-            
-        #check_cost = 0
-        # Now start the ES process
-        count = 0
-        kES_count = 0
-        k_stop = 1
-        
-        k_count = 0
-        k_N = 100
-        
+
+        pnew = x
+
         for step in np.arange(self.max_iter):
             
             print("step number: ", step)
 
-            p_old = pnorm
-            cost_old = cost_val
-            
-
-#            if step < 50:
-#                " Initially, every 50 steps update kES "
-#                if count > 20:
-#                    print " Updating kES! "
-#                    [self.dc, self.dp, self.dcdp, self.kES, pnew] = self.ES_sensitivity(pnew)
-#                    count = 0
-#                
-#            if step > 50:
-#                " After 50 steps, every 50 steps update kES "
-#                if count > 200:
-#                    print " Updating kES! "
-#                    [self.dc, self.dp, self.dcdp, self.kES, pnew] = self.ES_sensitivity(pnew)
-#                    count = 0
                
             # Normalize parameters within [-1 1]
             pnorm = self.ES_normalize(pnew)
-            
-              
-            pnorm = pnorm + self.dtES*np.cos(self.wES*step*self.dtES+self.k*self.kES*cost_val)*(self.alpha*self.alphaES*self.wES)**0.5
+
+            # Do the ES update
+            pnorm = pnorm + self.dtES*np.cos(self.wES*step*self.dtES+self.kES*cost_val)*(self.alphaES*self.wES)**0.5
             
             # Check that parameters stay within normalized range [-1, 1]
             for jn in np.arange(self.nparams):
@@ -111,11 +89,7 @@ class ES_min:
                 
             # Calculate unnormalized parameter value for next cost "
             pnew = self.ES_UNnormalize(pnorm)
-            
-            
-            #if step > 10:
-            #    pnew = self.p1ES + 10000.0*self.kES
-            #    pnew = self.p1ES + 5
+
                 
             cost_val = error_func(pnew)
             
@@ -123,78 +97,6 @@ class ES_min:
             
             print("Current cost = ", cost_val)
 
-            print ("Old cost = ", cost_old)
-
-            dc = cost_val - cost_old
-            
-            print("Cost difference =", dc)
-
-            print("Current parameter values = ", pnorm)
-
-            print("Old parameter values = ", p_old)
-
-            dp = pnorm - p_old
-            
-            print("Parameter value difference = ", dp)
-
-            print("dc/dp should equal = ", dc/dp)
-
-            print("count = ", count)
-
-            print("currently, dp_track = ", dp_track)
-
-            print("currently, dc_track = ", dc_track)
-
-            dp_track[count] = dp
-            dc_track[count] = dc           
-            count += 1
-            kES_count += k_stop*1
-            
-
-            print( "print kES_count =", kES_count)
-
-            if count == naves:
-                dp_ave = 0
-                for jp in dp_track:
-                    dp_ave = dp_ave + jp/naves
-                dc_ave = 0
-                for jc in dc_track:
-                    dc_ave = dc_ave + jc/naves
-                dcdp_ave = np.abs(dc_ave/dp_ave)
-                count = 0
-            
-                
-            if kES_count == 100*naves:
-                k_stop = 0
-                
-                print("Updating kES!")
-                if k_count == 0:
-                    old_kES = self.kES
-                    new_kES = (2*(self.w0/(self.alphaES))**0.5)/(0.0+dcdp_ave)
-                    
-                print("Old kES =", old_kES)
-
-                
-                print("New kES =", new_kES)
-
-                    
-                k_count += 1
-                
-                self.kES = old_kES*(k_N-k_count)/k_N + new_kES*k_count/k_N
-                
-                print("k_count =", k_count)
-
-                print("Current kES = ", self.kES)
-
-                self.dc = dc_track
-                self.dp = dp_track
-                self.dcdp = dcdp_ave
-                
-                if k_count == k_N:
-                    k_count = 0
-                    kES_count = 0
-                    k_stop = 1
-                
             
         return cost_val
         
@@ -238,7 +140,8 @@ class ES_min:
             p1 = p
             c1 = self.error_func(p1)
             p1N = self.ES_normalize(p1)
-            p2N = p1N + (self.pmax-self.pmin)/10000.0
+            #p2N = p1N + (self.pmax-self.pmin)/100.0
+            p2N = p1N + 0.01
             p2 = self.ES_UNnormalize(p2N)
             c2 = self.error_func(p2)
             dcdp = dcdp + abs((c2-c1)/(p2N-p1N))/nave
@@ -251,6 +154,153 @@ class ES_min:
             #    kES = 1.0
             
         kES = (2*(self.w0/(self.alphaES))**0.5)/(0.0+dcdp)
+        
+        pnew = p
+
+        return [dc, dp, dcdp, kES, pnew]
+        
+        
+        
+        
+    def ES_sensitivity_v2(self, p):
+        """
+        Calculate total change in cost relative to change in parameters
+
+        :param p:
+        :return:
+        """
+        
+        # Save initial parameter values "\
+        #self.p1ES = self.ES_normalize(x)
+        nave = 5.0
+        dcdp = 0.0
+        
+        for jave in np.arange(nave):
+            p1 = p
+            dc_dp_square_sum = 0
+            for p_index, p_value in enumerate(p1):
+                c1 = self.error_func(p1)
+                p1N = self.ES_normalize(p1)
+                p2N = p1N
+                # Update just one parameter at a time to get that partial derivative
+                p2N[p_index] = p2N[p_index] + 0.01
+                p2 = self.ES_UNnormalize(p2N)
+                c2 = self.error_func(p2)
+                dc_dp_square_sum = dc_dp_square_sum + ((c2-c1)/0.01)**2
+            # Now update dcdp with the averaged value of all partial derivatives
+            dcdp = dcdp + dc_dp_square_sum/nave
+            
+        dc = c2 - c1
+        dp = p2 - p1
+            #if dcdp > 0:
+            #    kES = (2*(self.w0/(self.alphaES))**0.5)/(0.0+dcdp)
+            #else: 
+            #    kES = 1.0
+            
+        kES = (2*(1.25*self.wES/(self.alphaES))**0.5)/(0.0+dcdp**0.5)
+        
+        pnew = p
+
+        return [dc, dp, dcdp, kES, pnew]
+        
+        
+        
+    def ES_sensitivity_v3(self, p):
+        """
+        Calculate total change in cost relative to change in parameters
+
+        :param p:
+        :return:
+        """
+        
+        # Save initial parameter values "\
+        #self.p1ES = self.ES_normalize(x)
+        nave = 5.0
+        dcdp = 0.0
+        
+        p1 = p
+            
+        dc_dp_square_sum = 0
+        for p_index, p_value in enumerate(p1):
+            dc_dp_sum = 0
+            for jave_2 in np.arange(nave):
+                c1 = self.error_func(p1)
+                p1N = self.ES_normalize(p1)
+                p2N = p1N
+                # Update just one parameter at a time to get that partial derivative
+                p2N[p_index] = p2N[p_index] + 0.01
+                p2 = self.ES_UNnormalize(p2N)
+                c2 = self.error_func(p2)
+                dc_dp_sum = dc_dp_sum + ((c2-c1)/0.01)**2
+            dc_dp_square_sum = dc_dp_square_sum + dc_dp_sum
+        # Now update dcdp with the averaged value of all partial derivatives
+        dcdp = dc_dp_square_sum/nave
+            
+        dc = c2 - c1
+        dp = p2 - p1
+            #if dcdp > 0:
+            #    kES = (2*(self.w0/(self.alphaES))**0.5)/(0.0+dcdp)
+            #else: 
+            #    kES = 1.0
+            
+        kES = (2*(1.25*self.wES/(self.alphaES))**0.5)/(0.0+dcdp**0.5)
+        
+        pnew = p
+
+        return [dc, dp, dcdp, kES, pnew]
+        
+    def ES_sensitivity_v4(self, p):
+        """
+        Calculate total change in cost relative to change in parameters
+
+        :param p:
+        :return:
+        """
+        
+        # Save initial parameter values "\
+        #self.p1ES = self.ES_normalize(x)
+        nave = 5.0
+        
+        # For air coils
+        nave = 1.0
+        dcdp = 0.0
+        
+        p1 = p   
+        dc_dp_square_sum = 0
+        
+        c1_sum = 0
+        # First, with things fixed, write down cost nave times
+        for jave_2 in np.arange(nave):
+            c1_sum = c1_sum + self.error_func(p1)
+        # Average the cost readings
+        c1 = c1_sum/nave 
+        
+        # Step through individual parameters
+        for p_index, p_value in enumerate(p1):   
+            p1N = self.ES_normalize(p1)
+            p2N = p1N
+            # Update just one parameter at a time to get that partial derivative
+            p2N[p_index] = p2N[p_index] + 0.01
+            p2 = self.ES_UNnormalize(p2N)
+            # Now keeping the update fixed, write down the new cost nave times
+            c2_sum = 0
+            for jave_2 in np.arange(nave):    
+                c2_sum = c2_sum + self.error_func(p2)
+            # Average the new cost readings
+            c2 = c2_sum/nave
+            # Calculate the partial derivative squared and add to total sum
+            dc_dp_square_sum = dc_dp_square_sum + ((c2-c1)/0.01)**2
+        # Now update dcdp with the averaged value of all partial derivatives
+        dcdp = dc_dp_square_sum
+            
+        dc = c2 - c1
+        dp = p2 - p1
+            #if dcdp > 0:
+            #    kES = (2*(self.w0/(self.alphaES))**0.5)/(0.0+dcdp)
+            #else: 
+            #    kES = 1.0
+            
+        kES = (2*(1.25*self.wES/(self.alphaES))**0.5)/(0.0+dcdp**0.5)
         
         pnew = p
 

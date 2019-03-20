@@ -10,14 +10,14 @@ S. Tomin, 2017
 """
 
 from __future__ import absolute_import, print_function
-import os
+import os, sys
 import functools
 import numpy as np
+
 from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialog
-from PyQt5 import QtGui, QtCore, Qt, uic
+from PyQt5 import QtGui, QtCore, uic
 from PyQt5.QtGui import QClipboard
-from mint.lcls_interface import *
 
 
 class customTW(QTableWidget):
@@ -167,34 +167,44 @@ class ResetpanelBoxWindow(ResetpanelWindow):
     def set_parent(self, parent):
         self.parent = parent
 
-    def addPv(self, pv):
+    def addPv(self, pv, force_active=False):
         """
         Add another PV to the GUI on middle click.
 
-        Args:
-                pv (str): String name of the PV to add
+        :param pv: (str or list): String name of the PV to add or list of strings to add
+        :param force_active: (bool): Whether or not to force the checkbox to be checked. Default is False.
         """
-        pv = str(pv)
-        if pv in self.pvs:
-            print ("PV already in list")
-            return
-        try:
-            dev = self.parent.create_devices(pvs=[pv])[0]
-        except:
-            print ("bad string")
-            return
+        if sys.version_info[0] >= 3 and isinstance(pv, str):
+            pvs = [pv]
+        elif sys.version_info[0] < 3 and isinstance(pv, unicode):
+            pvs = [pv]
+        else:
+            pvs = pv
 
-        state = dev.state()
-        print("state=", state)
-        if state:
-            self.pvs.append(pv)
-            self.devices.append(dev)
-            self.getStartValues()
+        for pv in pvs:
+            pv = str(pv)
+            if pv in self.pvs:
+                print ("PV already in list: ", pv)
+                continue
+            try:
+                dev = self.parent.create_devices(pvs=[pv])[0]
+            except:
+                print ("bad string")
+                continue
+
+            state = dev.state()
+            print("state=", state)
+            if state:
+                self.pvs.append(pv)
+                self.devices.append(dev)
+                self.getStartValues()
+
         table = self.get_state()
         self.initTable()
         self.addCheckBoxes()
-        self.uncheckBoxes()
-        self.set_state(table)
+        if not force_active:
+            self.uncheckBoxes()
+        self.set_state(table, force_active=force_active)
 
     def get_devices(self, pvs):
         d_pvs = [dev.eid for dev in self.devices]
@@ -234,11 +244,12 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.addCheckBoxes()
 
     def get_state(self):
-        devs = {"id":[], "lims": []}
+        devs = {"id":[], "lims": [], "checked": []}
         for row in range(self.ui.tableWidget.rowCount()):
             name = str(self.ui.tableWidget.item(row, 0).text())
             devs["id"].append(name)
             devs["lims"].append([self.ui.tableWidget.cellWidget(row, 3).value(), self.ui.tableWidget.cellWidget(row, 4).value()])
+            devs["checked"].append(self.ui.tableWidget.item(row, 5).checkState())
         return devs
 
     def get_limits(self, pv):
@@ -248,14 +259,24 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 return lims
         return None
 
-    def set_state(self, table):
+    def set_state(self, table, force_active=False):
         for row in range(self.ui.tableWidget.rowCount()):
             pv = str(self.ui.tableWidget.item(row, 0).text())
+            item = self.ui.tableWidget.item(row, 5)
+
+            if force_active:
+                item.setCheckState(QtCore.Qt.Checked)
+
             if pv in table["id"]:
                 indx = table["id"].index(pv)
                 self.ui.tableWidget.cellWidget(row, 3).setValue(table["lims"][indx][0])
                 self.ui.tableWidget.cellWidget(row, 4).setValue(table["lims"][indx][1])
+                if item.flags() == QtCore.Qt.NoItemFlags:
+                   continue
 
+                state = table.get("checked", None)
+                if state is not None:
+                    item.setCheckState(state[indx])
 
     def getRows(self, state):
         """
@@ -299,14 +320,15 @@ class ResetpanelBoxWindow(ResetpanelWindow):
             eng = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates)
             for i in range(2):
                 spin_box = QtGui.QDoubleSpinBox()
+                spin_box.setMaximumWidth(85)
                 if i == 0:
-                    spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
+                    spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 12px; background-color:#595959;")
                 else:
-                    spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
+                    spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 12px; background-color:#595959;")
                 spin_box.setLocale(eng)
                 spin_box.setDecimals(3)
-                spin_box.setMaximum(99999)
-                spin_box.setMinimum(-99999)
+                spin_box.setMaximum(999999)
+                spin_box.setMinimum(-999999)
                 spin_box.setSingleStep(0.1)
                 spin_box.setAccelerated(True)
                 if i == 0:  # Running for low limit spin box
@@ -337,11 +359,27 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         else:
             device.set_low_limit(val)
 
-    def uncheckBoxes(self):
-        """ Method to unchecked all active boxes """
+    def setBoxes(self, checked=True):
+        """
+        Method to check or uncheck all the boxes.
+        :param checked: (bool)
+        """
+        if checked:
+            val = QtCore.Qt.Checked
+        else:
+            val = QtCore.Qt.Unchecked
+
         for row in range(len(self.pvs)):
             item = self.ui.tableWidget.item(row, 5)
-            item.setCheckState(False)
+            item.setCheckState(val)
+
+    def uncheckBoxes(self):
+        """ Method to unchecked all active boxes """
+        self.setBoxes(False)
+
+    def checkBoxes(self):
+        """ Method to unchecked all active boxes """
+        self.setBoxes()
 
     def resetAll(self):
         """
@@ -367,8 +405,10 @@ class ResetpanelBoxWindow(ResetpanelWindow):
             pv = self.pvs[row]
             state = self.ui.tableWidget.item(row, 5).checkState()
             if state == 2:
-                self.startValues[pv] = dev.get_value()
-                self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
+                val = dev.get_value()
+                if val is not None:
+                    self.startValues[pv] = val
+                    self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
         self.ui.updateReference.setText("Update Reference")
 
     def getPvsFromCbState(self):
@@ -400,12 +440,17 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.ui_check.reset.clicked.connect(self.resetAll)
         self.ui_check.reset.clicked.connect(self.ui_check.close)
         self.ui_check.label.setText("Are you sure you want to implement \nchanges to checkbox selected PVs?")
+        frame_gm = self.ui_check.frameGeometry()
+        center_point = QtGui.QDesktopWidget().availableGeometry().center()
+        frame_gm.moveCenter(center_point)
+        self.ui_check.move(frame_gm.topLeft())
         self.ui_check.show()
 
 def main():
     """
     Start up the main program if launch from comamnd line.
     """
+    import sys
     try:
         pvs = sys.argv[1]
     except:

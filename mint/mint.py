@@ -16,10 +16,18 @@ from mint.opt_objects import *
 from scipy import optimize
 from GP.bayes_optimization import *
 from GP.OnlineGP import OGP
+from GP.DKLmodel import DKLGP
+try:
+    from matrixmodel.beamconfig import Beamconfig
+except:
+    for i in range(5):
+        print('WARNING: could not import Beamconfig from matrixmodel.beamconfig')
 import pandas as pd
 from threading import Thread
 import sklearn
 from op_methods.es import ES_min
+
+from mint import normscales
 
 sklearn_version = sklearn.__version__
 if sklearn_version >= "0.18":
@@ -48,6 +56,7 @@ class Logger(object):
 
 class Minimizer(object):
     def __init__(self):
+        self.mi = None
         self.max_iter = 100
         self.maximize = False
 
@@ -61,6 +70,9 @@ class ESMin(Minimizer):
         self.ES = ES_min()
 
     def minimize(self, error_func, x):
+        self.ES.bounds = self.bounds
+        self.ES.max_iter = self.max_iter
+        self.ES.norm_coef = self.norm_coef
         self.ES.minimize(error_func, x)
         return
 
@@ -99,27 +111,41 @@ class Simplex(Minimizer):
         return res
 
 
+class Powell(Minimizer):
+    def __init__(self):
+        super(Powell, self).__init__()
+        self.xtol = 1e-5
+        self.dev_steps = None
+
+    def minimize(self,  error_func, x):
+        res = optimize.minimize(error_func, x, method='Powell', tol=self.xtol)
+        return res
+
+
 class GaussProcess(Minimizer):
     def __init__(self):
-        super(GaussProcess, self).__init__()
-        self.seed_iter = 5
-        self.seed_timeout = 0.1
-        #BayesOpt.__init__(self, model=model, target_func=target_func, acq_func=acq_func, xi=xi, alt_param=alt_param,
-        #                  m=m, bounds=bounds, iter_bound=iter_bound, prior_data=prior_data)
+        super(GaussProcess,self).__init__()
+        self.seed_timeout = 1
         self.target = None
         self.devices = []
         self.energy = 3
-        #GP parameters
+        self.seed_iter = 0
         self.numBV = 30
         self.xi = 0.01
         self.bounds = None
+        #self.acq_func = 'PI'
         self.acq_func = 'EI'
+        #self.acq_func = 'UCB'
         self.alt_param = -1
         self.m = 200
         self.iter_bound = False
-        self.hyper_file = "../parameters/hyperparameters.npy"
+        self.hyper_file = None
         self.max_iter = 50
         self.norm_coef = 0.1
+        self.multiplier = 1
+        self.simQ = False
+        self.seedScanBool = True
+        self.prior_data = None
 
     def seed_simplex(self):
         opt_smx = Optimizer()
@@ -139,48 +165,185 @@ class GaussProcess(Minimizer):
 
 
     def preprocess(self):
-        # -------------- GP config setup -------------- #
+        self.energy = self.mi.get_energy()
+        hyp_params = HyperParams(pvs=self.devices, filename=self.hyper_file, mi=self.mi)
+        dev_ids = [dev.eid for dev in self.devices]
+        print('devids = ', dev_ids)
+        dev_vals = [dev.get_value() for dev in self.devices]
+        print("mintGP: dev_vals = ",dev_vals)
+        hyps1 = hyp_params.loadHyperParams(self.hyper_file, self.energy, self.target, dev_ids, dev_vals, self.multiplier)
+        dim = len(self.devices)
+        print("mintGP: initializing with hyperparams ", hyps1)
 
-        #no input bounds on GP selection for now
-        #print(self.devices)
-        pvs = [dev.eid for dev in self.devices]
-        #print(pvs)
-        hyp_params = HyperParams(pvs=pvs, filename=self.hyper_file)
-        ave = np.mean(-np.array(self.seed_y_data))
-        std = np.std(-np.array(self.seed_y_data))
-        noise = hyp_params.calcNoiseHP(ave, std=0.)
-        coeff = hyp_params.calcAmpCoeffHP(ave, std=0.)
+        # load correlations
+        if self.mi.name == 'MultinormalInterface':
+            corrmat = self.mi.corrmat
+            covarmat = self.mi.covarmat
+        else:
+            #try:
+                ##hardcoded for now
+                #rho = 0.
+                #corrmat = np.array([  [1., rho], [rho, 1.]  ])
 
-        len_sc_hyps = []
-        for dev in self.devices:
-            ave = 10
-            std = 3
-            len_sc_hyps.append(hyp_params.calcLengthScaleHP(ave, std))
+            #except:
+                #print('WARNING: There was an error importing a correlation matrix from the matrix model. Using an identity matrix instead.')
+                #corrmat = np.eye(len(dev_ids))
 
-        #hyps = hyp_params.loadHyperParams(energy=self.energy, detector_stat_params=target.get_stat_params())
-        hyps1 = (np.array([len_sc_hyps]), coeff, noise)
-        #(np.array([hyp_params.calcLengthScaleHP(ave, std)]), coeff=hyp_params.calcAmpCoeffHP(ave, std=0.), noise=hyp_params.calcAmpCoeffHP(ave, std=0.))
-        #print("hyps1", hyps1)
-        #init model
-        dim = len(pvs)
+            corrmat = np.eye(len(dev_ids))
 
-        self.model = OGP(dim, hyps1, maxBV=self.numBV, weighted=False)
-        self.scanner = BayesOpt(model=self.model, target_func=self.target, acq_func=self.acq_func, xi=self.xi,
-                           alt_param=self.alt_param, m=self.m, bounds=self.bounds, iter_bound=self.iter_bound,
-                                prior_data=self.prior_data)
+            # build covariance matrix from correlation matrix and length scales
+            diaglens = np.diagflat(np.sqrt(0.5/np.exp(hyps1[0]))) # length scales (or principal widths)
+            print('diaglens = ', diaglens)
+            covarmat = np.dot(diaglens, np.dot(corrmat,diaglens))
 
+        print('corrmat = ', corrmat)
+        print('covarmat = ', covarmat)
+        self.corrmat = corrmat
+        self.covarmat = covarmat
+
+        # create model
+        #self.model = OGP(dim, hyps1, maxBV=self.numBV, weighted=False)
+        amp_param = np.exp(hyps1[1]); print('amp_param = ', amp_param)
+        noise_variance = np.exp(hyps1[2]); print('noise_variance = ', noise_variance)
+        self.model = DKLGP(dim, dim_z=dim, alpha=amp_param, noise=noise_variance)
+        self.model.linear_from_correlation(covarmat)
+
+        # initialize model on prior data if available
+        if(self.prior_data is not None):
+            print("mintGP: Seeding GP with self.prior_data = ",self.prior_data)
+            p_X = self.prior_data.iloc[:, :-1]
+            p_Y = self.prior_data.iloc[:, -1]
+            num = len(self.prior_data.index)
+            #self.model.fit(p_X, p_Y, min(self.m, num))
+            self.model.fit(p_X, p_Y)
+
+
+        print("mintGP: self.prior_data = ", self.prior_data)
+        print("mintGP: self.bounds = ", self.bounds)
+        print("mintGP: self.iter_bound = ", self.iter_bound)
+
+        # create Bayesian optimizer
+        #self.scanner = BayesOpt(model=self.model, target_func=self.target, acq_func=self.acq_func, xi=self.xi, alt_param=self.alt_param, m=self.m, bounds=self.bounds, iter_bound=self.iter_bound, prior_data=self.prior_data, start_dev_vals=dev_vals)
+        self.scanner = BayesOpt(model=self.model, target_func=self.target, acq_func=self.acq_func, xi=self.xi, alt_param=self.alt_param, m=self.m, bounds=self.bounds, iter_bound=self.iter_bound, prior_data=self.prior_data, start_dev_vals=dev_vals, dev_ids=dev_ids, energy=self.energy, hyper_file=self.hyper_file,corrmat=corrmat,covarmat=covarmat)
         self.scanner.max_iter = self.max_iter
+        self.scanner.opt_ctrl = self.opt_ctrl
 
     def minimize(self,  error_func, x):
-        #self.target_func = error_func
-
-        self.seed_simplex()
+        self.energy = self.mi.get_energy()
+        print('Energy is ', self.energy, ' GeV')
+        if self.seedScanBool: self.seed_simplex()
         self.preprocess()
         x = [dev.get_value() for dev in self.devices]
         print("start GP")
         self.scanner.minimize(error_func, x)
-        print("finish GP")
+        self.saveModel()
         return
+
+    def saveModel(self):
+        """
+        Add GP model parameters to the save file.
+        """
+        # add in extra GP model data to save
+        try:
+            self.mi.data
+        except:
+            self.mi.data = {}
+        self.mi.data["acq_fcn"] = self.acq_func
+        # OnlineGP stuff
+        try:
+            self.mi.data["alpha"] = self.model.alpha
+        except:
+            pass
+        try:
+            self.mi.data["C"] = self.model.C
+        except:
+            pass
+        try:
+            self.mi.data["BV"] = self.model.BV
+        except:
+            pass
+        try:
+            self.mi.data["covar_params"] = self.model.covar_params
+        except:
+            pass
+        try:
+            self.mi.data["KB"] = self.model.KB
+        except:
+            pass
+        try:
+            self.mi.data["KBinv"] = self.model.KBinv
+        except:
+            pass
+        try:
+            self.mi.data["weighted"] = self.model.weighted
+        except:
+            pass
+        try:
+            self.mi.data["noise_var"] = self.model.noise_var
+        except:
+            pass
+        # DKLmodel stuff
+        try:
+            self.mi.data["dim"] = self.model.dim
+        except:
+            pass
+        try:
+            self.mi.data["hidden_layers"] = self.model.hidden_layers
+        except:
+            pass
+        try:
+            self.mi.data["dim_z"] = self.model.dim_z
+        except:
+            pass
+        if type(self.model.mask) is not type(None):
+            self.mi.data["mask"]        = self.model.mask
+        try:
+            self.mi.data["alpha"] = self.model.alpha
+        except:
+            pass
+        try:
+            self.mi.data["noise"] = self.model.noise
+        except:
+            pass
+        try:
+            self.mi.data["activations"] = self.model.activations
+        except:
+            pass
+        try:
+            self.mi.data["weight_dir"] = self.model.weight_dir
+        except:
+            pass
+        self.mi.data["corrmat"] = self.corrmat
+        self.mi.data["covarmat"] = self.covarmat
+        self.mi.data["seedScanBool"] = self.seedScanBool
+        if self.seedScanBool:
+            self.mi.data["nseed"] = self.prior_data.shape[0]
+        else:
+            self.mi.data["nseed"] = 0
+
+        if type(self.model.prmeanp) is type(None):
+            self.mi.data["prmean_params_amp"] = "None"
+            self.mi.data["prmean_params_centroid"] = "None"
+            self.mi.data["prmean_params_invcovarmat"] = "None"
+        else:
+            self.mi.data["prmean_params_amp"] = self.model.prmeanp[0]
+            self.mi.data["prmean_params_centroid"] = self.model.prmeanp[1]
+            self.mi.data["prmean_params_invcovarmat"] = self.model.prmeanp[2]
+        if type(self.model.prvarp) is type(None):
+            self.mi.data["prvar_params"] = "None"
+        else:
+            self.mi.data["prvar_params"] = self.model.prvarp
+        try:
+            self.mi.data["prmean_name"] = self.model.prmean_name
+        except:
+            pass
+
+        try:
+            self.mi.data["prior_pv_info"] = self.model.prior_pv_info
+            # print 'SUCCESS self.mi.data[prior_pv_info] = ', self.mi.data["prior_pv_info"]
+        except:
+            # print 'FAILURE self.mi.data[prior_pv_info]'
+            pass
 
 
 class GaussProcessSKLearn(Minimizer):
@@ -393,7 +556,7 @@ class OptControl:
 
 
 class Optimizer(Thread):
-    def __init__(self, normalize=False):
+    def __init__(self):
         super(Optimizer, self).__init__()
         self.debug = False
         self.minimizer = Simplex()
@@ -410,6 +573,7 @@ class Optimizer(Thread):
         self.normalization = False
         self.norm_coef = 0.05
         self.maximization = True
+        self.scaling_coef = 1.0
 
     def eval(self, seq=None, logging=False, log_file=None):
         """
@@ -425,6 +589,11 @@ class Optimizer(Thread):
             if self.devices[i].check_limits(x[i]):
                 return True
         return False
+
+    def get_values(self):
+        for i in range(len(self.devices)):
+            print('reading ', self.devices[i].id)
+            self.devices[i].get_value(save=True)
 
     def set_values(self, x):
         for i in range(len(self.devices)):
@@ -447,21 +616,34 @@ class Optimizer(Thread):
 
         :return: np.array() - device_delta_limits * norm_coef
         """
-        self.norm_scales = np.zeros(np.size(self.devices))
-        for i, dev in enumerate(self.devices):
-            lims = dev.get_limits()
-            delta = lims[-1] - lims[0]
-            self.norm_scales[i] = delta*self.norm_coef
+        self.norm_scales = normscales.normscales(self.target.mi, self.devices)
+        if self.norm_scales is None:
+            self.norm_scales = [None] * np.size(self.devices)
 
+        for idx, dev in enumerate(self.devices):
+            if self.norm_scales[idx] is not None:
+                continue
+            delta = dev.get_delta()
+            self.norm_scales[idx] = delta*self.norm_coef
+
+        self.norm_scales = np.array(self.norm_scales)
+        
+        # Randomize the initial steps of simplex - Talk to Joe if it fails
+        if isinstance(self.minimizer, Simplex):
+            self.norm_scales *= np.sign(np.random.randn(self.norm_scales.size))
         return self.norm_scales
 
     def error_func(self, x):
+        # 0.00025 is used for Simplex because of the fmin steps.
+        delta_x = np.array(x)*self.scaling_coef
+
         if self.normalization:
-            delta_x = x
             delta_x_scaled = delta_x/0.00025*self.norm_scales
             x = self.x_init + delta_x_scaled
-            print("delta_x = ", delta_x, "delta_x_scaled = ", delta_x_scaled)
+            print("X Init: ", self.x_init)
+            print("X: ", x)
 
+        
         if self.opt_ctrl.kill:
             #self.minimizer.kill = self.opt_ctrl.kill
             print('Killed from external process')
@@ -477,17 +659,19 @@ class Optimizer(Thread):
         self.set_values(x)
         self.set_triggers()
         self.do_wait()
+        self.get_values()
 
         print('sleeping ' + str(self.timeout))
         time.sleep(self.timeout)
 
-        coef = 1
+        coef = -1
         if self.maximization:
-            coef = -1
+            coef = 1
 
         pen = coef*self.target.get_penalty()
         print('penalty:', pen)
-        if self.debug: print('penalty:', pen)
+        if self.debug:
+            print('penalty:', pen)
 
         self.opt_ctrl.save_step(pen, x)
         return pen
@@ -512,14 +696,14 @@ class Optimizer(Thread):
 
         target_ref = self.target.get_penalty()
 
-        x = [dev.get_value() for dev in self.devices]
+        x = [dev.get_value(save=True) for dev in self.devices]
         x_init = x
 
         if self.logging:
             self.logger.log_start(dev_ids, method=self.minimizer.__class__.__name__, x_init=x_init, target_ref=target_ref)
 
+        self.x_init = x_init
         if self.normalization:
-            self.x_init = x_init
             x = np.zeros_like(x)
             self.calc_scales()
 

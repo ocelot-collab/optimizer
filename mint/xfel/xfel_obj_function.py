@@ -24,7 +24,6 @@ class XFELTarget(Target):
     """
     def __init__(self, mi=None, eid="x57**2 + y57**2 + x59**2 + y59"):
         super(XFELTarget, self).__init__(eid=eid)
-
         self.mi = mi
         self.debug = False
         self.kill = False
@@ -89,6 +88,18 @@ class XFELTarget(Target):
         target = -np.sqrt(np.sum((orbit2 - orbit1)**2))
         return target
         #return -np.sqrt(a ** 2 + b ** 2 + c**2)
+
+    def get_value_test(self):
+        """
+        For testing
+
+        :return:
+        """
+        values = np.array([dev.get_value() for dev in self.devices])
+        value = 2*np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
+        value = value * (1. + (np.random.rand(1)[0] - 0.5) * 0.001)
+        return value 
+
 
     def get_penalty(self):
         """

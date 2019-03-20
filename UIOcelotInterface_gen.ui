@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1100</width>
-    <height>1022</height>
+    <height>922</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -23,7 +23,7 @@
    <string>Ocelot Interface</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: white</string>
+   <string notr="true"/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
@@ -287,13 +287,22 @@
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>200</height>
+           <height>180</height>
           </size>
          </property>
          <property name="title">
           <string>Scanner Timing</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_5">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <property name="verticalSpacing">
+           <number>0</number>
+          </property>
           <item row="0" column="0">
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
@@ -309,10 +318,15 @@
                 <property name="font">
                  <font>
                   <pointsize>18</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
                  </font>
                 </property>
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(14, 109, 245);</string>
+                </property>
                 <property name="text">
-                 <string>Trim Delay (seconds)          </string>
+                 <string>Settle Time (seconds)          </string>
                 </property>
                </widget>
               </item>
@@ -355,6 +369,32 @@
                 </property>
                 <property name="text">
                  <string>Number of readings</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_datapoints">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>18</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(14, 109, 245);</string>
+                </property>
+                <property name="text">
+                 <string>Data Points</string>
                 </property>
                </widget>
               </item>
@@ -434,6 +474,27 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QSpinBox" name="sb_datapoints">
+                <property name="font">
+                 <font>
+                  <pointsize>18</pointsize>
+                 </font>
+                </property>
+                <property name="locale">
+                 <locale language="English" country="UnitedStates"/>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>1000000</number>
+                </property>
+                <property name="value">
+                 <number>1</number>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
            </layout>
@@ -460,22 +521,271 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_2">
+        <widget class="QGroupBox" name="groupBox_8">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>Scanner Parameters</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_20">
+          <item>
+           <layout class="QGridLayout" name="gridLayout_12">
+            <item row="4" column="1">
+             <widget class="QSpinBox" name="sb_num_iter">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+               </font>
+              </property>
+              <property name="maximum">
+               <number>1000</number>
+              </property>
+              <property name="value">
+               <number>50</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_27">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(14, 109, 245);</string>
+              </property>
+              <property name="text">
+               <string>Select Optimiser Algorithm </string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_25">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(14, 109, 245);</string>
+              </property>
+              <property name="text">
+               <string>Number Iterations</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QComboBox" name="cb_select_alg">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+               </font>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <widget class="QLabel" name="label_31">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(14, 109, 245);</string>
+              </property>
+              <property name="text">
+               <string>Scaling Coeficient</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="sb_scaling_coef">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+               </font>
+              </property>
+              <property name="toolTip">
+               <string>Scales the step size by this factor</string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="minimum">
+               <double>0.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>999.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>1.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_set_best_sol">
+            <property name="font">
+             <font>
+              <pointsize>18</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Set Best Solution After Optimization</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="g_box_isim">
          <property name="enabled">
           <bool>true</bool>
          </property>
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>250</height>
+           <height>90</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>Simplex/Scipy Scanner Setup</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_21">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_18">
+            <item>
+             <widget class="QCheckBox" name="cb_use_isim">
+              <property name="font">
+               <font>
+                <pointsize>18</pointsize>
+               </font>
+              </property>
+              <property name="toolTip">
+               <string>This is only used if the device is not in the LenghtScale list. Try to create as a % of the limit range</string>
+              </property>
+              <property name="text">
+               <string>Use Initial Simplex/Step [step =(Max - Min) x RelStep[%]]</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_8">
+              <item>
+               <widget class="QLabel" name="label_23">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>18</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true"/>
+                </property>
+                <property name="text">
+                 <string>Relative Step in %</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDoubleSpinBox" name="sb_isim_rel_step">
+                <property name="font">
+                 <font>
+                  <pointsize>18</pointsize>
+                 </font>
+                </property>
+                <property name="toolTip">
+                 <string>This is only used if the device is not in the LenghtScale list. Try to create as a % of the limit range</string>
+                </property>
+                <property name="locale">
+                 <locale language="English" country="UnitedStates"/>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.010000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.250000000000000</double>
+                </property>
+                <property name="value">
+                 <double>5.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>180</height>
           </size>
          </property>
          <property name="title">
           <string>GP Scanner Setup</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
+          <property name="leftMargin">
+           <number>12</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item row="0" column="0">
            <layout class="QGridLayout" name="gridLayout_3">
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
             <item row="0" column="0">
              <layout class="QVBoxLayout" name="verticalLayout_3">
               <item>
@@ -495,7 +805,7 @@
                  </font>
                 </property>
                 <property name="text">
-                 <string>GP Hyperparameter FIle     </string>
+                 <string>GP Hyperparameter File     </string>
                 </property>
                </widget>
               </item>
@@ -536,6 +846,9 @@
             </item>
             <item row="0" column="1">
              <layout class="QVBoxLayout" name="verticalLayout_2">
+              <property name="spacing">
+               <number>6</number>
+              </property>
               <item>
                <widget class="QPushButton" name="pb_hyper_file">
                 <property name="enabled">
@@ -635,13 +948,19 @@
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>150</height>
+           <height>80</height>
           </size>
          </property>
          <property name="title">
           <string>Configuration Files</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_8">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item row="1" column="0">
            <layout class="QHBoxLayout" name="horizontalLayout_7">
             <item>
@@ -662,6 +981,9 @@
                <font>
                 <pointsize>16</pointsize>
                </font>
+              </property>
+              <property name="toolTip">
+               <string>Save current Ocelot configuration for later usage</string>
               </property>
               <property name="text">
                <string>Save As</string>
@@ -686,6 +1008,9 @@
                <font>
                 <pointsize>16</pointsize>
                </font>
+              </property>
+              <property name="toolTip">
+               <string>Load saved Ocelot configuration for usage</string>
               </property>
               <property name="text">
                <string>Load</string>
@@ -714,6 +1039,9 @@
               <property name="cursor">
                <cursorShape>ForbiddenCursor</cursorShape>
               </property>
+              <property name="toolTip">
+               <string>Save the current state as the default when opening Ocelot</string>
+              </property>
               <property name="text">
                <string>Rewrite Default</string>
               </property>
@@ -735,148 +1063,14 @@
           <string>Load Settings</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
+          <property name="topMargin">
+           <number>6</number>
+          </property>
+          <property name="bottomMargin">
+           <number>6</number>
+          </property>
           <item row="0" column="0">
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QGroupBox" name="groupBox_9">
-              <property name="font">
-               <font>
-                <pointsize>9</pointsize>
-               </font>
-              </property>
-              <property name="title">
-               <string>SASE optimization</string>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_4">
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout">
-                 <item>
-                  <widget class="QPushButton" name="pb_sase1_1">
-                   <property name="font">
-                    <font>
-                     <pointsize>18</pointsize>
-                    </font>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">color: rgb(85, 255, 255); font-size: 18pt;</string>
-                   </property>
-                   <property name="text">
-                    <string>1. Launch orbit SASE1</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pb_sase1_2">
-                   <property name="font">
-                    <font>
-                     <pointsize>18</pointsize>
-                    </font>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">color: rgb(85, 200, 255); font-size: 18pt;</string>
-                   </property>
-                   <property name="text">
-                    <string>2. Match Quads SASE1</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="verticalSpacer_2">
-                   <property name="orientation">
-                    <enum>Qt::Vertical</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>20</width>
-                     <height>40</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="groupBox_4">
-              <property name="font">
-               <font>
-                <pointsize>9</pointsize>
-               </font>
-              </property>
-              <property name="title">
-               <string>Dispersion Minimization</string>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_11">
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_5">
-                 <item>
-                  <widget class="QPushButton" name="pb_disp_1">
-                   <property name="font">
-                    <font>
-                     <pointsize>18</pointsize>
-                    </font>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">color: rgb(85, 255, 255); font-size: 18pt;</string>
-                   </property>
-                   <property name="text">
-                    <string>1. I1 Horizantal </string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pb_disp_2">
-                   <property name="font">
-                    <font>
-                     <pointsize>18</pointsize>
-                    </font>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">color: rgb(85, 200, 255); font-size: 18pt;</string>
-                   </property>
-                   <property name="text">
-                    <string>2. I1 Vertical </string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="verticalSpacer_3">
-                   <property name="orientation">
-                    <enum>Qt::Vertical</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>20</width>
-                     <height>40</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="groupBox_10">
-              <property name="font">
-               <font>
-                <pointsize>9</pointsize>
-               </font>
-              </property>
-              <property name="title">
-               <string>Misc</string>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_9">
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_8"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
+           <layout class="QHBoxLayout" name="preset_layout"/>
           </item>
          </layout>
         </widget>
@@ -930,55 +1124,13 @@
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>350</height>
+           <height>400</height>
           </size>
          </property>
          <property name="title">
           <string>Objective Function</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_11">
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="cb_use_predef">
-            <property name="font">
-             <font>
-              <pointsize>16</pointsize>
-             </font>
-            </property>
-            <property name="text">
-             <string>Use Predefined Objective Function</string>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="0" colspan="2">
-           <widget class="QPushButton" name="pb_edit_obj_func">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>45</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>18</pointsize>
-             </font>
-            </property>
-            <property name="cursor">
-             <cursorShape>ForbiddenCursor</cursorShape>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color: rgb(85, 255, 255); font-size: 18pt;</string>
-            </property>
-            <property name="text">
-             <string>Edit Objective Function</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="0">
            <layout class="QVBoxLayout" name="verticalLayout_15">
             <item>
@@ -1046,7 +1198,12 @@
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
                </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(14, 109, 245);</string>
               </property>
               <property name="text">
                <string>Objective Function:</string>
@@ -1067,12 +1224,18 @@
             </item>
            </layout>
           </item>
-          <item row="0" column="1">
+          <item row="0" column="2">
            <layout class="QVBoxLayout" name="verticalLayout_16">
             <item>
              <widget class="QLineEdit" name="le_a">
               <property name="enabled">
                <bool>true</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
               </property>
               <property name="font">
                <font>
@@ -1089,6 +1252,12 @@
               <property name="enabled">
                <bool>true</bool>
               </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
@@ -1100,6 +1269,12 @@
              <widget class="QLineEdit" name="le_c">
               <property name="enabled">
                <bool>true</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
               </property>
               <property name="font">
                <font>
@@ -1113,6 +1288,12 @@
               <property name="enabled">
                <bool>true</bool>
               </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
@@ -1124,6 +1305,12 @@
              <widget class="QLineEdit" name="le_e">
               <property name="enabled">
                <bool>true</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
               </property>
               <property name="font">
                <font>
@@ -1137,12 +1324,21 @@
               <property name="enabled">
                <bool>true</bool>
               </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
                 <weight>50</weight>
                 <bold>false</bold>
                </font>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Option 1: Type a PV here.&lt;/p&gt;&lt;p&gt;Option 2:&lt;/p&gt;&lt;p&gt;- Uncheck the &amp;quot;Use predefined Objective Function&amp;quot; box&lt;/p&gt;&lt;p&gt;- Fill in PV A...E with PVs&lt;/p&gt;&lt;p&gt;- Use as Objective Function a formula such as:&lt;/p&gt;&lt;p&gt;---- np.mean(A-B)&lt;/p&gt;&lt;p&gt;---- np.mean(A)/np.stdev(B)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>A</string>
@@ -1151,6 +1347,12 @@
             </item>
             <item>
              <widget class="QSpinBox" name="sb_max_pen">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>16</pointsize>
@@ -1169,7 +1371,7 @@
             </item>
            </layout>
           </item>
-          <item row="1" column="1">
+          <item row="2" column="2">
            <layout class="QHBoxLayout" name="horizontalLayout_12">
             <item>
              <spacer name="horizontalSpacer_2">
@@ -1185,6 +1387,21 @@
              </spacer>
             </item>
             <item>
+             <widget class="QRadioButton" name="rb_minimize">
+              <property name="font">
+               <font>
+                <pointsize>16</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Minimize Signal</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup</string>
+              </attribute>
+             </widget>
+            </item>
+            <item>
              <widget class="QRadioButton" name="rb_maximize">
               <property name="font">
                <font>
@@ -1192,7 +1409,7 @@
                </font>
               </property>
               <property name="text">
-               <string>Maximize</string>
+               <string>Maximize Signal</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -1202,22 +1419,82 @@
               </attribute>
              </widget>
             </item>
-            <item>
-             <widget class="QRadioButton" name="rb_minimize">
-              <property name="font">
-               <font>
-                <pointsize>16</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Minimize</string>
-              </property>
-              <attribute name="buttonGroup">
-               <string notr="true">buttonGroup</string>
-              </attribute>
-             </widget>
-            </item>
            </layout>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_38">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(14, 109, 245);</string>
+            </property>
+            <property name="text">
+             <string>Statistical Method:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QComboBox" name="cb_statistics">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>32</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="cb_use_predef">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="toolTip">
+             <string>If checked, it uses the Target function in the Python script given by Edit Objective Function button</string>
+            </property>
+            <property name="text">
+             <string>Use Predefined Objective Function</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="pb_edit_obj_func">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>45</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>18</pointsize>
+             </font>
+            </property>
+            <property name="cursor">
+             <cursorShape>ForbiddenCursor</cursorShape>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(85, 255, 255); font-size: 18pt;</string>
+            </property>
+            <property name="text">
+             <string>Edit Objective Function</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -1232,6 +1509,9 @@
            <width>16777215</width>
            <height>200</height>
           </size>
+         </property>
+         <property name="toolTip">
+          <string>Useful to interrupt the scan in case a PV defined by &quot;Alarm 1&quot; goes out of range defined by limits.</string>
          </property>
          <property name="title">
           <string>Machine Status</string>
@@ -1368,10 +1648,10 @@
                    <locale language="English" country="UnitedStates"/>
                   </property>
                   <property name="minimum">
-                   <double>-100.000000000000000</double>
+                   <double>-99999999.989999994635582</double>
                   </property>
                   <property name="maximum">
-                   <double>100.989999999999995</double>
+                   <double>99999999.989999994635582</double>
                   </property>
                   <property name="singleStep">
                    <double>0.100000000000000</double>
@@ -1416,10 +1696,10 @@
                    <locale language="English" country="UnitedStates"/>
                   </property>
                   <property name="minimum">
-                   <double>-100.000000000000000</double>
+                   <double>-99999999.989999994635582</double>
                   </property>
                   <property name="maximum">
-                   <double>100.989999999999995</double>
+                   <double>99999999.989999994635582</double>
                   </property>
                   <property name="singleStep">
                    <double>0.100000000000000</double>
@@ -1501,159 +1781,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_8">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="title">
-          <string>Scanner Parameters</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_20">
-          <item>
-           <layout class="QGridLayout" name="gridLayout_12">
-            <item row="4" column="1">
-             <widget class="QSpinBox" name="sb_num_iter">
-              <property name="font">
-               <font>
-                <pointsize>18</pointsize>
-               </font>
-              </property>
-              <property name="maximum">
-               <number>1000</number>
-              </property>
-              <property name="value">
-               <number>50</number>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_27">
-              <property name="font">
-               <font>
-                <pointsize>18</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Select Optimiser Algorithm </string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_25">
-              <property name="font">
-               <font>
-                <pointsize>18</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Number Iterations</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QComboBox" name="cb_select_alg">
-              <property name="font">
-               <font>
-                <pointsize>18</pointsize>
-               </font>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="cb_set_best_sol">
-            <property name="font">
-             <font>
-              <pointsize>18</pointsize>
-             </font>
-            </property>
-            <property name="text">
-             <string>Set Best Solution After Optimization</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="g_box_isim">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="title">
-          <string>Simplex/Scipy Scanner Setup</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_21">
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_18">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_8">
-              <item>
-               <widget class="QLabel" name="label_23">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>18</pointsize>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Relative Step in %</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QDoubleSpinBox" name="sb_isim_rel_step">
-                <property name="font">
-                 <font>
-                  <pointsize>18</pointsize>
-                 </font>
-                </property>
-                <property name="locale">
-                 <locale language="English" country="UnitedStates"/>
-                </property>
-                <property name="decimals">
-                 <number>2</number>
-                </property>
-                <property name="minimum">
-                 <double>0.250000000000000</double>
-                </property>
-                <property name="maximum">
-                 <double>100.000000000000000</double>
-                </property>
-                <property name="singleStep">
-                 <double>0.250000000000000</double>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="cb_use_isim">
-              <property name="font">
-               <font>
-                <pointsize>18</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Use Initial Simplex/Step [step =(Max - Min) x RelStep[%]]</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -1661,10 +1788,331 @@
          <property name="sizeHint" stdset="0">
           <size>
            <width>20</width>
-           <height>40</height>
+           <height>30</height>
           </size>
          </property>
         </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab4">
+      <attribute name="title">
+       <string>Data Browser</string>
+      </attribute>
+      <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1">
+       <property name="leftMargin">
+        <number>20</number>
+       </property>
+       <item>
+        <layout class="QVBoxLayout" name="data_layout" stretch="1,1">
+         <item>
+          <widget class="QFrame" name="frame_2">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">border-color: blue;</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <property name="lineWidth">
+            <number>1</number>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout">
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>Data Explorer:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSlider" name="browser_data_slider">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Use this to navigate the data points</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QSlider::groove:horizontal{
+border: 1px solid #637EB8;
+background: white;
+height: 7px;
+border-radius: 3px;
+}
+QSlider::sub-page:horizontal {
+background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+stop: 0 #ABC7EC, stop: 1 #154A98);
+border: 1px solid #777;
+height: 10px;
+border-radius: 4px;
+}
+QSlider::add-page:horizontal {
+background: #fff;
+border: 1px solid #154A98;
+height: 10px;
+border-radius: 4px;
+}
+QSlider::handle:horizontal{
+background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+stop:0 #fff, stop:1 #b3b4b6);
+border: 1px solid #777;
+width: 10px;
+margin-top: -4px;
+margin-bottom: -4px;
+border-radius: 2px;
+}
+
+/*Verticales*/
+QSlider::groove:vertical{
+border: 1px solid #637EB8;
+background: white;
+width:7px;
+height: 55px;
+border-radius: 3px;
+}
+QSlider::add-page:vertical {
+background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+stop: 0 #ABC7EC, stop: 1 #154A98);
+border: 1px solid #154A98;
+width: 10px;
+border-radius: 4px;
+}
+QSlider::sub-page:vertical {
+background: #fff;
+border: 1px solid #777;
+width: 7px;
+border-radius: 4px;
+}
+QSlider::handle:vertical{
+background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+stop:0 #fff, stop:1 #ABC7EC);
+border: 1px solid #777;
+height: 5px;
+margin-left: -4px;
+margin-right: -4px;
+border-radius: 2px;
+}
+/*Horizontales y Verticales*/
+QSlider::handle:horizontal:hover,
+QSlider::handle:vertical:hover{
+border: 1px solid #154A98;
+border-radius: 3px;
+}</string>
+              </property>
+              <property name="maximum">
+               <number>10</number>
+              </property>
+              <property name="pageStep">
+               <number>10</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="tickPosition">
+               <enum>QSlider::TicksBothSides</enum>
+              </property>
+              <property name="tickInterval">
+               <number>1</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QTableWidget" name="browser_data_table">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="browser_restore_btn">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: orange</string>
+              </property>
+              <property name="text">
+               <string>Restore Devices</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="frame_3">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>200</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <property name="lineWidth">
+            <number>1</number>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="label_11">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>Objective Function Histogram Monitor:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="browser_objhist_plot_panel" native="true">
+              <property name="styleSheet">
+               <string notr="true"/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="plots_layout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>32</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Objective Function Monitor:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="browser_obj_plot_panel" native="true"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>32</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Objective Function Monitor:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="browser_dev_plot_panel" native="true"/>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
