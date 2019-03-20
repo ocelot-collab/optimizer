@@ -1,4 +1,4 @@
-# -*- coding: iso-8859-1 -*-
+# -*- coding: utf-8 -*-
 """
 Contains the Bayes optimization class.
 Initialization parameters:
@@ -89,7 +89,7 @@ class BayesOpt:
         self.iter_bound = iter_bound
         self.prior_data = prior_data
         self.target_func = target_func
-        try: 
+        try:
             self.mi = self.target_func.mi
         except:
             self.mi = self.target_func
@@ -131,7 +131,7 @@ class BayesOpt:
             self.corrmat = np.eye(len(dev_ids))
         else:
             self.corrmat = corrmat
-        
+
         # use diagonal covariance matrix if none passed
         if type(covarmat) is type(None):
             try:
@@ -144,11 +144,11 @@ class BayesOpt:
             self.covarmat = corrmat
         print('BO: self.covarmat = ', self.covarmat)
         self.invcovarmat = np.linalg.inv(self.covarmat)
-        
+
         self.usePriorMean = False
         self.build_prior_mean()
-        
-        
+
+
     # call to reload the prior mean
     def build_prior_mean(self):
         if self.usePriorMean:
@@ -189,17 +189,17 @@ class BayesOpt:
         # jac = approx_fprime(allparam, priorMeanOnParams, ep, x)
         # fvar = np.dot(jac,np.dot(paramcovarmat,jac.T))
         # return fvar
-    
+
     def multinormal_prior_var(self, x, params):
         return 1.
-        
+
     def multinormal_prior_var_flat(self, x, params):
         return 1.
-        
+
     def multinormal_prior_var_disable(self, x, params):
         return 1.e16 # huge variance => disable prior
         return np.inf
-        
+
     def build_prior_mean_sim(self):
 
         # stuff for multinormal simulation interface
@@ -220,7 +220,7 @@ class BayesOpt:
             lengthscales = np.sqrt(0.5*np.exp(-self.model.covar_params[0]))
             prwidths = 2.*lengthscales
             ndim = lengthscales.size
-            
+
             diaglens = np.diagflat(prwidths)
             covarmat = np.dot(diaglens,np.dot(self.corrmat,diaglens))
             prinvcovarmat = np.linalg.inv(covarmat)
@@ -380,13 +380,13 @@ class BayesOpt:
         print ("Prior mean widths: ",prwidths)
         prcentroid = np.array(prcentroid,ndmin=2)
         prwidths = np.array(prwidths, ndmin=2)
-            
+
         # build covariance matrix with correlations
         diaglens = np.diagflat(prwidths)
         covarmat = np.dot(diaglens,np.dot(self.corrmat,diaglens))
         prinvcovarmat = np.linalg.inv(covarmat)
         print ("Prior mean covarmat: \n",covarmat)
-        
+
         self.model.prmean = self.multinormal_prior_mean # prior mean fcn
         #self.model.prmeanp = [prcentroid, prwidths, pramp] # params of prmean fcn
         self.model.prmeanp = [pramp, prcentroid, prinvcovarmat] # params of prmean fcn
@@ -439,76 +439,75 @@ class BayesOpt:
                 break
             y_new = np.array([[inverse_sign *y_new]])
 
-            #advance the optimizer to the next iteration
-            #self.opt.OptIter(alpha=alpha[i])
-            #self.OptIter() # no alpha
+            # advance the optimizer to the next iteration
+            # self.opt.OptIter(alpha=alpha[i])
+            # self.OptIter() # no alpha
 
             # change position of interface and get resulting y-value
 
             x_new = deepcopy(x_next)
-            #(x_new, y_new) = self.mi.getState()
+            # (x_new, y_new) = self.mi.getState()
             self.current_x = x_new
-            #self.current_y = y_new
+            # self.current_y = y_new
 
             # add new entry to observed data
             self.X_obs = np.concatenate((self.X_obs, x_new), axis=0)
             self.Y_obs.append(y_new)
 
             # update the model (may want to add noise if using testEI)
-            self.model.update(x_new, y_new)# + .5*np.random.randn())
+            self.model.update(x_new, y_new)  # + .5*np.random.randn())
 
-    def OptIter(self,pause=0):
+    def OptIter(self, pause=0):
         # runs the optimizer for one iteration
-    
+
         # get next point to try using acquisition function
         x_next = self.acquire()
-        if(self.acq_func[0] == 'testEI'):
+        if (self.acq_func[0] == 'testEI'):
             ind = x_next
-            x_next = np.array(self.acq_func[2].iloc[ind,:-1],ndmin=2)
-            
-        #print
-        #print "BayesOpt.OptIter - setting next point to acquire"
-        #print(self.X_obs)
-        #print(self.Y_obs)
-        
+            x_next = np.array(self.acq_func[2].iloc[ind, :-1], ndmin=2)
+
+        # print
+        # print "BayesOpt.OptIter - setting next point to acquire"
+        # print(self.X_obs)
+        # print(self.Y_obs)
+
         # change position of interface and get resulting y-value
         self.mi.setX(x_next)
-        if(self.acq_func[0] == 'testEI'):
-            (x_new, y_new) = (x_next, self.acq_func[2].iloc[ind,-1])
+        if (self.acq_func[0] == 'testEI'):
+            (x_new, y_new) = (x_next, self.acq_func[2].iloc[ind, -1])
         else:
             (x_new, y_new) = self.mi.getState()
         # add new entry to observed data
-        self.X_obs = np.concatenate((self.X_obs,x_new),axis=0)
+        self.X_obs = np.concatenate((self.X_obs, x_new), axis=0)
         self.Y_obs.append(y_new)
-        #print("self.X_obs = " + str(self.X_obs))
-        #print("self.Y_obs = " + str(self.Y_obs))
-        
-        #print(self.X_obs)
-        #print(self.Y_obs)
-        
+        # print("self.X_obs = " + str(self.X_obs))
+        # print("self.Y_obs = " + str(self.Y_obs))
+
+        # print(self.X_obs)
+        # print(self.Y_obs)
+
         # update the model (may want to add noise if using testEI)
-        self.model.update(x_new, y_new)# + .5*np.random.randn())
-            
-            
-    def ForcePoint(self,x_next):
+        self.model.update(x_new, y_new)  # + .5*np.random.randn())
+
+    def ForcePoint(self, x_next):
         # force it to take a point at my discretion and update the model
-    
+
         # need x_next to adhere to the format self.acquire() produces
-        
+
         # change position of interface and get resulting y-value
         self.mi.setX(x_next)
-        if(self.acq_func[0] == 'testEI'):
-            (x_new, y_new) = (x_next, self.acq_func[2].iloc[ind,-1])
+        if (self.acq_func[0] == 'testEI'):
+            (x_new, y_new) = (x_next, self.acq_func[2].iloc[ind, -1])
         else:
             (x_new, y_new) = self.mi.getState()
         # add new entry to observed data
-        self.X_obs = np.concatenate((self.X_obs,x_new),axis=0)
+        self.X_obs = np.concatenate((self.X_obs, x_new), axis=0)
         self.Y_obs.append(y_new)
-        #print("self.X_obs = " + str(self.X_obs))
-        #print("self.Y_obs = " + str(self.Y_obs))
-        
+        # print("self.X_obs = " + str(self.X_obs))
+        # print("self.Y_obs = " + str(self.Y_obs))
+
         # update the model (may want to add noise if using testEI)
-        self.model.update(x_new, y_new) # + .5*np.random.randn())
+        self.model.update(x_new, y_new)  # + .5*np.random.randn())
 
     def best_seen(self):
         """
@@ -520,25 +519,25 @@ class BayesOpt:
 
         Not needed for UCB so do it the fast way (return max obs)
         """
-        if(self.acq_func[0] == 'UCB'):
+        if (self.acq_func[0] == 'UCB'):
             mu = self.Y_obs
         else:
             (mu, var) = self.model.predict(self.X_obs)
-            mu = [self.model.predict(np.array(x,ndmin=2))[0] for x in self.X_obs]
+            mu = [self.model.predict(np.array(x, ndmin=2))[0] for x in self.X_obs]
 
-        #(mu2, var2) = self.model.predict(self.X_obs)
-        #print 'self.X_obs = ', self.X_obs
-        #print 'mu2 = ', mu2
-        #print 'mu = ', mu
-        #print [len(m) for m in mu2]
-        #print [self.model.predict(np.array(x,ndmin=2))[0] for x in self.X_obs]
+        # (mu2, var2) = self.model.predict(self.X_obs)
+        # print 'self.X_obs = ', self.X_obs
+        # print 'mu2 = ', mu2
+        # print 'mu = ', mu
+        # print [len(m) for m in mu2]
+        # print [self.model.predict(np.array(x,ndmin=2))[0] for x in self.X_obs]
 
         (ind_best, mu_best) = max(enumerate(mu), key=op.itemgetter(1))
         return (self.X_obs[ind_best], mu_best)
-        #return (np.array(self.X_obs[ind_best], ndmin=2), mu_best)
+        # return (np.array(self.X_obs[ind_best], ndmin=2), mu_best)
 
     def acquire(self, alpha=1.):
-                
+
         # print 'self.model.prmean = ', self.model.prmean
         # print 'self.model.prmeanp = ', self.model.prmeanp
         # print 'self.model.prvar = ', self.model.prvar
@@ -549,11 +548,11 @@ class BayesOpt:
         starts search at current position.
         """
         # look from best positions
-        (x_best, y_best) = self.best_seen() # sort of a misnomer (see function best_seen)
+        (x_best, y_best) = self.best_seen()  # sort of a misnomer (see function best_seen)
         self.x_best = x_best
         x_curr = self.current_x[-1]
-        #y_curr = self.current_y[-1]
-        #x_start = x_curr
+        # y_curr = self.current_y[-1]
+        # x_start = x_curr
         x_start = x_best
 
         # calculate length scales
@@ -561,82 +560,82 @@ class BayesOpt:
             lengthscales = np.sqrt(0.5*np.exp(-self.model.covar_params[0][0])) # length scales from covar params
         except:
             lengthscales = np.sqrt(np.diag(self.covarmat))
-        print ('lengthscales = ', lengthscales)
-        ndim = x_curr.size # dimension of the feature space we're searching NEEDED FOR UCB
+
+        ndim = x_curr.size  # dimension of the feature space we're searching NEEDED FOR UCB
         try:
-            nsteps = 1 + self.X_obs.shape[0] # acquisition number we're on  NEEDED FOR UCB
+            nsteps = 1 + self.X_obs.shape[0]  # acquisition number we're on  NEEDED FOR UCB
         except:
             nsteps = 1
 
-        #print "self.x_best = " + str(x_best)
-        #print "self.current_x = " + str(self.current_x)
-        #print "self.current_x[-1] = " + str(self.current_x[-1])
+        # print "self.x_best = " + str(x_best)
+        # print "self.current_x = " + str(self.current_x)
+        # print "self.current_x[-1] = " + str(self.current_x[-1])
 
         # check to see if this is bounding step sizes
-        if(self.iter_bound or True):
-            if(self.bounds is None): # looks like a scale factor
+        if (self.iter_bound or True):
+            if (self.bounds is None):  # looks like a scale factor
                 self.bounds = 1.0
 
             bound_lengths = 3. * lengthscales # 3x hyperparam lengths
             relative_bounds = np.transpose(np.array([-bound_lengths, bound_lengths]))
-            
-            #iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
+
+            # iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
             iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
 
         else:
             iter_bounds = self.bounds
 
-        #print "x_start = " + str(x_start)
-        #print "BayesOpt.acquire - self.model.covar_params = " + str(self.model.covar_params)
-        #print "self.model.covar_params[0] = " + str(self.model.covar_params[0])
-        #print "iter_bounds = " + str(iter_bounds)
+        # print "x_start = " + str(x_start)
+        # print "BayesOpt.acquire - self.model.covar_params = " + str(self.model.covar_params)
+        # print "self.model.covar_params[0] = " + str(self.model.covar_params[0])
+        # print "iter_bounds = " + str(iter_bounds)
 
         # options for finding the peak of the acquisition function:
-        optmethod = 'L-BFGS-B' # these 4 allow bounds
-        #optmethod = 'BFGS'
-        #optmethod = 'TNC'
-        #optmethod = 'SLSQP'
-        #optmethod = 'Powell' # these 2 don't
-        #optmethod = 'COBYLA'
-        maxiter = 1000 # max number of steps for one scipy.optimize.minimize call
-        nproc = mp.cpu_count() # number of processes to launch minimizations on
-        niter = 1 # max number of starting points for search
-        niter_success = 1 # stop search if same minima for 10 steps
-        tolerance = 1.e-4 # goal tolerance
-        #nproc = 5*mp.cpu_count() # number of processes to launch minimization
+        optmethod = 'L-BFGS-B'  # these 4 allow bounds
+        # optmethod = 'BFGS'
+        # optmethod = 'TNC'
+        # optmethod = 'SLSQP'
+        # optmethod = 'Powell' # these 2 don't
+        # optmethod = 'COBYLA'
+        maxiter = 1000  # max number of steps for one scipy.optimize.minimize call
+        nproc = mp.cpu_count()  # number of processes to launch minimizations on
+        niter = 1  # max number of starting points for search
+        niter_success = 1  # stop search if same minima for 10 steps
+        tolerance = 1.e-4  # goal tolerance
+        # nproc = 5*mp.cpu_count() # number of processes to launch minimization
 
         # perturb start to break symmetry
-        #x_start += np.random.randn(lengthscales.size)*lengthscales*1e-6
+        # x_start += np.random.randn(lengthscales.size)*lengthscales*1e-6
 
         # probability of improvement acquisition function
-        if(self.acq_func[0] == 'PI'):
-            print ('Using PI')
+        if (self.acq_func[0] == 'PI'):
+
             aqfcn = negProbImprove
-            fargs=(self.model, y_best, self.acq_func[1])
+            fargs = (self.model, y_best, self.acq_func[1])
 
         # expected improvement acquisition function
-        elif(self.acq_func[0] == 'EI'):
-            print ('Using EI')
+        elif (self.acq_func[0] == 'EI'):
+
             aqfcn = negExpImprove
             fargs = (self.model, y_best, self.acq_func[1], alpha)
 
         # gaussian process upper confidence bound acquisition function
-        elif(self.acq_func[0] == 'UCB'):
-            print ('Using UCB')
+        elif (self.acq_func[0] == 'UCB'):
+
             aqfcn = negUCB
             fargs = (self.model, ndim, nsteps, self.ucb_params[0], self.ucb_params[1])
 
         # maybe something mitch was using once? (can probably remove)
-        elif(self.acq_func[0] == 'testEI'):
+        elif (self.acq_func[0] == 'testEI'):
             # collect all possible x values
             options = np.array(self.acq_func[2].iloc[:, :-1])
             (x_best, y_best) = self.best_seen()
 
             # find the option with best EI
-            best_option_score = (-1,1e12)
+            best_option_score = (-1, 1e12)
             for i in range(options.shape[0]):
-                result = negExpImprove(options[i],self.model,y_best,self.acq_func[1])
-                if(result < best_option_score[1]):
+                result = negExpImprove(options[i], self.model, y_best, self.acq_func[1])
+                if (result < best_option_score[1]):
                     best_option_score = (i, result)
 
             # return the index of the best option
@@ -651,8 +650,8 @@ class BayesOpt:
             if False:
                 nmax = 15.
                 scale = 3.
-                for i in scale*np.linspace(-1,1,nmax):
-                    x = x_start + i * np.array(lengthscales,ndmin=2)
+                for i in scale * np.linspace(-1, 1, nmax):
+                    x = x_start + i * np.array(lengthscales, ndmin=2)
                     (y_mean, y_var) = self.model.predict(np.array(x, ndmin=2))
                     print (i,x,y_mean,y_var,negExpImprove(x,self.model, y_best, self.acq_func[1], alpha))
 
@@ -664,93 +663,88 @@ class BayesOpt:
 
                 print('Plotting heat maps.')
 
-                #center_point = self.x_start # moving view
-                center_point = self.start_dev_vals # static view
-                rangex = center_point[0] + 5 * lengthscales[0] * np.array([-1,1]) #+ x_start[0]
-                rangey = center_point[1] + 5 * lengthscales[1] * np.array([-1,1]) #+ x_start[1]
+                # center_point = self.x_start # moving view
+                center_point = self.start_dev_vals  # static view
+                rangex = center_point[0] + 5 * lengthscales[0] * np.array([-1, 1])  # + x_start[0]
+                rangey = center_point[1] + 5 * lengthscales[1] * np.array([-1, 1])  # + x_start[1]
 
                 try:
-                    plotheatmap(self.model.predict,(),rangex,rangey,series=self.model.BV)
-                except Exception as e:
-                    print ('Could not print prediction heatmap. Exception: ', e)
+                    plotheatmap(self.model.predict, (), rangex, rangey, series=self.model.BV)
+                except:
+                    print('Could not print prediction heatmap.')
                     pass
 
                 try:
-                    plotheatmap(aqfcn,fargs,rangex,rangey,series=self.model.BV)
-                except Exception as e:
-                    print ('Could not print acquisition heatmap. Exception: ', e)
+                    plotheatmap(aqfcn, fargs, rangex, rangey, series=self.model.BV)
+                except:
+                    print('Could not print acquisition heatmap.')
                     pass
 
-            if(self.multiprocessingQ):
+            if (self.multiprocessingQ):
 
-                neval = 2*int(10.*2.**(ndim/12.))
-                nkeep = 2*min(4,neval)
+                neval = 2 * int(10. * 2. ** (ndim / 12.))
+                nkeep = 2 * min(8, neval)
 
-                print ('neval = ', neval,'\t nkeep = ',nkeep)
 
                 ## parallelgridsearch generates pseudo-random grid, then performs an ICDF transform
                 ## to map to multinormal distrinbution centered on x_start and with widths given by hyper params
-                #v0s = parallelgridsearch(aqfcn,x_start,0.6*lengthscales,fargs,neval,nkeep)
-                #x0s = v0s[:,:-1] # for later testing if the minimize results are better than the best starting point
-                #v0best = v0s[0]
+                # v0s = parallelgridsearch(aqfcn,x_start,0.6*lengthscales,fargs,neval,nkeep)
+                # x0s = v0s[:,:-1] # for later testing if the minimize results are better than the best starting point
+                # v0best = v0s[0]
                 ##x0s = parallelgridsearch(aqfcn,x_start,lengthscales,fargs,max(1,int(neval/2)),max(1,int(nkeep/2)))
                 ##x0s = np.vstack((x0s,parallelgridsearch(aqfcn,x_start,0.5*lengthscales,fargs,max(1,int(neval/2)),max(1,int(nkeep/2)))))
 
                 # add the 10 best points seen so far (largest Y_obs)
-                nbest = 3 # add the best points seen so far (largest Y_obs)
-                nstart = 2 # make sure some starting points are there to prevent run away searches
+                nbest = 3  # add the best points seen so far (largest Y_obs)
+                nstart = 2  # make sure some starting points are there to prevent run away searches
                 yobs = np.array([y[0][0] for y in self.Y_obs])
                 isearch = yobs.argsort()[-nbest:]
-                for i in range(min(nstart,len(self.Y_obs))): #
-                    if np.sum(isearch == i) == 0: # not found in list
+                for i in range(min(nstart, len(self.Y_obs))):  #
+                    if np.sum(isearch == i) == 0:  # not found in list
                         isearch = np.append(isearch, i)
-                isearch.sort() # sort to bias searching near earlier steps
-                #isearch = isearch[::-1]
-                #print 'isearch = ', isearch
-                #print 'self.X_obs = ', self.X_obs
-                #print 'self.Y_obs = ', self.Y_obs
+                isearch.sort()  # sort to bias searching near earlier steps
+                # isearch = isearch[::-1]
+                # print 'isearch = ', isearch
+                # print 'self.X_obs = ', self.X_obs
+                # print 'self.Y_obs = ', self.Y_obs
                 v0s = None
                 for i in isearch:
                     vs = parallelgridsearch(aqfcn,self.X_obs[i],0.6*lengthscales,fargs,neval,nkeep)
                     if type(v0s) == type(None):
                         v0s = copy.copy(vs)
                     else:
-                        v0s = np.vstack((v0s,vs))
+                        v0s = np.vstack((v0s, vs))
 
                 #print 'v0s = ', v0s
 
-                v0sort = v0s[:,-1].argsort()[:nkeep] # keep the nlargest
-                #print 'v0sort = ', v0sort
-                #print 'v0s[v0sort] = ', v0s[v0sort]
+                v0sort = v0s[:, -1].argsort()[:nkeep]  # keep the nlargest
+                # print 'v0sort = ', v0sort
+                # print 'v0s[v0sort] = ', v0s[v0sort]
                 v0s = v0s[v0sort]
-                
-                x0s = v0s[:,:-1] # for later testing if the minimize results are better than the best starting point
-                v0best = v0s[0]
-                #x0s = parallelgridsearch(aqfcn,x_start,lengthscales,fargs,max(1,int(neval/2)),max(1,int(nkeep/2)))
-                #x0s = np.vstack((x0s,parallelgridsearch(aqfcn,x_start,0.5*lengthscales,fargs,max(1,int(neval/2)),max(1,int(nkeep/2)))))
 
-                
-                #print 'self.X_obs = \n', self.X_obs, '\n'
-                #print 'self.Y_obs = \n', self.Y_obs, '\n'
-                #yobs = np.array([y[0][0] for y in self.Y_obs])
-                #print 'yobs = \n', yobs, '\n'
-                #print 'yobs.argsort() = \n', yobs.argsort(), '\n'
-                #print 'yobs.argsort()[-5:] = \n', yobs.argsort()[-5:], '\n'
-                #print 'self.X_obs[0] = \n', self.X_obs[0], '\n'
-                #print 'type(self.X_obs[0]) = \n', type(self.X_obs[0]), '\n'
-                #xobs = [self.X_obs[i] for i in yobs.argsort()[-5:]] # take the best 5
-                #print 'xobs = \n', xobs, '\n'
-                
+                x0s = v0s[:, :-1]  # for later testing if the minimize results are better than the best starting point
+                v0best = v0s[0]
+
+                # print 'self.X_obs = \n', self.X_obs, '\n'
+                # print 'self.Y_obs = \n', self.Y_obs, '\n'
+                # yobs = np.array([y[0][0] for y in self.Y_obs])
+                # print 'yobs = \n', yobs, '\n'
+                # print 'yobs.argsort() = \n', yobs.argsort(), '\n'
+                # print 'yobs.argsort()[-5:] = \n', yobs.argsort()[-5:], '\n'
+                # print 'self.X_obs[0] = \n', self.X_obs[0], '\n'
+                # print 'type(self.X_obs[0]) = \n', type(self.X_obs[0]), '\n'
+                # xobs = [self.X_obs[i] for i in yobs.argsort()[-5:]] # take the best 5
+                # print 'xobs = \n', xobs, '\n'
+
                 # add more points to search from
-                #x0s = np.vstack((x0s,np.array(x_curr))) # last point
-                #x0s = np.vstack((x0s,np.array(x_best))) # best so far
+                # x0s = np.vstack((x0s,np.array(x_curr))) # last point
+                # x0s = np.vstack((x0s,np.array(x_best))) # best so far
                 ## add the 10 best points seen so far (largest Y_obs)
-                #yobs = np.array([y[0][0] for y in self.Y_obs])
-                #for i in yobs.argsort()[-10:]:
-                    #x0s = np.vstack((x0s,np.array(self.X_obs[i])))
-                
-                print ('x0s = ', x0s)
-                print ('fargs = ', fargs)
+                # yobs = np.array([y[0][0] for y in self.Y_obs])
+                # for i in yobs.argsort()[-10:]:
+                # x0s = np.vstack((x0s,np.array(self.X_obs[i])))
+
+
 
                 if basinhoppingQ:
                     # use basinhopping
@@ -782,12 +776,12 @@ class BayesOpt:
 class HyperParams:
     def __init__(self, pvs, filename, mi=None):
         self.pvs = pvs
-        print ('HyperParams = ',self.pvs)
+
         self.filename = filename
         self.mi = mi
         pass
 
-    def loadSeedData(self,filename, target):
+    def loadSeedData(self, filename, target):
         """ Load in the seed data from a matlab ocelot scan file.
 
         Input file should formated like OcelotInterface file format.
@@ -803,54 +797,47 @@ class HyperParams:
         Returns:
                 Matrix of ordered data for GP. [ len(num_iterations) x len(num_devices) ]
         """
-        print()
+
         dout = []
         if type(filename) == type(''):
-            print ("Loaded seed data from file:",filename)
-            #stupid messy formating to unest matlab format
+            print("Loaded seed data from file:", filename)
+            # stupid messy formating to unest matlab format
             din = scipy.io.loadmat(str(filename))['data']
             names = np.array(din.dtype.names)
             for pv in self.pvs:
-                pv = pv.replace(":","_")
+                pv = pv.replace(":", "_")
                 if pv in names:
                     x = din[pv].flatten()[0]
                     x = list(chain.from_iterable(x))
                     dout.append(x)
 
-            #check if the right number of PV were pulled from the file
+            # check if the right number of PV were pulled from the file
             if len(self.pvs) != len(dout):
-                print ("The seed data file device length unmatched with scan requested PVs!")
-                print ('PV len         = ',len(self.pvs))
-                print ('Seed data len = ',len(dout))
                 self.parent.scanFinished()
 
-            #add in the y values
-            #ydata = din[self.objective_func_pv.replace(':','_')].flatten()[0]
-            ydata = din[target.replace(':','_')].flatten()[0]
+            # add in the y values
+            # ydata = din[self.objective_func_pv.replace(':','_')].flatten()[0]
+            ydata = din[target.replace(':', '_')].flatten()[0]
             dout.append(list(chain.from_iterable(ydata)))
 
         # If passing seed data from a seed scan
         else:
-            print ("Loaded Seed Data from Seed Scan:")
+            print("Loaded Seed Data from Seed Scan:")
             din = filename
             for pv in self.pvs:
                 if pv in din.keys():
                     dout.append(din[pv])
             dout.append(din[target])
-            #dout.append(din[target])
-                    #dout.append(din[target])
+            # dout.append(din[target])
+            # dout.append(din[target])
 
-        #transpose to format for the GP
+        # transpose to format for the GP
         dout = np.array(dout).T
 
-        #dout = dout.loc[~np.isnan(dout).any(axis=1),:]
+        # dout = dout.loc[~np.isnan(dout).any(axis=1),:]
         dout = dout[~np.isnan(dout).any(axis=1)]
 
-        #prints for debug
-        print ("[device_1, ..., device_N] detector")
-        print (self.pvs,target)
-        print (dout)
-        print()
+
 
         return dout
 
@@ -859,7 +846,7 @@ class HyperParams:
         f = np.load(str(self.filename), fix_imports=True, encoding='latin1')
         filedata = f[0][key]
         return filedata
-        
+
     def loadSimHyperParams(self, filename, energy, detector, pvs, vals, multiplier = 1.):
             # hyperparams for multinormal simulation interface
             covar_params = np.array(np.log(0.5/(self.mi.sigmas**2)),ndmin=2)
@@ -867,11 +854,11 @@ class HyperParams:
             noise_param = 2.*np.log((self.mi.bgNoise + self.mi.sigAmp * self.mi.sigNoiseScaleFactor) * (self.mi.noiseScaleFactor+1.e-15))
             amp_param = np.log(self.mi.sigAmp)
             hyperparams = (covar_params, amp_param, noise_param)
-            
+
             return hyperparams
 
-    #def loadHyperParams(self, filename, energy, detector, pvs, multiplier = 1):
-    def loadHyperParams(self, filename, energy, detector, pvs, vals, multiplier = 1.):
+    # def loadHyperParams(self, filename, energy, detector, pvs, multiplier = 1):
+    def loadHyperParams(self, filename, energy, detector, pvs, vals, multiplier=1.):
         """
         Method to load in the hyperparameters from a .npy file.
         Sorts data, ordering parameters with this objects pv list.
@@ -883,20 +870,22 @@ class HyperParams:
         Returns:
                 List of hyperparameters, ordered using the UI's "self.pvs" list.
         """
-        
+
         # stuff for multinormal simulation interface
         if self.mi.name == 'MultinormalInterface':
-            return self.loadSimHyperParams(filename, energy, detector, pvs, vals, multiplier = 1.)
-        
-        #Load in a npy file containing hyperparameters binned for every 1 GeV of beam energy
-        #get current L3 beam energy
+            return self.loadSimHyperParams(filename, energy, detector, pvs, vals, multiplier=1.)
+
+        # Load in a npy file containing hyperparameters binned for every 1 GeV of beam energy
+        # get current L3 beam energy
         # if len(energy) is 3: key = energy[0:1]
         # if len(energy) is 4: key = energy[0:2]
-        #key = str(int(round(energy)))
-        #print "Loading raw data for",key,"GeV from",filename
-        #f = np.load(str(filename)); filedata0 = f[0][key]; names0 = filedata0.keys()
-        #print energy, names0
-        #filedata = filedata0
+        key = str(int(round(energy)))
+
+        f = np.load(str(filename))
+        filedata0 = f[0][key]
+        names0 = filedata0.keys()
+
+        filedata = filedata0
 
         # scrapes
         self.prior_params_file = 'parameters/fit_params_2018-01_to_2018-01.pkl'
@@ -912,29 +901,31 @@ class HyperParams:
         # pvs = [pv.replace(":","_") for pv in pvs]
 
         # store results
-        hyps = [] # hyper params
-        peakFELs = [] # for estimating the goal from historical values
+        hyps = []  # hyper params
+        peakFELs = []  # for estimating the goal from historical values
 
         # calculate the length scales
         for i, pv in enumerate(pvs):
             # note: we pull data from most recent runs, but to fill in the gaps, we can use data from a larger time window
             #       it seems like the best configs change with time so we prefer recent data
 
-            pv_ = pv.replace(":","_")
+            pv_ = pv.replace(":", "_")
 
             # pv is in the data scrapes
             if pv_ in names_recent or pv_ in names_older:
 
                 # use recent data unless too sparse (less than 10 points)
-                if pv_ in names_recent and filedata_recent.get_value(pv_, 'number of points fitted')>10:
+                if pv_ in names_recent and filedata_recent.get_value(pv_, 'number of points fitted') > 10:
                     print('Hyperparams: ' + pv + ' RECENT DATA LOOKS GOOD')
                     filedata = filedata_recent
                 # fill in for sparse data with data from a larger time range
                 elif pv_ in names_older:
-                    print('Hyperparams: '+pv+' DATA TOO SPARSE <= 10 ################################################')
+                    print(
+                        'Hyperparams: ' + pv + ' DATA TOO SPARSE <= 10 ################################################')
                     filedata = filedata_older
                 else:
-                    print('Hyperparams: '+pv+' DATA TOO SPARSE <= 10 ################################################')
+                    print(
+                        'Hyperparams: ' + pv + ' DATA TOO SPARSE <= 10 ################################################')
                     filedata = filedata_recent
 
                 # calculate hyper width
@@ -942,60 +933,61 @@ class HyperParams:
                 width_b = filedata.get_value(pv_, 'width intercept')
                 # width_res_m = filedata.get_value(pv, 'width residual slope')
                 # width_res_b = filedata.get_value(pv, 'width residual intercept')
-                pvwidth = (width_m * energy + width_b) # prior widths
-                hyp = np.log(0.5/(pvwidth**2))
+                pvwidth = (width_m * energy + width_b)  # prior widths
+                hyp = np.log(1. / (pvwidth ** 2))
                 hyps.append(hyp)
-                print ("calculated hyper param from scrapes:", pv, pvwidth, hyp)
+
 
                 # estimate FEL response for amp param
                 peakFEL0 = filedata.get_value(pv_, 'peakFEL0')
                 peakFEL1 = filedata.get_value(pv_, 'peakFEL1')
-                peakFELs += [peakFEL0 + peakFEL1 * energy] # store for average or max later
+                peakFELs += [peakFEL0 + peakFEL1 * energy]  # store for average or max later
 
             # data is not in the scrapes so check if in the
             elif pv in names0:
-                print ('WARNING: Using length scale from ', filename)
+
                 ave = float(filedata[pv][0])
                 std = float(filedata[pv][1])
-                hyp = (self.calcLengthScaleHP(ave, std, multiplier = multiplier))
+                hyp = (self.calcLengthScaleHP(ave, std, multiplier=multiplier))
                 hyps.append(hyp)
-                print ("calculated hyper param from operator list:", pv, ave, std, hyp)
+
 
             # default to estimate from limits
             else:
                 try:
-                    print ('WARNING: for now, default length scale is calculated in some weird legacy way. Should calculate from range and starting value.')
+                    print('WARNING: for now, default length scale is calculated in some weird legacy way. '
+                          'Should calculate from range and starting value.')
                     ave = float(vals[i])
                     std = np.sqrt(abs(ave))
-                    hyp = (self.calcLengthScaleHP(ave, std, multiplier = multiplier))
+                    hyp = (self.calcLengthScaleHP(ave, std, multiplier=multiplier))
                     hyps.append(hyp)
-                    print ("calculated hyper param from Mitch's function:", pv, ave, std, hyp)
-                    print ('calculated from values: ', float(vals[i]))
+
                 except:
-                    print ('WARNING: Defaulting to 1 for now... (should estimate from starting value and limits in the future)')
-                    hyp = np.log(0.5/1.**2)
+                    print('WARNING: Defaulting to 1 for now... (should estimate from starting value and limits in the future)')
+                    hyp = 0.
                     hyps.append(hyp)
-                    print ("calculated hyper param from default:", pv, 1, hyp)
+
 
         # estimate the amp and variance hyper params
 
-        obj_func = detector.get_value() # get the current mean and std of the chosen detector
-        print ('obj_func = ',obj_func)
+        obj_func = detector.get_value()  # get the current mean and std of the chosen detector
+
         try:
-            #std = np.std(  obj_func[(2799-5*120):-1])
-            #ave = np.mean( obj_func[(2799-5*120):-1])
-            #std = np.std(  obj_func[-120:])
-            #ave = np.mean( obj_func[-120:])
+            # std = np.std(  obj_func[(2799-5*120):-1])
+            # ave = np.mean( obj_func[(2799-5*120):-1])
+            # std = np.std(  obj_func[-120:])
+            # ave = np.mean( obj_func[-120:])
             # SLACTarget.get_value() returns tuple with elements stat, stdev, ...
             ave = obj_func[0]
             std = obj_func[1]
         except:
-            print ("Detector is not a waveform, Using scalar for hyperparameter calc")
-            print ("Also check GP/BayesOptimization.py:HyperParams.loadHyperParams near line 722")
+            print("Detector is not a waveform, Using scalar for hyperparameter calc")
+            print("Also check GP/BayesOptimization.py:HyperParams.loadHyperParams near line 722")
             ave = obj_func
             # Hard code in the std when obj func is a scalar
             # Not a great way to deal with this, should probably be fixed
             std = 0.1
+
 
         # print('WARNING: overriding amplitude and variance hyper params')
         # ave = 1.
@@ -1015,20 +1007,20 @@ class HyperParams:
 
         print ('DETECTOR AMP = ', ave, ' and hyper amp = ', coeff)
         print ('DETECTOR STD = ', std, ' and hyper variance = ', noise)
-        
+
         dout = ( np.array([hyps]), coeff, noise )
         #prints for debug
         print()
-        print ("Calculated Hyperparameters ( [device_1, ..., device_N ], amplitude coefficent, noise coefficent)")
+        print("Calculated Hyperparameters ( [device_1, ..., device_N ], amplitude coefficent, noise coefficent)")
         print()
         for i in range(len(hyps)):
             print(self.pvs[i], hyps[i])
-        print ("AMP COEFF   = ", coeff)
-        print ("NOISE COEFF = ", noise)
+        print("AMP COEFF   = ", coeff)
+        print("NOISE COEFF = ", noise)
         print()
         return dout
 
-    def calcLengthScaleHP(self, ave, std, c = 1.0, multiplier = 1, pv = None):
+    def calcLengthScaleHP(self, ave, std, c=1.0, multiplier=1, pv=None):
         """
         Method to calculate the GP length scale hyperparameters using history data
         Formula for hyperparameters are from Mitch and some papers he read on the GP.
@@ -1040,18 +1032,15 @@ class HyperParams:
         Returns:
                 Float of the calculated length scale hyperparameter
         """
-        #for future use
+        # for future use
         if pv is not None:
-            #[pv,val]
+            # [pv,val]
             pass
-        #+- 1 std around the mean
-        #hi  = ave+std
-        #lo  = ave-std
-        #hyp = -2*np.log( ( ( multiplier*c*(hi-lo) ) / 4.0 ) + 0.01 )
-        hyp = -2*np.log( ( ( multiplier*c*std ) / 2.0 ) + 0.01 )
+
+        hyp = -2 * np.log(((multiplier * c * std) / 2.0) + 0.01)
         return hyp
 
-    def calcAmpCoeffHP(self, ave, std, c = 0.5):
+    def calcAmpCoeffHP(self, ave, std, c=0.5):
         """
         Method to calculate the GP amplitude hyperparameter
         Formula for hyperparameters are from Mitch and some papers he read on the GP.
@@ -1063,12 +1052,12 @@ class HyperParams:
         Returns:
                 Float of the calculated amplitude hyperparameter
         """
-        #We would c = 0.5 to work well, could get changed at some point
-        hyp2 = np.log( ( ((c*ave)**2) + 0.1 ) )
-        #hyp2 = np.log( ave + 0.1 )
+        # We would c = 0.5 to work well, could get changed at some point
+        hyp2 = np.log((((c * ave) ** 2) + 0.1))
+        # hyp2 = np.log( ave + 0.1 )
         return hyp2
 
-    def calcNoiseHP(self, ave, std, c = 1.0):
+    def calcNoiseHP(self, ave, std, c=1.0):
         """
         Method to calculate the GP noise hyperparameter
         Formula for hyperparameters are from Mitch and some papers he read on the GP.
@@ -1079,11 +1068,12 @@ class HyperParams:
         Returns:
                 Float of the calculated noise hyperparameter
         """
-        hyp = np.log((c*std / 4.0) + 0.01)
-        #hyp = np.log(std + 0.01)
+        hyp = np.log((c * std / 4.0) + 0.01)
+        # hyp = np.log(std + 0.01)
         return hyp
 
     # end BayesOpt class
+
 
 def negProbImprove(x_new, model, y_best, xi):
     """
@@ -1092,14 +1082,15 @@ def negProbImprove(x_new, model, y_best, xi):
     function for 2D scans (at least when alpha==1 in the fcn below). Alse
     performs worse than EI according to the literature.
     """
-    (y_mean, y_var) = model.predict(np.array(x_new,ndmin=2))
+    (y_mean, y_var) = model.predict(np.array(x_new, ndmin=2))
     diff = y_mean - y_best - xi
-    if(y_var == 0):
+    if (y_var == 0):
         return 0.
     else:
         Z = diff / np.sqrt(y_var)
 
     return -norm.cdf(Z)
+
 
 def negExpImprove(x_new, model, y_best, xi, alpha=1.0):
     """
@@ -1112,32 +1103,33 @@ def negExpImprove(x_new, model, y_best, xi, alpha=1.0):
     diff = y_mean - y_best - xi
 
     # Nonvectorizable. Can prob use slicing to do the same.
-    if(y_var == 0):
+    if (y_var == 0):
         return 0.
     else:
         Z = diff / np.sqrt(y_var)
 
     EI = diff * norm.cdf(Z) + np.sqrt(y_var) * norm.pdf(Z)
-    #print(x_new, EI)
+    # print(x_new, EI)
     return alpha * (-EI) + (1. - alpha) * (-y_mean)
 
-# old version
-#def negUCB(x_new, model, mult):
-    #"""
-    #The upper confidence bound acquisition function. Currently only partially
-    #implemented. The mult parameter specifies how wide the confidence bound
-    #should be, and there currently is no way to compute this parameter. This
-    #acquisition function shouldn't be used until there is a proper mult.
-    #"""
-    #(y_new, var) = model.predict(np.array(x_new,ndmin=2))
 
-    #UCB = y_new + mult * np.sqrt(var)
-    #return -UCB
+# old version
+# def negUCB(x_new, model, mult):
+# """
+# The upper confidence bound acquisition function. Currently only partially
+# implemented. The mult parameter specifies how wide the confidence bound
+# should be, and there currently is no way to compute this parameter. This
+# acquisition function shouldn't be used until there is a proper mult.
+# """
+# (y_new, var) = model.predict(np.array(x_new,ndmin=2))
+
+# UCB = y_new + mult * np.sqrt(var)
+# return -UCB
 
 # GP upper confidence bound
 # original paper: https://arxiv.org/pdf/0912.3995.pdf
 # tutorial: http://www.cs.ubc.ca/~nando/540-2013/lectures/l7.pdf
-def negUCB(x_new, model, ndim, nsteps, nu = 1., delta = 1.):
+def negUCB(x_new, model, ndim, nsteps, nu=1., delta=1.):
     """
     GPUCB: Gaussian process upper confidence bound aquisition function
     Default nu and delta hyperparameters theoretically yield "least regret".
@@ -1152,13 +1144,13 @@ def negUCB(x_new, model, ndim, nsteps, nu = 1., delta = 1.):
     delta: delta in the tutorial (see above)
     """
 
-    #ndim = model.nin # problem space dimensionality
-    #nsteps = model.nupdates + 1 # current step number
-    if nsteps==0: nsteps += 1
-    (y_mean, y_var) = model.predict(np.array(x_new,ndmin=2))
+    # ndim = model.nin # problem space dimensionality
+    # nsteps = model.nupdates + 1 # current step number
+    if nsteps == 0: nsteps += 1
+    (y_mean, y_var) = model.predict(np.array(x_new, ndmin=2))
 
-    tau = 2.*np.log(nsteps**(0.5*ndim+2.)*(np.pi**2.)/3./delta)
-    #print 'y_mean = ', y_mean, '\tnu = ', nu, '\ttau = ', tau, '\ty_var = ', y_var
+    tau = 2. * np.log(nsteps ** (0.5 * ndim + 2.) * (np.pi ** 2.) / 3. / delta)
+    # print 'y_mean = ', y_mean, '\tnu = ', nu, '\ttau = ', tau, '\ty_var = ', y_var
     GPUCB = y_mean + np.sqrt(nu * tau * y_var)
 
     return -GPUCB

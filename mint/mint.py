@@ -188,7 +188,7 @@ class GaussProcess(Minimizer):
             #except:
                 #print('WARNING: There was an error importing a correlation matrix from the matrix model. Using an identity matrix instead.')
                 #corrmat = np.eye(len(dev_ids))
-                
+
             corrmat = np.eye(len(dev_ids))
 
             # build covariance matrix from correlation matrix and length scales
@@ -243,23 +243,23 @@ class GaussProcess(Minimizer):
         """
         Add GP model parameters to the save file.
         """
-        #add in extra GP model data to save
+        # add in extra GP model data to save
         try:
             self.mi.data
         except:
             self.mi.data = {}
-        self.mi.data["acq_fcn"]      = self.acq_func
+        self.mi.data["acq_fcn"] = self.acq_func
         # OnlineGP stuff
         try:
-            self.mi.data["alpha"]        = self.model.alpha
+            self.mi.data["alpha"] = self.model.alpha
         except:
             pass
         try:
-            self.mi.data["C"]            = self.model.C
+            self.mi.data["C"] = self.model.C
         except:
             pass
         try:
-            self.mi.data["BV"]           = self.model.BV
+            self.mi.data["BV"] = self.model.BV
         except:
             pass
         try:
@@ -267,59 +267,59 @@ class GaussProcess(Minimizer):
         except:
             pass
         try:
-            self.mi.data["KB"]           = self.model.KB
+            self.mi.data["KB"] = self.model.KB
         except:
             pass
         try:
-            self.mi.data["KBinv"]        = self.model.KBinv
+            self.mi.data["KBinv"] = self.model.KBinv
         except:
             pass
         try:
-            self.mi.data["weighted"]     = self.model.weighted
+            self.mi.data["weighted"] = self.model.weighted
         except:
             pass
         try:
-            self.mi.data["noise_var"]    = self.model.noise_var
+            self.mi.data["noise_var"] = self.model.noise_var
         except:
             pass
         # DKLmodel stuff
         try:
-            self.mi.data["dim"]        = self.model.dim
+            self.mi.data["dim"] = self.model.dim
         except:
             pass
         try:
-            self.mi.data["hidden_layers"]        = self.model.hidden_layers
+            self.mi.data["hidden_layers"] = self.model.hidden_layers
         except:
             pass
         try:
-            self.mi.data["dim_z"]        = self.model.dim_z
+            self.mi.data["dim_z"] = self.model.dim_z
         except:
             pass
         if type(self.model.mask) is not type(None):
             self.mi.data["mask"]        = self.model.mask
         try:
-            self.mi.data["alpha"]        = self.model.alpha
+            self.mi.data["alpha"] = self.model.alpha
         except:
             pass
         try:
-            self.mi.data["noise"]        = self.model.noise
+            self.mi.data["noise"] = self.model.noise
         except:
             pass
         try:
-            self.mi.data["activations"]        = self.model.activations
+            self.mi.data["activations"] = self.model.activations
         except:
             pass
         try:
-            self.mi.data["weight_dir"]        = self.model.weight_dir
+            self.mi.data["weight_dir"] = self.model.weight_dir
         except:
             pass
-        self.mi.data["corrmat"]      = self.corrmat
-        self.mi.data["covarmat"]     = self.covarmat
+        self.mi.data["corrmat"] = self.corrmat
+        self.mi.data["covarmat"] = self.covarmat
         self.mi.data["seedScanBool"] = self.seedScanBool
         if self.seedScanBool:
-            self.mi.data["nseed"]    = self.prior_data.shape[0]
+            self.mi.data["nseed"] = self.prior_data.shape[0]
         else:
-            self.mi.data["nseed"]    = 0
+            self.mi.data["nseed"] = 0
 
         if type(self.model.prmeanp) is type(None):
             self.mi.data["prmean_params_amp"] = "None"
@@ -340,9 +340,9 @@ class GaussProcess(Minimizer):
 
         try:
             self.mi.data["prior_pv_info"] = self.model.prior_pv_info
-            #print 'SUCCESS self.mi.data[prior_pv_info] = ', self.mi.data["prior_pv_info"]
+            # print 'SUCCESS self.mi.data[prior_pv_info] = ', self.mi.data["prior_pv_info"]
         except:
-            #print 'FAILURE self.mi.data[prior_pv_info]'
+            # print 'FAILURE self.mi.data[prior_pv_info]'
             pass
 
 
@@ -635,7 +635,7 @@ class Optimizer(Thread):
 
     def error_func(self, x):
         # 0.00025 is used for Simplex because of the fmin steps.
-        delta_x = x*self.scaling_coef
+        delta_x = np.array(x)*self.scaling_coef
 
         if self.normalization:
             delta_x_scaled = delta_x/0.00025*self.norm_scales
