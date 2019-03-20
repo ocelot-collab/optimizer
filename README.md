@@ -46,7 +46,8 @@ Algorithm API is designed to be a layer of abstraction between the Optimizer and
 
 ## Graphical User Interface
 
-Ocelot Optimizer was designed to cover as many as possible 
+Ocelot Optimizer was designed to cover as many as possible optimization problems especially during an accelerator commissioning. 
+We tried to build GUI which reflects that goal. With GUI you can:
 * Select different optimizers (Simplex, GP, ES, …)
 * Select any group of devices
 * Craft your objective function 
