@@ -154,7 +154,7 @@ class MainWindow(Ui_Form):
         table["maximization"] = self.rb_maximize.isChecked()
 
         if not os.path.exists(os.path.dirname(filename)):
-            os.makedirs(filename)
+            os.makedirs(os.path.dirname(filename))
 
         with open(filename, 'w') as f:
             json.dump(table, f)
