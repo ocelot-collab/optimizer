@@ -15,7 +15,6 @@ import argparse
 import sklearn
 import functools
 import inspect
-import traceback
 
 sklearn_version = sklearn.__version__
 
@@ -44,7 +43,7 @@ from mint.opt_objects import *
 from mint import mint
 from mint import opt_objects as obj
 
-from mint.xfel_interface import *
+from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
@@ -106,13 +105,13 @@ class OcelotInterfaceWindow(QFrame):
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
         self.ui.cb_select_alg.addItem(self.name_simplex)
-        self.ui.cb_select_alg.addItem(self.name_gauss)
+        # self.ui.cb_select_alg.addItem(self.name_gauss)
         # self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
         self.ui.cb_select_alg.addItem(self.name_es)
-        #self.ui.cb_select_alg.addItem(self.name_powell)
-        if sklearn_version >= "0.18":
-            self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
+        self.ui.cb_select_alg.addItem(self.name_powell)
+        # if sklearn_version >= "0.18":
+        #     self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
 
         #self.ui.pb_help.clicked.connect(lambda: os.system("firefox file://"+self.optimizer_path+"docs/build/html/index.html"))
         self.ui.pb_help.clicked.connect(self.ui.open_help)
@@ -277,8 +276,8 @@ class OcelotInterfaceWindow(QFrame):
         legend = customLegend(offset=(75, 20))
         legend.setParentItem(plot.graphicsItem())
 
-        default_colors = [QtGui.QColor(255, 51, 51),
-                          QtGui.QColor(51, 255, 51),
+        default_colors = [QtGui.QColor(0, 255, 255),
+                          QtGui.QColor(108, 237, 125),
                           QtGui.QColor(255, 255, 51),
                           QtGui.QColor(178, 102, 255)]
 
@@ -291,8 +290,8 @@ class OcelotInterfaceWindow(QFrame):
                 color = self.randColor()
 
             # create the obj func line object
-            color = self.randColor()
-            pen = pg.mkPen(color, width=3)
+            # color = self.randColor()
+            pen = pg.mkPen(color, width=5)
             plot_curves[plot_item] = pg.PlotCurveItem(x=[], y=[], pen=pen, antialias=True, name=plot_item)
             plot.addItem(plot_curves[plot_item])
             legend.addItem(plot_curves[plot_item], item_label, color=str(color.name()))
@@ -844,7 +843,7 @@ class OcelotInterfaceWindow(QFrame):
                 else:
                     color = self.randColor()
 
-                pen=pg.mkPen(color, width=2)
+                pen=pg.mkPen(color, width=3)
                 item = pg.PlotCurveItem(x, y, pen=pen, antialias=True, name=str(dev.eid))
                 if idx == 0:
                     self.multiPlotStarts[dev.eid] = dev.get_value()
