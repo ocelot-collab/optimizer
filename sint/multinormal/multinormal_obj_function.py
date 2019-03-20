@@ -30,6 +30,7 @@ class MultinormalTarget(Target):
         self.points = None
         self.initialize = True
 
+
     def get_penalty(self):
         sase, std, charge, current, losses = self.get_value()
         alarm = self.get_alarm()
@@ -67,10 +68,10 @@ class MultinormalTarget(Target):
         if self.points is None:
             self.points = 120
         self.mi.points = self.points
-        print("Get Value of : ", self.points, " points.")
+        # print("Get Value of : ", self.points, " points.")
 
         data = self.mi.f(self.mi.x)
-        print("Data (", data.shape, ") : ", data)
+        # print("Data (", data.shape, ") : ", data)
 
         if self.stats is None:
             self.stats = stats.StatNone
@@ -97,3 +98,6 @@ class MultinormalTarget(Target):
         self.charge = []
         self.current = []
         self.losses = []
+
+    def get_energy(self):
+        return 7 # GeV

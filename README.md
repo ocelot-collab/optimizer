@@ -64,14 +64,16 @@ Ocelot Optimizer was designed to cover as many as possible
 ## How to get started
 
 * Download @GitHub:  https://github.com/ocelot-collab/optimizer
+
 * Try “simulation” interface and test different optimization methods: 
 >> python generic_optim.py MultinormalInterface
+
 * to ask help:
 >> python generic_optim.py --help 
-* Edit template machine interface to map in your control system:
-     - DemoInterface (path optimizer/mint/demo/demo_interface.py)
 
-** Guys can we extend a bit DemoInterface and add more details. I actually would be also interested to see what options LCLSMachineInterface has**
+* Edit template machine interface to map in your control system:
+     - [DemoInterface](mint/demo/demo_interface.py)
+>> python generic_optim.py MultinormalInterface
 
 ```python
 class DemoInterface(MachineInterface):
@@ -79,7 +81,16 @@ class DemoInterface(MachineInterface):
 
     def __init__(self, args=None):
         super(DemoInterface, self).__init__(args=args)
-        self.config_dir = os.path.join(self.config_dir, "demo")  # <ocelot>/parameters/demo
+
+        # self.config_dir is path to a directory where a default config will be saved (the tool state)
+        # self.config_dir = "<optimizer>/parameters/" is default path in the parent class MachineInterface
+        self.config_dir = os.path.join(self.config_dir, "demo")  # <optimizer>/parameters/demo
+
+        # self.path2jsondir is a path to a folder where optimization histories will be saved in json format
+        # by default self.path2jsondir = <data> on the same level that <optimizer>
+        # the folder will be created automatically
+
+        # flag from LCLSInterface which not allow Optimizer to write to control system
         self.read_only = False
 
     def get_value(self, channel):
@@ -90,3 +101,12 @@ class DemoInterface(MachineInterface):
         print("Called set_value for channel: {}, with value: {}".format(channel, val))
 
 ```
+
+As a second step we recommend to have a look to XFELMachineInterface (<optimizer>/min/xfel/xfel_interface.py)
+and also [TestMachineInterface](min/xfel/xfel_interface.py) 
+which you can run using:
+
+>> python generic_optim.py --devmode 
+
+
+See the parent class [MachineInterface](mint/opt_objects.py) to have more configurable options.  

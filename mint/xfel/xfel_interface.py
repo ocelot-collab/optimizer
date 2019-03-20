@@ -16,7 +16,6 @@ import sys
 import numpy as np
 import subprocess
 import base64
-from threading import Lock
 from mint.opt_objects import MachineInterface, Device
 from collections import OrderedDict
 
@@ -40,9 +39,8 @@ class XFELMachineInterface(MachineInterface):
             print('error importing doocs library')
         self.logbook_name = "xfellog"
 
-        path2root = os.path.abspath(os.path.join(__file__ , "../../.."))
+        path2root = os.path.abspath(os.path.join(__file__ , "../../../.."))
         self.config_dir = os.path.join(path2root, "config_optim_new")
-
     def get_value(self, channel):
         """
         Getter function for XFEL.
@@ -133,7 +131,7 @@ class XFELMachineInterface(MachineInterface):
         return succeded
 
     def get_obj_function_module(self):
-        from mint import xfel_obj_function
+        from mint.xfel import xfel_obj_function
         return xfel_obj_function
 
     def get_preset_settings(self):
@@ -207,6 +205,7 @@ class TestMachineInterface(XFELMachineInterface):
         super(TestMachineInterface, self).__init__(args)
         self.data = 1.
         pass
+
     def get_alarms(self):
         return np.random.rand(4)#0.0, 0.0, 0.0, 0.0]
 
@@ -272,7 +271,7 @@ class TestMachineInterface(XFELMachineInterface):
         return True
 
     def get_obj_function_module(self):
-        from mint import xfel_obj_function
+        from mint.xfel import xfel_obj_function
         return xfel_obj_function
 
 
