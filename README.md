@@ -103,7 +103,7 @@ class DemoInterface(MachineInterface):
 ```
 
 As a second step we recommend to have a look to XFELMachineInterface (<optimizer>/min/xfel/xfel_interface.py)
-and also [TestMachineInterface](min/xfel/xfel_interface.py) 
+and also [TestMachineInterface](mint/xfel/xfel_interface.py) 
 which you can run using:
 
 >> python generic_optim.py --devmode 
