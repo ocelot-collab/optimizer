@@ -47,13 +47,14 @@ from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
+from mint.petra.petra_interface import *
 from sint.multinormal.multinormal_interface import *
 
 
 from stats import stats
 
 AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
-                                TestMachineInterface, BESSYMachineInterface, MultinormalInterface,
+                                TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
                                 DemoInterface]
 
 
@@ -190,10 +191,10 @@ class OcelotInterfaceWindow(QFrame):
 
         parser_mi = argparse.ArgumentParser()
 
-        mis = [mi.name for mi in AVAILABLE_MACHINE_INTERFACES]
+        mis = [mi.__class__.__name__ for mi in AVAILABLE_MACHINE_INTERFACES]
         subparser = parser_mi.add_subparsers(title='Machine Interface Options', dest="mi")
         for mi in AVAILABLE_MACHINE_INTERFACES:
-            mi_parser = subparser.add_parser(mi.name, help='{} arguments'.format(mi.name))
+            mi_parser = subparser.add_parser(mi.__class__.__name__, help='{} arguments'.format(mi.__class__.__name__))
             mi.add_args(mi_parser)
 
         self.optimizer_args, others = parser.parse_known_args()
@@ -1038,7 +1039,7 @@ def main():
 
     indicator = QtCore.QTimer()
     indicator.timeout.connect(window.indicate_machine_state)
-    indicator.start(10)
+    indicator.start(100)
 
     #show app
 
