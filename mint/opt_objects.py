@@ -96,8 +96,8 @@ class MachineInterface(object):
         text = ""
 
         if not gui.cb_use_predef.checkState():
-            text += "obj func: A   : " + str(gui.le_a.text()).split("/")[-2] + "/" + str(gui.le_a.text()).split("/")[
-                -1] + "\n"
+            if str(gui.le_a.text()) != "" and gui.is_le_addr_ok(gui.le_b):
+                text += "obj func: A   : " + str(gui.le_a.text()).split("/")[-2] + "/" + str(gui.le_a.text()).split("/")[-1] + "\n"
             if str(gui.le_b.text()) != "" and gui.is_le_addr_ok(gui.le_b):
                 text += "obj func: B   : " + str(gui.le_b.text()).split("/")[-2] + "/" + \
                         str(gui.le_b.text()).split("/")[-1] + "\n"
