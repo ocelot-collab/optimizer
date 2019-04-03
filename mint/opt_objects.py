@@ -469,11 +469,10 @@ class Target(object):
         :return: penalty
         """
         sase = self.get_value()
-        for i in range(self.nreadings):
+        for i in range(self.nreadings - 1):
             sase += self.get_value()
             time.sleep(self.interval)
         sase = sase/self.nreadings
-        print("SASE", sase)
         alarm = self.get_alarm()
         pen = 0.0
         if alarm >= 0.95:
