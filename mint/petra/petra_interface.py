@@ -3,7 +3,13 @@ PETRA III machine interface (tine)
 """
 from __future__ import absolute_import, print_function
 
-import PyTine as pt
+
+try:
+    import PyTine as pt
+except ImportError:
+    # Ignore the error since maybe no one is trying to use it... we will raise on the ctor.
+    pass
+
 
 import sys
 import numpy as np
@@ -35,6 +41,7 @@ class PETRAMachineInterface(MachineInterface):
         if 'PyTine' not in sys.modules:
             print('error importing tine library')
         self.logbook_name = "petralog"
+        print("PETRA INTERFCE")
         path2root = os.path.abspath(os.path.join(__file__ , "../../../.."))
         self.config_dir = os.path.join(path2root, "config_optim_new")
 
