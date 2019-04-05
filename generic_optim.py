@@ -84,7 +84,7 @@ class OcelotInterfaceWindow(QFrame):
                 self.mi = XFELMachineInterface(args)
             else:
                 self.mi = globals()[class_name](args)
-        self.optimizer_path = os.path.abspath(os.path.join(__file__ ,"../")) + os.sep 
+        self.optimizer_path = os.path.abspath(os.path.join(__file__ ,"../")) + os.sep
         self.config_dir = self.mi.config_dir
         self.path2preset = os.path.join(self.config_dir, "standard")
         self.set_file = os.path.join(self.config_dir, "default.json")  # ./parameters/default.json"
@@ -194,9 +194,8 @@ class OcelotInterfaceWindow(QFrame):
         mis = [mi.__class__.__name__ for mi in AVAILABLE_MACHINE_INTERFACES]
         subparser = parser_mi.add_subparsers(title='Machine Interface Options', dest="mi")
         for mi in AVAILABLE_MACHINE_INTERFACES:
-            mi_parser = subparser.add_parser(mi.__class__.__name__, help='{} arguments'.format(mi.__class__.__name__))
+            mi_parser = subparser.add_parser(mi.__name__, help='{} arguments'.format(mi.__name__))
             mi.add_args(mi_parser)
-
         self.optimizer_args, others = parser.parse_known_args()
 
         if len(others) != 0:
@@ -610,7 +609,7 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.use_predef_fun()
 
         if self.ui.cb_use_predef.checkState():
-            print("RELOAD Module Objective Function")
+            print("RELOAD Module Objective Function", self.mi.get_obj_function_module())
             obj_function_module = self.mi.get_obj_function_module()
             if 'target_class' in dir(obj_function_module):
                 tclass = obj_function_module.target_class
