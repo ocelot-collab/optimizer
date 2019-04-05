@@ -151,15 +151,6 @@ class ResetpanelWindow(QFrame):
 
                 continue
 
-
-            lim_low, lim_high = dev.get_limits()
-            spin_box = self.ui.tableWidget.cellWidget(row, 3)
-            spin_box.setValue(lim_low)
-            spin_box.setEnabled(dev._can_edit_limits)
-            spin_box = self.ui.tableWidget.cellWidget(row, 4)
-            spin_box.setValue(lim_high)
-            spin_box.setEnabled(dev._can_edit_limits)
-
             # if value out of the limits
             if dev.check_limits(value):
                 for col in [3, 4]:
@@ -173,6 +164,20 @@ class ResetpanelWindow(QFrame):
                         spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
                     if col == 4:
                         spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
+
+            lim_low, lim_high = dev.get_limits()
+
+            # stop update min spinbox if it has focus
+            if not self.ui.tableWidget.cellWidget(row, 3).hasFocus():
+                spin_box = self.ui.tableWidget.cellWidget(row, 3)
+                spin_box.setValue(lim_low)
+                spin_box.setEnabled(dev._can_edit_limits)
+
+            # stop update max spinbox if it has focus
+            if not self.ui.tableWidget.cellWidget(row, 4).hasFocus():
+                spin_box = self.ui.tableWidget.cellWidget(row, 4)
+                spin_box.setValue(lim_high)
+                spin_box.setEnabled(dev._can_edit_limits)
 
             pv = dev.eid
 
