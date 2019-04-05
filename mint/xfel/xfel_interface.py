@@ -40,7 +40,7 @@ class XFELMachineInterface(MachineInterface):
         self.logbook_name = "xfellog"
 
         path2root = os.path.abspath(os.path.join(__file__ , "../../../.."))
-        self.config_dir = os.path.join(path2root, "config_optim_new")
+        self.config_dir = os.path.join(path2root, "config_optim")
     def get_value(self, channel):
         """
         Getter function for XFEL.
