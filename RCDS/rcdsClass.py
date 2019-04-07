@@ -1,20 +1,27 @@
 import math
 import numpy as np
 
+#Created by X. Huang, SLAC, 10/6/2016
+#Disclaimer: The RCDS algorithm or the Matlab RCDS code come with absolutely 
+#NO warranty. The author of the RCDS method and the Matlab RCDS code does not 
+#take any responsibility for any damage to equipments or personnel injury 
+#that may result from the use of the algorithm or the code.
+
 class RCDS:
-    def __init__(self, g_noise=0.1, g_cnt=0, Nvar=6, g_vrange=None, g_data=None, Imat=None):
+    def __init__(self, func, g_noise=0.1, g_cnt=0, Nvar=6, g_vrange=None, g_data=None, Imat=None):
         self.g_noise = g_noise
         self.g_cnt = g_cnt
         self.Nvar = Nvar
         self.g_vrange = g_vrange
         self.g_data = g_data
         self.Imat = Imat
+        self.objfunc = func
 
-    def powellmain(self,func,x0,step,Dmat0,tol=1.0E-5,maxIt=100,maxEval=1500):
-        '''RCDS main function, implementing Powell's direction set update method
+    def powellmain(self,x0,step,Dmat0,tol=1.0E-5,maxIt=100,maxEval=1500):
+        '''RCDS main self.func_objtion, implementing Powell's direction set update method
         Created by X. Huang, 10/5/2016
         Input:
-                 func is function handle,
+                 self.func_obj is self.func_objtion handle,
                  step, tol : floating number
                  x0: NumPy vector
                         Dmat0: a matrix
@@ -24,7 +31,7 @@ class RCDS:
                         nf: integer, number of evaluations
         '''
         self.Nvar = len(x0)
-        f0 = func(x0)
+        f0 = self.func_obj(x0)
         nf = 1
 
         xm = x0
@@ -34,6 +41,7 @@ class RCDS:
         Dmat = Dmat0
         Npmin = 6 #number of points for fitting
         while it<maxIt:
+            print('iteration {}'.format(it))
             it += 1
             step /=1.2
 
@@ -41,12 +49,13 @@ class RCDS:
             dl=0
             for ii in range(self.Nvar):
                 dv=Dmat[:,ii]
-                (x1,f1,a1,a2,xflist,ndf)=self.bracketmin(func,xm,fm,dv,step)
+                #print('bracketmin', xm,fm,dv,step)
+                (x1,f1,a1,a2,xflist,ndf)=self.bracketmin(xm,fm,dv,step)
                 nf += ndf
                 #print([it, ii, a1,a2, f1])
 
                 print("iter %d, dir %d: begin\t%d\t%f" %(it, ii, self.g_cnt,f1))
-                (x1,f1,ndf)=self.linescan(func,x1,f1,dv,a1,a2,Npmin,xflist)
+                (x1,f1,ndf)=self.linescan(x1,f1,dv,a1,a2,Npmin,xflist)
                 nf += ndf
 
                 if (fm-f1)>dl:
@@ -57,7 +66,9 @@ class RCDS:
                 xm=x1
 
             xt=2*xm-x0
-            ft=func(xt)
+            print('evaluating self.func_obj')
+            ft=self.func_obj(xt)
+            print('done')
             nf +=1
 
             if f0<=ft or 2*(f0-2*fm+ft)*((f0-fm-dl)/(ft-f0))**2 >= dl:
@@ -76,10 +87,10 @@ class RCDS:
 
                     #move to the minimum of the new direction
                     dv = Dmat[:,-1]
-                    (x1,f1,a1,a2,xflist,ndf)=self.bracketmin(func,xm,fm,dv,step)
+                    (x1,f1,a1,a2,xflist,ndf)=self.bracketmin(xm,fm,dv,step)
                     nf += ndf
                     print("iter %d, new dir %d: begin\t%d\t%f " %(it,k, self.g_cnt,f1))
-                    (x1,f1,ndf) = self.linescan(func,x1,f1,dv,a1,a2,Npmin,xflist)
+                    (x1,f1,ndf) = self.linescan(x1,f1,dv,a1,a2,Npmin,xflist)
                     print("end\t%d : %f\n" %(self.g_cnt,f1))
                     nf=nf+ndf
                     fm=f1
@@ -90,7 +101,7 @@ class RCDS:
             print('g count is ', self.g_cnt, 'and maxEval is ', maxEval)
             #termination
             if self.g_cnt>maxEval:
-                print("terminated, reaching function evaluation limit: %d > %d\n" % (self.g_cnt, maxEval))
+                print("terminated, reaching self.func_objtion evaluation limit: %d > %d\n" % (self.g_cnt, maxEval))
                 break
 
             if 2.0*abs(f0-fm) < tol*(abs(f0)+abs(fm)) and tol>0:
@@ -102,11 +113,11 @@ class RCDS:
 
         return xm, fm, nf
 
-    def bracketmin(self,func,x0,f0,dv,step):
+    def bracketmin(self,x0,f0,dv,step):
         '''bracket the minimum
         Created by X. Huang, 10/5/2016
         Input:
-                 func is function handle,
+                 self.func_obj is self.func_objtion handle,
                  f0,step : floating number
                  x0, dv: NumPy vector
         Output:
@@ -119,7 +130,7 @@ class RCDS:
 
         nf = 0
         if math.isnan(f0):
-            f0 = func(x0)
+            f0 = self.func_obj(x0)
             nf +=1
 
         xflist = np.array([[0,f0]])
@@ -130,7 +141,7 @@ class RCDS:
         step_init = step
 
         x1 = x0+dv*step
-        f1 = func(x1)
+        f1 = self.func_obj(x1)
         nf += 1
 
         xflist = np.concatenate((xflist,np.array([[step,f1]])),axis=0)
@@ -147,7 +158,7 @@ class RCDS:
             else:
                 step = step+0.1
             x1 = x0+dv*step
-            f1 = func(x1)
+            f1 = self.func_obj(x1)
             nf += 1
 
             if math.isnan(f1):
@@ -171,7 +182,7 @@ class RCDS:
         #go in the negative direction
         step = -step_init
         x2 = x0+dv*step
-        f2 = func(x2)
+        f2 = self.func_obj(x2)
         nf += 1
         xflist = np.concatenate((xflist,np.array([[step,f2]])),axis=0)
         if f2<fm:
@@ -187,7 +198,7 @@ class RCDS:
                 step -= 0.1
 
             x2 = x0+dv*step
-            f2 = func(x2)
+            f2 = self.func_obj(x2)
             nf += 1
             if math.isnan(f2):
                 step = step0
@@ -212,11 +223,11 @@ class RCDS:
 
         return xm, fm, a1, a2, xflist, nf
 
-    def linescan(self,func,x0,f0,dv,alo,ahi,Np,xflist):
+    def linescan(self,x0,f0,dv,alo,ahi,Np,xflist):
         '''Line optimizer for RCDS
         Created by X. Huang, 10/3/2016
         Input:
-                 func is function handle,
+                 self.func_obj is self.func_objtion handle,
                  f0, alo, ahi: floating number
                  x0, dv: NumPy vector
                  xflist: Nx2 array
@@ -226,7 +237,7 @@ class RCDS:
         #global g_noise
         nf = 0
         if math.isnan(f0):
-            f0 = func(x0)
+            f0 = self.func_obj(x0)
             nf+=1
 
         if alo >= ahi:
@@ -247,7 +258,8 @@ class RCDS:
         Nlist = np.shape(xflist)[0]
         for ii in range(Nlist):
             if xflist[ii,1]>=alo and xflist[ii,1]<=ahi:
-                ik = round((xflist[ii,1]-alo)/delta)
+                ik = math.round((xflist[ii,1]-alo)/delta)
+                #print('test', ik, ii, len(alist),len(xflist),xflist[ii,0])
                 alist[ik]=xflist[ii,0]
                 flist[ik]=xflist[ii,1]
 
@@ -255,7 +267,7 @@ class RCDS:
         for ii in range(len(alist)):
             if math.isnan(flist[ii]):
                 alpha = alist[ii]
-                flist[ii]=func(x0+alpha*dv)
+                flist[ii]=self.func_obj(x0+alpha*dv)
                 nf += 1
             if math.isnan(flist[ii]):
                 mask[ii] = False
@@ -287,7 +299,7 @@ class RCDS:
             return xm, fm, nf
 
     def func_obj(self,x):
-        '''Objective function for test
+        '''Objective self.func_objtion for test
         Input:
                 x : a column vector
         Output:
@@ -302,33 +314,10 @@ class RCDS:
         #print(p)
         if min(x)<0 or max(x)>1:
             obj = float('NaN')
-
-        obj = 0
-        for ii in range(self.Nvar-1):
-            obj -= 10*math.exp(-0.2*math.sqrt(p[ii]**2+p[ii+1]**2))
-
-        obj += np.random.randn()*self.g_noise
-
-        self.g_cnt +=1
-        #print(self.g_cnt)
-        dentry = np.asarray(np.r_[self.g_cnt,np.asarray(p).reshape(-1), obj])
-        #print(dentry)
-        if self.g_cnt<=self.g_data.shape[0]:
-            self.g_data[self.g_cnt-1,:] = dentry
         else:
-            self.g_data = np.concatenate((self.g_data,[dentry]),axis=0)
-            #print(self.g_data.shape)
+        	obj = self.objfunc(p)
+        self.g_cnt +=1
+        
         return obj
-
-    if 0: #test
-        p0 = np.matrix(np.ones([self.Nvar,1]))*15.0
-        x0 = np.divide(p0-self.g_vrange[:,0],self.g_vrange[:,1]-self.g_vrange[:,0])
-
-        y0 = func_obj(x0)
-
-        step = 0.01
-        (xm,fm,nf)=powellmain(func_obj,x0,step,self.Imat)
-        print([x0,xm])
-        print(y0,fm)
-        #for ii in range(self.g_cnt):
-        #       print(self.g_data[ii,:])
+        
+ 
