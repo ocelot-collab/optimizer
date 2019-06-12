@@ -49,6 +49,7 @@ from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
 from mint.petra.petra_interface import *
 from sint.multinormal.multinormal_interface import *
+from op_methods import *
 
 
 from stats import stats
@@ -102,6 +103,7 @@ class OcelotInterfaceWindow(QFrame):
         self.name_simplex_norm = "Simplex Norm."
         self.name_es = "Extremum Seeking"
         self.name_powell = "Powell"
+        self.name_gauss_gpy = "GP GPy"
         # self.name4 = "Conjugate Gradient"
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
@@ -111,6 +113,7 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
         self.ui.cb_select_alg.addItem(self.name_es)
         self.ui.cb_select_alg.addItem(self.name_powell)
+        #self.ui.cb_select_alg.addItem(self.name_gauss_gpy)
         # if sklearn_version >= "0.18":
         #     self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
 
@@ -351,25 +354,30 @@ class OcelotInterfaceWindow(QFrame):
 
         #GP Method
         if current_method == self.name_gauss:
-            minimizer = mint.GaussProcess()
+            minimizer = GaussProcess()
             minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:
-            minimizer = mint.GaussProcessSKLearn()
+            minimizer = GaussProcessSKLearn()
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
+
+        elif current_method == self.name_gauss_gpy:
+            minimizer = GPgpy()
+            minimizer.seed_iter = self.ui.sb_seed_iter.value()
+
         # Custom Minimizer
         elif current_method == self.name_custom:
-            minimizer = mint.CustomMinimizer()
+            minimizer = CustomMinimizer()
 
         elif current_method == self.name_simplex_norm:
-            minimizer = mint.Simplex()
+            minimizer = SimplexNorm()
         elif current_method == self.name_es:
-            minimizer = mint.ESMin()
+            minimizer = ESMin()
         elif current_method == self.name_powell:
-            minimizer = mint.Powell()
+            minimizer = Powell()
         #simplex Method
         else:
-            minimizer = mint.Simplex()
+            minimizer = Simplex()
 
         self.method_name = minimizer.__class__.__name__
 
@@ -428,8 +436,8 @@ class OcelotInterfaceWindow(QFrame):
         # set the Objective function from GUI or from file mint.obj_function.py
         # (reloading)
         self.set_obj_fun(update_objfunc_text=False)
-        if self.ui.le_obf.text():
-            self.objective_func.eid = self.ui.le_obf.text()
+        # if self.ui.le_obf.text():
+        #     self.objective_func.eid = self.ui.le_obf.text()
         self.objective_func_pv = self.objective_func.eid
 
         if self.mi.use_num_points():
@@ -441,13 +449,34 @@ class OcelotInterfaceWindow(QFrame):
 
         # configure the Minimizer
         minimizer.mi = self.mi
-        if minimizer.__class__ in [mint.GaussProcess, mint.GaussProcessSKLearn]:
+        if minimizer.__class__ in [GaussProcess, GaussProcessSKLearn, GPgpy]:
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
             minimizer.seed_timeout = self.ui.sb_tdelay.value()
             minimizer.hyper_file = self.hyper_file
             minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
 
-        elif minimizer.__class__ in [mint.Simplex, mint.Powell]:
+            if self.ui.cb_use_isim.checkState():
+                minimizer.dev_steps = []
+
+                for dev in self.devices:
+                    if dev.simplex_step == 0:
+                        lims = dev.get_limits()
+                        rel_step = self.ui.sb_isim_rel_step.value()
+                        d_lims = lims[1] - lims[0]
+                        # set the same step as for pure Simplex if delta lims is zeros
+                        if np.abs(d_lims) < 2e-5:
+                            val0 = dev.get_value()
+                            if np.abs(val0) < 1e-8:
+                                step = 0.00025
+                            else:
+                                step = val0*0.05
+                            minimizer.dev_steps.append(step)
+                        else:
+                            minimizer.dev_steps.append(d_lims * rel_step / 100.)
+            else:
+                minimizer.dev_steps = None
+
+        elif minimizer.__class__ in [Simplex, Powell]:
             if self.ui.cb_use_isim.checkState():
                 minimizer.dev_steps = []
 
@@ -469,7 +498,7 @@ class OcelotInterfaceWindow(QFrame):
             else:
                 minimizer.dev_steps = None
                 
-        elif minimizer.__class__ in [mint.ESMin]:
+        elif minimizer.__class__ in [ESMin]:
 
 
             bounds = []
@@ -479,7 +508,7 @@ class OcelotInterfaceWindow(QFrame):
 
             minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
 
-        elif minimizer.__class__ == mint.CustomMinimizer:
+        elif minimizer.__class__ == CustomMinimizer:
             minimizer.dev_steps = []
 
             for dev in self.devices:
@@ -644,7 +673,6 @@ class OcelotInterfaceWindow(QFrame):
             state_e = self.ui.is_le_addr_ok(self.ui.le_e)
 
             func = str(self.ui.le_obf.text())
-
             def get_value_exp():
                 A = 0.
                 B = 0.
@@ -662,8 +690,11 @@ class OcelotInterfaceWindow(QFrame):
                 if state_e:
                     E = self.mi.get_value(e_str)
                 return eval(func)
-
-            self.objective_func = Target(eid=a_str)
+            func_id = func
+            for v, v_str in zip(["A", "B", "C", "D", "E"], [a_str, b_str, c_str, d_str, e_str]):
+                if v in func:
+                    func_id += " @ " + v + " = " + v_str
+            self.objective_func = Target(eid=func_id)
             self.objective_func.devices = []
             self.objective_func.get_value = get_value_exp
             self.objective_func.mi = self.mi
@@ -677,7 +708,7 @@ class OcelotInterfaceWindow(QFrame):
         if self.dev_mode:
             def get_value_dev_mode():
                 values = np.array([dev.get_value() for dev in self.devices])
-                return np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
+                return np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.)) + np.random.rand()*0.1
 
             self.objective_func.get_value = get_value_dev_mode
 
