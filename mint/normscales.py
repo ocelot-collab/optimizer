@@ -18,7 +18,8 @@ def normscales(mi, devices, default_length_scale=1., verboseQ=True):
     print("******************** NORMSCALES - NORMSCALES")
     # stuff for multinormal simulation interface
     if mi.name == 'MultinormalInterface':
-        return mi.sigmas
+        # a dirty trick, but no more dirty than it was before :)
+        return mi.sigmas[:len(devices)]
     if mi.name != 'LCLSMachineInterface':
         return None  # np.ones(len(pvs))
     
@@ -58,7 +59,7 @@ def normscales(mi, devices, default_length_scale=1., verboseQ=True):
     for i, pv in enumerate(pvs):
         # note: we pull data from most recent runs, but to fill in the gaps, we can use data from a larger time window
         #       it seems like the best configs change with time so we prefer recent data
-
+        print(i, pv)
         pv_ = pv.replace(":","_")
 
         # pv is in the data scrapes
