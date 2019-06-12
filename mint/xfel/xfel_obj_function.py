@@ -31,6 +31,18 @@ class XFELTarget(Target):
         self.clean()
         self.nreadings = 1
         self.interval = 0.0
+        self.clean_ref_data()
+
+    def collect_ref_data(self):
+        try:
+            ref_sase = self.mi.get_ref_sase_signal()
+        except:
+            print("ERROR: could nor read ref_sase")
+            ref_sase = None
+        self.ref_sase.append(ref_sase)
+
+    def clean_ref_data(self):
+        self.ref_sase = []
 
     def get_alarm(self):
         """
@@ -89,17 +101,6 @@ class XFELTarget(Target):
         return target
         #return -np.sqrt(a ** 2 + b ** 2 + c**2)
 
-    def get_value_test(self):
-        """
-        For testing
-
-        :return:
-        """
-        values = np.array([dev.get_value() for dev in self.devices])
-        value = 2*np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
-        value = value * (1. + (np.random.rand(1)[0] - 0.5) * 0.001)
-        return value 
-
 
     def get_penalty(self):
         """
@@ -110,11 +111,11 @@ class XFELTarget(Target):
 
         :return: penalty
         """
-        sase = 0.
+        data = []
         for i in range(self.nreadings):
-            sase += self.get_value()
+            data.append(self.get_value())
             time.sleep(self.interval)
-        sase = sase/self.nreadings
+        sase = np.mean(data)
         print("SASE", sase)
         alarm = self.get_alarm()
         if self.debug: print('alarm:', alarm)
@@ -132,7 +133,10 @@ class XFELTarget(Target):
         self.penalties.append(pen)
         self.times.append(time.time())
         self.values.append(sase)
+        self.objective_acquisitions.append(np.array(data))
+        self.std_dev.append(np.std(data))
         self.alarms.append(alarm)
+        self.collect_ref_data()
         return pen
 
     def get_spectrum(self):
@@ -155,3 +159,5 @@ class XFELTarget(Target):
         self.times = []
         self.alarms = []
         self.values = []
+        self.objective_acquisitions = []
+        self.std_dev = []
