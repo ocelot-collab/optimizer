@@ -276,6 +276,7 @@ class Device(object):
         self.low_limit = 0.
         self.high_limit = 0.
         self._can_edit_limits = True
+        self.istep = None               # inital step
 
     def set_value(self, val):
         self.values.append(val)
@@ -392,6 +393,7 @@ class Target(object):
         self.points = None
         self.mi = None
         self.clean_ref_data()
+        self.devices = []
 
     def collect_ref_data(self):
         try:
@@ -399,7 +401,6 @@ class Target(object):
         except:
             print("ERROR: could nor read ref_sase")
             ref_sase = None
-        print("ref_sase = ", ref_sase)
         self.ref_sase.append(ref_sase)
 
     def clean_ref_data(self):
@@ -460,56 +461,10 @@ class Target_test(Target):
         :param eid: ID
         """
         self.mi = mi
-        self.debug = False
-        self.kill = False
-        self.pen_max = 100
-        self.niter = 0
-        self.penalties = []
-        self.times = []
-        self.alarms = []
-        self.values = []
-
-    def get_penalty(self):
-        sase = self.get_value()
-        alarm = self.get_alarm()
-
-        if self.debug: print('alarm:', alarm)
-        if self.debug: print('sase:', sase)
-        pen = 0.0
-        if alarm > 1.0:
-            return self.pen_max
-        if alarm > 0.7:
-            return alarm * 50.0
-        pen += alarm
-        pen -= sase
-        if self.debug: print('penalty:', pen)
-        self.niter += 1
-        print("niter = ", self.niter)
-        self.penalties.append(pen)
-        self.times.append(time.time())
-        self.values.append(sase)
-        self.alarms.append(alarm)
-        return pen
 
     def get_value(self):
         values = np.array([dev.get_value() for dev in self.devices])
         return np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
 
-    def get_spectrum(self):
-        return [0, 0]
-
-    def get_stat_params(self):
-        #spetrum = self.get_spectrum()
-        #ave = np.mean(spetrum[(2599 - 5 * 120):-1])
-        #std = np.std(spetrum[(2599 - 5 * 120):-1])
-        ave = self.get_value()
-        std = 0.1
-        return ave, std
-
-    def get_alarm(self):
-        return 0
-
-    def get_energy(self):
-        return 3
 
 
