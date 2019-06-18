@@ -265,12 +265,7 @@ class MainWindow(Ui_Form):
         print("Load Settings with: ", filename)
         path, file = os.path.split(filename)
         (body_name, extension) = file.split(".")
-
-        #print(body_name, extension, path, self.Form.obj_save_path.split(os.sep)[-1])
-        #copy(os.path.join(self.Form.obj_save_path,  body_name + ".py"), self.Form.path_to_obj_func)
-        obj_dir = self.Form.obj_save_path.split(os.sep)[-1]
-        path2obj_func = os.path.join(path, obj_dir)
-        copy(os.path.join(path2obj_func, body_name + ".py"), self.Form.path_to_obj_func)
+        copy(os.path.join(self.Form.obj_save_path,  body_name + ".py"), self.Form.path_to_obj_func)
         self.restore_state(filename)
 
     def get_hyper_file(self):
