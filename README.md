@@ -103,16 +103,6 @@ class DemoInterface(MachineInterface):
 
 ```
 
-
-* <b>Note:</b> Config folder (MachineInterface.config_dir) keeps default config (default.json). Also, you can save and restore 
-your own config with your specific target function (script).  That is why, inside 
-the config folder will be created folder "obj_funcs" to store  objective funcions (Target()) which belongs to different config files.*
-
-
-* <b>Note:</b> We recommend keeping mi.config_dir outside of the Optimizer folder to make easier future update. *
-
-
-
 As a second step we recommend to have a look to [XFELMachineInterface](mint/xfel/xfel_interface.py)
 and also [TestMachineInterface](mint/xfel/xfel_interface.py) 
 which you can run using:
