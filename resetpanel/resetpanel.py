@@ -14,7 +14,6 @@ from PyQt5 import QtGui, QtCore, uic
 from mint.opt_objects import *
 
 from resetpanel.UIresetpanel import Ui_Form
-
 import os
 
 sys.path.append("..")
@@ -150,8 +149,8 @@ class ResetpanelWindow(QFrame):
                     self.ui.tableWidget.item(row, 2).setBackground(QtGui.QColor(89, 89, 89))  # grey
 
                 continue
-
             # if value out of the limits
+            
             if dev.check_limits(value):
                 for col in [3, 4]:
                     spin_box = self.ui.tableWidget.cellWidget(row, col)
@@ -166,7 +165,7 @@ class ResetpanelWindow(QFrame):
                         spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
 
             lim_low, lim_high = dev.get_limits()
-
+            
             # stop update min spinbox if it has focus
             if not self.ui.tableWidget.cellWidget(row, 3).hasFocus():
                 spin_box = self.ui.tableWidget.cellWidget(row, 3)
@@ -182,8 +181,12 @@ class ResetpanelWindow(QFrame):
             pv = dev.eid
 
             self.currentValues[pv] = value  # dev.get_value()
-            self.ui.tableWidget.setItem(row, 2, QtGui.QTableWidgetItem(str(np.around(self.currentValues[pv], 4))))
+            if self.ui.tableWidget.item(row, 2) is None:
+                self.ui.tableWidget.setItem(row, 2, QtGui.QTableWidgetItem(str(np.around(self.currentValues[pv], 4))))
+            else:
+                self.ui.tableWidget.item(row, 2).setText(str(np.around(self.currentValues[pv], 4)))
             # print(self.currentValues[pv])
+            #print(self.ui.tableWidget.item(row, 2) is None)
             tol = abs(self.startValues[pv] * percent)
             diff = abs(abs(self.startValues[pv]) - abs(self.currentValues[pv]))
             if diff > tol:
@@ -198,8 +201,10 @@ class ResetpanelWindow(QFrame):
                 # self.ui.tableWidget.item(row, col).setFlags(
                 #    QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
                 self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(89, 89, 89))
-
+            #print("check rest = ", time.time() - start)
+            
         QApplication.processEvents()
+
 
     def resetAll(self):
         """Set all PVs back to their reference values."""
