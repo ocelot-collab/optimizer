@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
 from mint.mint import *
 from scipy import optimize
+from mint import normscales
 
 class Simplex(Minimizer):
     def __init__(self):
