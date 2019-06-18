@@ -13,37 +13,7 @@ import scipy
 import numpy as np
 from mint.opt_objects import *
 
-
-try:
-    from matrixmodel.beamconfig import Beamconfig
-except:
-    for i in range(5):
-        print('WARNING: could not import Beamconfig from matrixmodel.beamconfig')
-import pandas as pd
 from threading import Thread
-
-
-from mint import normscales
-
-
-class Logger(object):
-    def __init__(self, log_file):
-        self.log_file = log_file
-        self.f = open(self.log_file, 'a')
-
-    def log_start(self, dev_ids, method, x_init, target_ref):
-        self.f.write('\n*** optimization step ***\n')
-        self.f.write(str(dev_ids) + '\n')
-        self.f.write(method + '\n')
-        self.f.write('x_init =' + str(x_init) + '\n')
-        self.f.write('target_ref =' + str(target_ref) + '\n')
-
-    def log(self, data):
-        self.f.write(data)
-
-    def log_fin(self, target_new):
-        self.f.write('target_new=' + str(target_new) + '\n')
-        self.f.close()
 
 
 class Minimizer(object):
@@ -189,7 +159,6 @@ class Optimizer(Thread):
         self.logging = False
         # self.kill = False #intructed by tmc to terminate thread of this class
         self.log_file = "log.txt"
-        self.logger = Logger(self.log_file)
         self.devices = []
         self.target = None
         self.timeout = 0
@@ -297,9 +266,6 @@ class Optimizer(Thread):
         x = [dev.get_value(save=True) for dev in self.devices]
         x_init = x
 
-        if self.logging:
-            self.logger.log_start(dev_ids, method=self.minimizer.__class__.__name__, x_init=x_init, target_ref=target_ref)
-
         self.minimizer.x_init = x_init
 
         self.minimizer.preprocess()
@@ -320,8 +286,6 @@ class Optimizer(Thread):
 
         print ('step ended changing sase from/to', target_ref, target_new)
 
-        if self.logging:
-            self.logger.log_fin(target_new=target_new)
 
     def run(self):
         self.opt_ctrl.start()

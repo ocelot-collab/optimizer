@@ -5,6 +5,14 @@ from GP.OnlineGP import OGP
 from GP.DKLmodel import DKLGP
 from op_methods.simplex import *
 
+try:
+    from matrixmodel.beamconfig import Beamconfig
+except:
+    for i in range(5):
+        print('WARNING: could not import Beamconfig from matrixmodel.beamconfig')
+import pandas as pd
+
+
 class GaussProcess(Minimizer):
     def __init__(self):
         super(GaussProcess,self).__init__()
