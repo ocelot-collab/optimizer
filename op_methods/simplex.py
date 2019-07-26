@@ -1,13 +1,32 @@
 from __future__ import print_function, absolute_import
 from mint.mint import *
 from scipy import optimize
+from mint import normscales
 
 class Simplex(Minimizer):
     def __init__(self):
         super(Simplex, self).__init__()
         self.xtol = 1e-5
         self.dev_steps = None
+    
+    def preprocess(self):
+        """
+        defining attribute self.dev_steps
 
+        :return:
+        """
+
+        self.dev_steps = []
+        for dev in self.devices:
+            if "istep" not in dev.__dict__:
+                self.dev_steps = None
+                return
+            elif dev.istep is None or dev.istep == 0:
+                self.dev_steps = None
+                return
+            else:
+                self.dev_steps.append(dev.istep)
+    
     def minimize(self,  error_func, x):
         #print("start seed", np.count_nonzero(self.dev_steps))
         if self.dev_steps == None or len(self.dev_steps) != len(x):

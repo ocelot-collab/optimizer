@@ -13,37 +13,7 @@ import scipy
 import numpy as np
 from mint.opt_objects import *
 
-
-try:
-    from matrixmodel.beamconfig import Beamconfig
-except:
-    for i in range(5):
-        print('WARNING: could not import Beamconfig from matrixmodel.beamconfig')
-import pandas as pd
 from threading import Thread
-
-
-from mint import normscales
-
-
-class Logger(object):
-    def __init__(self, log_file):
-        self.log_file = log_file
-        self.f = open(self.log_file, 'a')
-
-    def log_start(self, dev_ids, method, x_init, target_ref):
-        self.f.write('\n*** optimization step ***\n')
-        self.f.write(str(dev_ids) + '\n')
-        self.f.write(method + '\n')
-        self.f.write('x_init =' + str(x_init) + '\n')
-        self.f.write('target_ref =' + str(target_ref) + '\n')
-
-    def log(self, data):
-        self.f.write(data)
-
-    def log_fin(self, target_new):
-        self.f.write('target_new=' + str(target_new) + '\n')
-        self.f.close()
 
 
 class Minimizer(object):
@@ -62,7 +32,8 @@ class Minimizer(object):
     def normalize(self, x):
         """
         Normalize actuator values.
-        The method is used when the minimization function cannot be controlled, e.g. the standard simplex method in Scipy
+        The method is used when the function "minimize" cannot be controlled
+        but transformation of actuator values is needed, e.g. the standard simplex method in Scipy.
 
         :param x: array of actuator values
         :return: x_normalize
@@ -72,7 +43,8 @@ class Minimizer(object):
     def unnormalize(self, xnorm, norm_coef, scaling_coef):
         """
         Un normalize parameters back to physical values.
-        The method is used when the minimization function cannot be controlled, e.g. the standard simplex method in Scipy
+        The method is used when the function "minimize" cannot be controlled
+        but transformation of actuator values is needed, e.g. the standard simplex method in Scipy.
 
         :param xnorm:
         :param norm_coef: scaling coefficient
@@ -84,6 +56,7 @@ class Minimizer(object):
     def preprocess(self):
         """
         The method is called before starting optimization
+
         :return:
         """
         pass
@@ -91,10 +64,19 @@ class Minimizer(object):
 
 class MachineStatus:
     def __init__(self):
-        pass
+        self.alarm_device = None
+        self.alarm_min = -1
+        self.alarm_max = 1
 
     def is_ok(self):
-        return True
+        if self.alarm_device is None:
+            return True
+        alarm_value = self.alarm_device.get_value()
+
+        print("ALARM: ", alarm_value, self.alarm_min, self.alarm_max)
+        if self.alarm_min <= alarm_value <= self.alarm_max:
+                return True
+        return False
 
 
 class OptControl:
@@ -155,7 +137,6 @@ class OptControl:
         self.penalty.append(pen)
         self.dev_sets.append(x)
         self.nsteps = len(self.penalty)
-        print("SAVE", self.penalty)
 
     def best_step(self):
         #if len(self.penalty)== 0:
@@ -178,7 +159,6 @@ class Optimizer(Thread):
         self.logging = False
         # self.kill = False #intructed by tmc to terminate thread of this class
         self.log_file = "log.txt"
-        self.logger = Logger(self.log_file)
         self.devices = []
         self.target = None
         self.timeout = 0
@@ -198,6 +178,7 @@ class Optimizer(Thread):
             self.seq = seq
         for s in self.seq:
             s.apply()
+            s.finalize()
 
     def exceed_limits(self, x):
         for i in range(len(x)):
@@ -212,23 +193,23 @@ class Optimizer(Thread):
 
     def set_values(self, x):
         for i in range(len(self.devices)):
-            print('setting', self.devices[i].id, '->', x[i])
+            #print('setting', self.devices[i].id, '->', x[i])
             self.devices[i].set_value(x[i])
 
     def set_triggers(self):
         for i in range(len(self.devices)):
-            print('triggering ', self.devices[i].id)
+            #print('triggering ', self.devices[i].id)
             self.devices[i].trigger()
 
     def do_wait(self):
         for i in range(len(self.devices)):
-            print('waiting ', self.devices[i].id)
+            #print('waiting ', self.devices[i].id)
             self.devices[i].wait()
 
     def error_func(self, x):
 
         x = self.minimizer.unnormalize(x, self.norm_coef, self.scaling_coef)
-        
+
         if self.opt_ctrl.kill:
             #self.minimizer.kill = self.opt_ctrl.kill
             print('Killed from external process')
@@ -285,15 +266,11 @@ class Optimizer(Thread):
         x = [dev.get_value(save=True) for dev in self.devices]
         x_init = x
 
-        if self.logging:
-            self.logger.log_start(dev_ids, method=self.minimizer.__class__.__name__, x_init=x_init, target_ref=target_ref)
-
         self.minimizer.x_init = x_init
 
         self.minimizer.preprocess()
 
         x = self.minimizer.normalize(x)
-
         res = self.minimizer.minimize(self.error_func, x)
         print("result", res)
 
@@ -309,8 +286,6 @@ class Optimizer(Thread):
 
         print ('step ended changing sase from/to', target_ref, target_new)
 
-        if self.logging:
-            self.logger.log_fin(target_new=target_new)
 
     def run(self):
         self.opt_ctrl.start()
@@ -331,156 +306,11 @@ class Action:
         print ('applying...', self.id)
         self.func(*self.args)
 
+    def finalize(self):
+        """
+        the method is called after method self.apply() is completed.
 
-
-def test_simplex():
-    """
-    test simplex method
-    :return:
-    """
-    d1 = TestDevice(eid="d1")
-    d2 = TestDevice(eid="d2")
-    d3 = TestDevice(eid="d3")
-
-    def get_limits():
-        return [-100, 100]
-
-    d1.get_limits = get_limits
-    d2.get_limits = get_limits
-    d3.get_limits = get_limits
-
-    devices = [d1, d2, d3]
-    target = Target_test()
-
-    # init Optimizer
-    opt = Optimizer()
-    opt.timeout = 0
-
-    # init Minimizer
-    minimizer = Simplex()
-    minimizer.max_iter = 300
-
-    opt.minimizer = minimizer
-
-    seq = [Action(func=opt.max_target_func, args=[target, devices])]
-    opt.eval(seq)
-
-
-def test_gauss_process():
-    """
-    test simplex method
-    :return:
-    """
-    d1 = TestDevice(eid="d1")
-    d2 = TestDevice(eid="d2")
-    d3 = TestDevice(eid="d3")
-
-    def get_limits():
-        return [-100, 100]
-
-    d1.get_limits = get_limits
-    d2.get_limits = get_limits
-    d3.get_limits = get_limits
-
-    devices = [d1, d2, d3]
-    target = TestTarget()
-
-    # init Optimizer
-    opt = Optimizer()
-    opt.timeout = 0
-
-    # init Minimizer
-    minimizer = GaussProcess()
-    minimizer.seed_iter = 3
-    minimizer.max_iter = 300
-
-    opt.minimizer = minimizer
-
-    seq = [Action(func=opt.max_target_func, args=[ target, devices])]
-    opt.eval(seq)
-
-
-#from itertools import chain
-#import scipy
-#from ocelot.optimizer.GP.OnlineGP import OGP
-#from ocelot.optimizer.GP.bayes_optimization import BayesOpt, HyperParams
-
-
-def test_GP():
-    """
-    test GP method
-    :return:
-    """
-
-    def get_limits():
-        return [-100, 100]
-    d1 = TestDevice(eid="d1")
-    d1.get_limits = get_limits
-    d2 = TestDevice(eid="d2")
-    d2.get_limits = get_limits
-    d3 = TestDevice(eid="d3")
-    d3.get_limits = get_limits
-
-    devices = [d1, d2]
-    target = TestTarget()
-
-    opt = Optimizer()
-    opt.timeout = 0
-
-    opt_smx = Optimizer()
-    opt_smx.timeout = 0
-    minimizer = Simplex()
-    minimizer.max_iter = 3
-    opt_smx.minimizer = minimizer
-    #opt.debug = True
-
-    seq = [Action(func=opt_smx.max_target_func, args=[target, devices])]
-    opt_smx.eval(seq)
-    s_data = np.append(np.vstack(opt_smx.opt_ctrl.dev_sets), np.transpose(-np.array([opt_smx.opt_ctrl.penalty])), axis=1)
-    print(s_data)
-
-    # -------------- GP config setup -------------- #
-    #GP parameters
-    numBV = 30
-    xi = 0.01
-    #no input bounds on GP selection for now
-
-    pvs = [dev.eid for dev in devices]
-    hyp_params = HyperParams(pvs=pvs, filename="../parameters/hyperparameters.npy")
-    ave = np.mean(-np.array(opt_smx.opt_ctrl.penalty))
-    std = np.std(-np.array(opt_smx.opt_ctrl.penalty))
-    noise = hyp_params.calcNoiseHP(ave, std=0.)
-    coeff = hyp_params.calcAmpCoeffHP(ave, std=0.)
-    len_sc_hyps = []
-    for dev in devices:
-        ave = 10
-        std = 3
-        len_sc_hyps.append(hyp_params.calcLengthScaleHP(ave, std))
-    print("y_data", opt_smx.opt_ctrl.penalty)
-    print("pd.DataFrame(s_data)", pd.DataFrame(s_data))
-    print("len_sc_hyps", len_sc_hyps )
-
-    bnds = None
-    #hyps = hyp_params.loadHyperParams(energy=3, detector_stat_params=target.get_stat_params())
-    hyps1 = (np.array([len_sc_hyps]), coeff, noise) #(np.array([hyps]), coeff, noise)
-    print("hyps1", hyps1)
-    #exit(0)
-    #init model
-    dim = len(pvs)
-
-    model = OGP(dim, hyps1, maxBV=numBV, weighted=False)
-
-    minimizer = BayesOpt(model, target_func=target, xi=0.01, acq_func='EI', bounds=bnds, prior_data=pd.DataFrame(s_data))
-    minimizer.devices = devices
-    minimizer.max_iter = 300
-    opt.minimizer = minimizer
-
-    seq = [Action(func=opt.max_target_func, args=[ target, devices])]
-    opt.eval(seq)
-
-
-if __name__ == "__main__":
-    test_simplex()
-    #test_gauss_process()
-    #test_GP()
+        :return:
+        """
+        pass
 

@@ -16,7 +16,7 @@ import sys
 import numpy as np
 import subprocess
 import base64
-from mint.opt_objects import MachineInterface, Device
+from mint.opt_objects import MachineInterface, Device, TestDevice
 from collections import OrderedDict
 from datetime import datetime
 import json
@@ -156,32 +156,33 @@ class XFELMachineInterface(MachineInterface):
 
         dump2json["method"] = method_name
         dump2json["dev_times"] = devices[0].times
-        dump2json["obj_values"] = objective_func.values
         dump2json["obj_times"] = objective_func.times
         dump2json["maximization"] = maximization
-        dump2json["std"] = objective_func.std_dev
-        dump2json["nreadings"] = objective_func.nreadings
+        dump2json["nreadings"] = [objective_func.nreadings]
         dump2json["function"] = objective_func.eid
         dump2json["beam_energy"] = self.get_beam_energy()
         dump2json["wavelength"] = self.get_wavelength()
+        dump2json["obj_values"] = np.array(objective_func.values).tolist()
+        dump2json["std"] = np.array(objective_func.std_dev).tolist()
         try:
             dump2json["ref_sase"] = [objective_func.ref_sase[0], objective_func.ref_sase[-1]]
         except Exception as e:
             print("ERROR. Read ref sase: " + str(e))
+            dump2json["ref_sase"] = [None]
 
 
         try:
-            dump2json["charge"] = self.get_charge()
+            dump2json["charge"] = [self.get_charge()]
         except Exception as e:
             print("ERROR. Read charge: " + str(e))
-            dump2json["charge"] = None
+            dump2json["charge"] = [None]
 
         if not os.path.exists(self.path2jsondir):
             os.makedirs(self.path2jsondir)
 
         filename = os.path.join(self.path2jsondir, datetime.now().strftime("%Y-%m-%d %H-%M-%S") + ".json")
         try:
-            with open(filename, 'w+') as f:
+            with open(filename, 'w') as f:
                 json.dump(dump2json, f)
         except Exception as e:
             print("ERROR. Could not write data: " + str(e))
@@ -268,12 +269,21 @@ class XFELMachineInterface(MachineInterface):
             "SASE Optimization": [
                 {"display": "1. Launch orbit SASE1", "filename": "sase1_1.json"},
                 {"display": "2. Match Quads SASE1", "filename": "sase1_2.json"},
+                 {"display": "3. AirCoils SASE1", "filename": "CAX_CAY_SASE1.json"},
+                  {"display": "4. AirCoils SASE2", "filename": "sase1_2.json"},
             ],
+            
+            "SASE2 Optimization": [
+                 {"display": "3. AirCoils SASE1", "filename": "CAX_CAY_SASE1.json"},
+                  {"display": "4. AirCoils SASE2", "filename": "sase1_2.json"},
+            ],
+            
             "Dispersion Minimization": [
                 {"display": "1. I1 Horizontal", "filename": "disp_1.json"},
                 {"display": "2. I1 Vertical", "filename": "disp_2.json"},
             ]
         }
+        
         return presets
 
     def get_quick_add_devices(self):
@@ -313,7 +323,7 @@ class XFELMachineInterface(MachineInterface):
                                 "XFEL.MAGNETS/MAGNET.ML/CIY.72.I1/KICK_MRAD.SP",
                                 "XFEL.MAGNETS/MAGNET.ML/CY.39.I1/KICK_MRAD.SP"])
         ])
-        return devs
+        return None
 # test interface
 
 
@@ -394,4 +404,11 @@ class TestMachineInterface(XFELMachineInterface):
         from mint.xfel import xfel_obj_function
         return xfel_obj_function
 
+    def device_factory(self, pv):
+        """
+        Create a device for the given PV using the proper Device Class.
 
+        :param pv: (str) The process variable for which to create the device.
+        :return: (Device) The device instance for the given PV.
+        """
+        return TestDevice(eid=pv)
