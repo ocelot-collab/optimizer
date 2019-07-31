@@ -276,7 +276,7 @@ class Device(object):
         self.low_limit = 0.
         self.high_limit = 0.
         self._can_edit_limits = True
-        self.istep = None               # inital step
+        self.istep = None               # initial step
 
     def set_value(self, val):
         self.values.append(val)

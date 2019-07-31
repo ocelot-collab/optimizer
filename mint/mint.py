@@ -3,7 +3,7 @@ Main Ocelot optimization file
 Contains the setup for using the scipy.optimize package run simplex and other algorothms
 Modified for use at LCLS from Ilya's version
 
-The file was modified and were introduced new Objects and methods.
+The file was modified and new Objects and methods were introduced.
 S. Tomin, 2017
 
 """
@@ -151,21 +151,96 @@ class OptControl:
         self.nsteps = 0
 
 
+class DeviceManager(object):
+    """
+    The class is an intermediary between the Devices and the Optimizer.
+    The idea is to be able to work with real devices (e.g. Quads) through virtual devices, e.g. beta functions. d
+    """
+
+    def __init__(self):
+        self.devices = []
+
+    def preprocess(self):
+        """
+        Method is called once in  Optmizer.max_target_func()
+        :return:
+        """
+        pass
+
+    def get_values(self):
+        x = []
+        for i in range(len(self.devices)):
+            print('reading ', self.devices[i].id)
+            x.append(self.devices[i].get_value(save=True))
+        return x
+
+    def set_values(self, x):
+        for i in range(len(self.devices)):
+            self.devices[i].set_value(x[i])
+
+    def set_triggers(self):
+        for i in range(len(self.devices)):
+            self.devices[i].trigger()
+
+    def do_wait(self):
+        for i in range(len(self.devices)):
+            self.devices[i].wait()
+
+    def set(self, x):
+        """
+        Method sets new values to the Diveces. The method is used in the Optimizer.
+
+        :param x: list of values
+        :return:
+        """
+        self.set_values(x)
+        self.set_triggers()
+        self.do_wait()
+
+    def get(self):
+        """
+        Method gets values from devices. The method is used in the Optimizer
+
+        :return: list of values
+        """
+        x = self.get_values()
+        return x
+
+    def exceed_limits(self, x):
+        """
+        The method checks if x is out of range of any device. The method is used in the Optimizer
+
+        :param x: list of values
+        :return: False if x is in the ranges, True if x is out
+        """
+        for i in range(len(x)):
+            if self.devices[i].check_limits(x[i]):
+                return True
+        return False
+
+    def clean(self):
+        """
+        method cleans devices. The method is used in Optimizer
+
+        :return:
+        """
+        for dev in self.devices:
+            dev.clean()
+
+
 class Optimizer(Thread):
     def __init__(self):
         super(Optimizer, self).__init__()
         self.debug = False
         self.minimizer = Minimizer()
-        self.logging = False
         # self.kill = False #intructed by tmc to terminate thread of this class
-        self.log_file = "log.txt"
         self.devices = []
         self.target = None
         self.timeout = 0
         self.opt_ctrl = OptControl()
+        self.dev_manager = DeviceManager()
         self.seq = []
         self.set_best_solution = True
-        #self.normalization = False
         self.norm_coef = 0.05
         self.maximization = True
         self.scaling_coef = 1.0
@@ -180,32 +255,6 @@ class Optimizer(Thread):
             s.apply()
             s.finalize()
 
-    def exceed_limits(self, x):
-        for i in range(len(x)):
-            if self.devices[i].check_limits(x[i]):
-                return True
-        return False
-
-    def get_values(self):
-        for i in range(len(self.devices)):
-            print('reading ', self.devices[i].id)
-            self.devices[i].get_value(save=True)
-
-    def set_values(self, x):
-        for i in range(len(self.devices)):
-            #print('setting', self.devices[i].id, '->', x[i])
-            self.devices[i].set_value(x[i])
-
-    def set_triggers(self):
-        for i in range(len(self.devices)):
-            #print('triggering ', self.devices[i].id)
-            self.devices[i].trigger()
-
-    def do_wait(self):
-        for i in range(len(self.devices)):
-            #print('waiting ', self.devices[i].id)
-            self.devices[i].wait()
-
     def error_func(self, x):
 
         x = self.minimizer.unnormalize(x, self.norm_coef, self.scaling_coef)
@@ -219,13 +268,11 @@ class Optimizer(Thread):
         self.opt_ctrl.wait()
 
         # check limits
-        if self.exceed_limits(x):
+        if self.dev_manager.exceed_limits(x):
             return self.target.pen_max
-        # set values
-        self.set_values(x)
-        self.set_triggers()
-        self.do_wait()
-        self.get_values()
+
+        self.dev_manager.set(x)
+        self.dev_manager.get()
 
         print('sleeping ' + str(self.timeout))
         time.sleep(self.timeout)
@@ -246,24 +293,28 @@ class Optimizer(Thread):
         """
         Direct target function optimization with simplex/GP, using Devices as a multiknob
         """
-        [dev.clean() for dev in devices]
+        self.dev_manager.devices = devices
+        self.dev_manager.preprocess()
+
+        self.dev_manager.clean()
         target.clean()
         self.target = target
-        #print(self.target)
         self.devices = devices
-        # testing
+
+        # devices are needed for calculating initial step size
         self.minimizer.devices = devices
         self.minimizer.maximize = self.maximization
+
+        # target in minizer is needed for calculating normscales
         self.minimizer.target = target
         self.minimizer.opt_ctrl = self.opt_ctrl
 
+        # devices are needed for "devmode"
         self.target.devices = self.devices
-        dev_ids = [dev.eid for dev in self.devices]
-        if self.debug: print('starting multiknob optimization, devices = ', dev_ids)
 
         target_ref = self.target.get_penalty()
 
-        x = [dev.get_value(save=True) for dev in self.devices]
+        x = self.dev_manager.get()
         x_init = x
 
         self.minimizer.x_init = x_init
@@ -278,14 +329,13 @@ class Optimizer(Thread):
         if self.set_best_solution:
             print("SET the best solution", x)
             x = self.opt_ctrl.best_step()
-            if self.exceed_limits(x):
+            if self.dev_manager.exceed_limits(x):
                 return self.target.pen_max
-            self.set_values(x)
+            self.dev_manager.set(x)
 
         target_new = self.target.get_penalty()
 
         print ('step ended changing sase from/to', target_ref, target_new)
-
 
     def run(self):
         self.opt_ctrl.start()
