@@ -231,11 +231,8 @@ class DeviceManager(object):
 class Optimizer(Thread):
     def __init__(self):
         super(Optimizer, self).__init__()
-        self.debug = False
         self.minimizer = Minimizer()
-        self.logging = False
         # self.kill = False #intructed by tmc to terminate thread of this class
-        self.log_file = "log.txt"
         self.devices = []
         self.target = None
         self.timeout = 0
@@ -285,8 +282,6 @@ class Optimizer(Thread):
 
         pen = coef*self.target.get_penalty()
         print('penalty:', pen)
-        if self.debug:
-            print('penalty:', pen)
 
         self.opt_ctrl.save_step(pen, x)
         return pen
