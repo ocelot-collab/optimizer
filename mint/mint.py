@@ -233,7 +233,9 @@ class Optimizer(Thread):
         super(Optimizer, self).__init__()
         self.debug = False
         self.minimizer = Minimizer()
+        self.logging = False
         # self.kill = False #intructed by tmc to terminate thread of this class
+        self.log_file = "log.txt"
         self.devices = []
         self.target = None
         self.timeout = 0
