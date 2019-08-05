@@ -266,16 +266,20 @@ class XFELMachineInterface(MachineInterface):
             {"display": "Text of the PushButton", "filename": "my_file.json"}
         """
         presets = {
-            "SASE Optimization": [
-                {"display": "1. Launch orbit SASE1", "filename": "sase1_1.json"},
-                {"display": "2. Match Quads SASE1", "filename": "sase1_2.json"},
-                 {"display": "3. AirCoils SASE1", "filename": "CAX_CAY_SASE1.json"},
-                  {"display": "4. AirCoils SASE2", "filename": "sase1_2.json"},
+            "SASE1 opt 1": [
+                {"display": "1. Launch orbit", "filename": "sase1_1.json"},
+                {"display": "2. Match Quads", "filename": "sase1_2.json"},
+                 {"display": "3. SASE1 CAX CAY", "filename": "SASE1_CAX_CAY.json"}],
+        "SASE1 opt 2": [
+                  {"display": "4. SASE1 CAX CBX", "filename": "SASE1_CAX_CBX.json"},
+                {"display": "5. SASE1 phase-shifters", "filename": "SASE1_phase_shifter.json"},
+                {"display": "6. SASE1 inj elements", "filename": "SASE1_tuning_with_injector_elements.json"},
             ],
             
-            "SASE2 Optimization": [
-                 {"display": "3. AirCoils SASE1", "filename": "CAX_CAY_SASE1.json"},
-                  {"display": "4. AirCoils SASE2", "filename": "sase1_2.json"},
+            "SASE2 Opt": [
+                 {"display": "1. Match Quads", "filename": "SASE2_matching_quads.json"},
+                  {"display": "2. AirCoils", "filename": "SASE2_CAX_CBX_CAY_CBY.json"},
+                  {"display": "3. Phase-shifters", "filename": "SASE2_BPS.json"},
             ],
             
             "Dispersion Minimization": [

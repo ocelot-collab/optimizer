@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 import json
 
-#from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget
 
 
 class MachineInterface(object):
