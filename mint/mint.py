@@ -251,7 +251,7 @@ class Optimizer(Thread):
         if seq is not None:
             self.seq = seq
         for s in self.seq:
-            s.apply()
+            s.apply(func=self.max_target_func)
             s.finalize()
 
     def error_func(self, x):
@@ -343,15 +343,18 @@ class Optimizer(Thread):
 
 
 class Action:
-    def __init__(self, func, args=None, id=None):
+    def __init__(self, func=None, args=None, id=None):
         self.func = func
         self.args = args
 
         self.id = id
 
-    def apply(self):
+    def apply(self, func=None):
         print ('applying...', self.id)
-        self.func(*self.args)
+        if func is None:
+            self.func(*self.args)
+        else:
+            func(*self.args)
 
     def finalize(self):
         """
