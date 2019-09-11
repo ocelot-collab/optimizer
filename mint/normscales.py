@@ -1,5 +1,6 @@
 # -*- coding: iso-8859-1 -*-
 import numpy as np
+import parameters
 
 """
 TODO: note these methods should be brought into each respective machine interface rathyer than living here
@@ -97,9 +98,15 @@ def normscales_LCLSMachineInterface(mi, devices, default_length_scale=1., correl
     vals = [dev.get_value() for dev in devices]
 
     key = str(int(round(energy))).encode('utf-8')
-    filename = 'parameters/hype3.npy'
+    filename = parameters.path_to_hype3
     if verboseQ: print("Loading raw data for ",key," GeV from", filename)
-    f = np.load(str(filename), encoding='bytes'); filedata0 = f[0][key]; names0 = filedata0.keys()
+    try:
+        f = np.load(str(filename), allow_pickle=True, encoding='bytes'); 
+    except:
+        print('loading pickle...')
+        with open(filename) as f_name:
+                f = np.load(f_name)
+    filedata0 = f[0][key]; names0 = filedata0.keys()
     if verboseQ: 
         print('\n\n\n\\', f[0])
         print(f[0][key])
