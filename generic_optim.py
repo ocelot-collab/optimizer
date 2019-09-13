@@ -52,6 +52,7 @@ from mint import opt_objects as obj
 
 from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
+from mint.spear.spear_interface import * 
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
 from mint.petra.petra_interface import *
@@ -68,7 +69,7 @@ from stats import stats
 
 AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
                                 TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
-                                DemoInterface]
+                                DemoInterface, SPEARMachineInterface]
 
 
 class OcelotInterfaceWindow(QFrame):
