@@ -17,7 +17,7 @@ try:
    sklearn_version = sklearn.__version__
 except:
    sklearn_version = None
-   
+
 import functools
 import inspect
 import parameters
@@ -52,11 +52,12 @@ from mint import opt_objects as obj
 
 from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
-from mint.spear.spear_interface import * 
+from mint.spear.spear_interface import *
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
 from mint.petra.petra_interface import *
 from sint.multinormal.multinormal_interface import *
+from mint.flash.flash_interface import *
 from op_methods.simplex import *
 from op_methods.gp_slac import *
 from op_methods.es import *
@@ -69,7 +70,7 @@ from stats import stats
 
 AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
                                 TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
-                                DemoInterface, SPEARMachineInterface]
+                                DemoInterface, SPEARMachineInterface, FLASHMachineInterface]
 
 
 class OcelotInterfaceWindow(QFrame):
