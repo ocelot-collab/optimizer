@@ -12,11 +12,18 @@ from __future__ import absolute_import, print_function
 import sys
 import os
 import argparse
-import sklearn
+try:
+   import sklearn
+   sklearn_version = sklearn.__version__
+except:
+   sklearn_version = None
+   
 import functools
 import inspect
+import parameters
 
-sklearn_version = sklearn.__version__
+print('GENERIC OPTIM PATH: ',  os.path.abspath(os.path.join(__file__ ,"../")) + os.sep)
+
 
 path = os.path.realpath(__file__)
 #indx = path.find("ocelot/optimizer")
@@ -45,6 +52,7 @@ from mint import opt_objects as obj
 
 from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
+from mint.spear.spear_interface import * 
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
 from mint.petra.petra_interface import *
@@ -61,7 +69,7 @@ from stats import stats
 
 AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
                                 TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
-                                DemoInterface]
+                                DemoInterface, SPEARMachineInterface]
 
 
 class OcelotInterfaceWindow(QFrame):
@@ -113,7 +121,7 @@ class OcelotInterfaceWindow(QFrame):
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
         self.ui.cb_select_alg.addItem(self.name_simplex)
-        # self.ui.cb_select_alg.addItem(self.name_gauss)
+        self.ui.cb_select_alg.addItem(self.name_gauss)
         # self.ui.cb_select_alg.addItem(self.name_custom)
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
         self.ui.cb_select_alg.addItem(self.name_es)
@@ -152,7 +160,7 @@ class OcelotInterfaceWindow(QFrame):
         # database
 
         self.scan_params = None
-        self.hyper_file = "../parameters/hyperparameters.npy"
+        self.hyper_file = parameters.path_to_hyps
 
         self.set_obj_fun()
 
