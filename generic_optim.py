@@ -24,7 +24,6 @@ import parameters
 
 print('GENERIC OPTIM PATH: ',  os.path.abspath(os.path.join(__file__ ,"../")) + os.sep)
 
-
 path = os.path.realpath(__file__)
 #indx = path.find("ocelot/optimizer")
 print("PATH", os.path.realpath(__file__))
@@ -68,6 +67,11 @@ from op_methods.gp_sklearn import *
 
 from stats import stats
 
+import logging
+#logging.basicConfig(filename="optimizer.log", format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
                                 TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
                                 DemoInterface, SPEARMachineInterface, FLASHMachineInterface]
@@ -95,7 +99,7 @@ class OcelotInterfaceWindow(QFrame):
         else:
             class_name = self.optimizer_args.mi
             if class_name not in globals():
-                print("Could not find Machine Interface with name: {}. Loading XFELMachineInterface instead.".format(class_name))
+                logger.warning("Could not find Machine Interface with name: {}. Loading XFELMachineInterface instead.".format(class_name))
                 self.mi = XFELMachineInterface(args)
             else:
                 self.mi = globals()[class_name](args)
@@ -344,14 +348,14 @@ class OcelotInterfaceWindow(QFrame):
             return
 
         index = self.ui.browser_data_slider.value()
-        print("***** Restoring Devices to value at index: ", index)
+        logger.info("***** Restoring Devices to value at index: " + str(index))
         for dev in self.devices:
             try:
                 val = dev.values[index]
-                print("Restore: {} to value: {}".format(dev.eid, val))
+                logger.info("Restore: {} to value: {}".format(dev.eid, val))
                 dev.set_value(val)
             except IndexError:
-                print("Restore: {} failed. Index Error.".format(dev.eid))
+                logger.warning("Restore: {} failed. Index Error.".format(dev.eid))
 
     def statistics_select(self, value):
         if self.objective_func is not None:
@@ -525,9 +529,8 @@ class OcelotInterfaceWindow(QFrame):
                 if dev.simplex_step == 0:
                     lims = dev.get_limits()
                     rel_step = self.ui.sb_isim_rel_step.value()
-                    print(dev.id, rel_step)
                     minimizer.dev_steps.append((lims[1] - lims[0]) * rel_step / 100.)
-            print("MINImizer steps", minimizer.dev_steps)
+            logger.debug("MINImizer steps: " + str(minimizer.dev_steps))
 
         self.max_iter = self.ui.sb_num_iter.value()
         minimizer.max_iter = self.max_iter
@@ -536,7 +539,7 @@ class OcelotInterfaceWindow(QFrame):
         self.opt = mint.Optimizer()
 
         self.opt.scaling_coef = self.ui.sb_scaling_coef.value()
-        print("Using Scaling Coeficient of: ", self.opt.scaling_coef)
+        logger.debug("Using Scaling Coeficient of: " + str(self.opt.scaling_coef))
 
         # solving minimization or maximization problem
         self.opt.maximization = self.ui.rb_maximize.isChecked()
@@ -573,9 +576,9 @@ class OcelotInterfaceWindow(QFrame):
                 ret, msg = self.save2db()
                 if not ret:
                     self.error_box(message=msg)
-                print("scan_finished: OK")
+                logger.info("scan_finished: OK")
         except Exception as ex:
-            print("scan_finished: ERROR. Exception was: ", ex)
+            logger.warning("scan_finished: ERROR. Exception was: " + str(ex))
 
     def save2db(self):
         # first try to gather minimizer data
@@ -642,12 +645,12 @@ class OcelotInterfaceWindow(QFrame):
         except Exception as ex:
             self.ui.pb_edit_obj_func.setStyleSheet("background: red")
             self.ui.cb_use_predef.setCheckState(False)
-            print("ERROR set objective function. Exception was: ", ex)
+            logger.warning("ERROR: set objective function. Exception was: " + str(ex))
 
         self.ui.use_predef_fun()
 
         if self.ui.cb_use_predef.checkState():
-            print("RELOAD Module Objective Function", self.mi.get_obj_function_module())
+            logger.debug("RELOAD Module Objective Function" + str(self.mi.get_obj_function_module()))
             obj_function_module = self.mi.get_obj_function_module()
             if 'target_class' in dir(obj_function_module):
                 tclass = obj_function_module.target_class
@@ -655,7 +658,7 @@ class OcelotInterfaceWindow(QFrame):
                 tclass = [obj for name, obj in inspect.getmembers(obj_function_module) if
                             inspect.isclass(obj) and issubclass(obj, Target) and obj != Target][0]
 
-            print("Target Class: ", tclass)
+            logger.debug("Target Class: " + str(tclass))
             self.objective_func = tclass(mi=self.mi)
             if update_objfunc_text:
                 self.ui.le_obf.setText(self.objective_func.eid)
@@ -727,16 +730,14 @@ class OcelotInterfaceWindow(QFrame):
         :return: None
         """
         alarm_dev = str(self.ui.le_alarm.text()).replace(" ", "")
-        print("set_m_status: alarm_dev", alarm_dev)
+        logger.debug("set_m_status: alarm_dev" + str(alarm_dev))
         if alarm_dev == "":
             return
 
         state = self.ui.is_le_addr_ok(self.ui.le_alarm)
-        print("alarm device", self.ui.le_alarm, state)
 
         a_dev = AlarmDevice(alarm_dev)
         a_dev.mi = self.mi
-        print(a_dev)
         if not state:
             self.m_status.alarm_device = None
         else:
@@ -779,7 +780,7 @@ class OcelotInterfaceWindow(QFrame):
                         return
                     line.setData(x=x, y=y_data)
                 except Exception as ex:
-                    print("No data to plot for: ", plot_item, ". Exception was: ", ex)
+                    logger.warning("No data to plot for: " + str(plot_item) + ". Exception was: " + str(ex))
 
         #plot data for all devices being scanned
         for dev in self.devices:
@@ -816,7 +817,7 @@ class OcelotInterfaceWindow(QFrame):
             line = self.plots_dict['plot_objhist_browser']['curves']['histogram']
             line.setData(x=bins, y=hist)
         except Exception as ex:
-            print("No data to plot histogram. Exception was: ", ex)
+            logger.warning("No data to plot histogram. Exception was: " + str(ex))
 
         table = self.ui.browser_data_table
         table.setRowCount(len(self.devices) + len(self.mi.get_plot_attrs()))
@@ -830,8 +831,7 @@ class OcelotInterfaceWindow(QFrame):
                     continue
                 table_data.append((display_name, y_data[index+1]))
             except Exception as ex:
-                print("No data to plot for: ", plot_item, ". Exception was: ",
-                      ex)
+                logger.warning("No data to plot for: " + str(plot_item) + ". Exception was: " + str(ex))
 
         for dev in self.devices:
             if index > len(dev.values):
@@ -912,7 +912,7 @@ class OcelotInterfaceWindow(QFrame):
         elif platform.system() == 'Linux':
             subprocess.call(['gedit', self.path_to_obj_func])
         else:
-            print("Unknown platform")
+            logger.warning("Run Editor: Unknown platform")
             return
         self.set_obj_fun()
 
@@ -986,7 +986,7 @@ class OcelotInterfaceWindow(QFrame):
         layout_quick_add.addLayout(frm_layout)
 
     def assemble_preset_box(self):
-        print("Assembling Preset Box")
+        logger.info("Assembling Preset Box")
         presets = self.mi.get_preset_settings()
         layout = self.ui.preset_layout
         for display, methods in presets.items():

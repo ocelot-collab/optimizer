@@ -19,7 +19,9 @@ from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialog
 from PyQt5 import QtGui, QtCore, uic
 from PyQt5.QtGui import QClipboard
+import logging
 
+logger = logging.getLogger(__name__)
 
 class customTW(QTableWidget):
     """
@@ -393,6 +395,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
             val = self.startValues[dev.eid]
             state = self.ui.tableWidget.item(row, 5).checkState()
             if state == 2:
+                logger.info(" resetAll: {} <-- {}".format(dev.eid, val))
                 dev.set_value(val)
                 #epics.caput(pv, val)
 
@@ -410,6 +413,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 val = dev.get_value()
                 if val is not None:
                     self.startValues[pv] = val
+                    logger.info(" updateReference: startValues[{}] <-- {}".format(dev.eid, val))
                     self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
         self.ui.updateReference.setText("Update Reference")
 

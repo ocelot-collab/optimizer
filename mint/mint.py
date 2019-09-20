@@ -14,7 +14,9 @@ import numpy as np
 from mint.opt_objects import *
 
 from threading import Thread
+import logging
 
+logger = logging.getLogger(__name__)
 
 class Minimizer(object):
     def __init__(self):
@@ -72,10 +74,9 @@ class MachineStatus:
         if self.alarm_device is None:
             return True
         alarm_value = self.alarm_device.get_value()
-
-        print("ALARM: ", alarm_value, self.alarm_min, self.alarm_max)
         if self.alarm_min <= alarm_value <= self.alarm_max:
-                return True
+            return True
+        logger.info(" ALARM: Machine is DOWN. alarm value: " + str(alarm_value) + ". min/max = " + str(self.alarm_min) + "/" + str(self.alarm_max))
         return False
 
 
@@ -141,7 +142,6 @@ class OptControl:
     def best_step(self):
         #if len(self.penalty)== 0:
         #    print("No ")
-        print("BEST ", self.penalty)
         x = self.dev_sets[np.argmin(self.penalty)]
         return x
 
@@ -170,12 +170,14 @@ class DeviceManager(object):
     def get_values(self):
         x = []
         for i in range(len(self.devices)):
-            print('reading ', self.devices[i].id)
-            x.append(self.devices[i].get_value(save=True))
+            val = self.devices[i].get_value(save=True)
+            logger.debug('reading: {} --> {}'.format(self.devices[i].id, val))
+            x.append(val)
         return x
 
     def set_values(self, x):
         for i in range(len(self.devices)):
+            logger.debug('set: {} <-- {}'.format(self.devices[i].id, x[1]))
             self.devices[i].set_value(x[i])
 
     def set_triggers(self):
@@ -250,7 +252,8 @@ class Optimizer(Thread):
         """
         if seq is not None:
             self.seq = seq
-        for s in self.seq:
+        for i, s in enumerate(self.seq):
+            logger.info(" Optimizer: action #{} is started".format(i))
             s.apply(func=self.max_target_func)
             s.finalize()
 
@@ -260,7 +263,7 @@ class Optimizer(Thread):
 
         if self.opt_ctrl.kill:
             #self.minimizer.kill = self.opt_ctrl.kill
-            print('Killed from external process')
+            logger.info('Killed from external process')
             # NEW CODE - to kill if run from outside thread
             return self.target.pen_max
 
@@ -273,7 +276,7 @@ class Optimizer(Thread):
         self.dev_manager.set(x)
         self.dev_manager.get()
 
-        print('sleeping ' + str(self.timeout))
+        logger.info('sleeping ' + str(self.timeout))
         time.sleep(self.timeout)
 
         coef = -1
@@ -281,7 +284,7 @@ class Optimizer(Thread):
             coef = 1
 
         pen = coef*self.target.get_penalty()
-        print('penalty:', pen)
+        logger.debug('penalty: ' + str(pen))
 
         self.opt_ctrl.save_step(pen, x)
         return pen
@@ -320,11 +323,10 @@ class Optimizer(Thread):
 
         x = self.minimizer.normalize(x)
         res = self.minimizer.minimize(self.error_func, x)
-        print("result", res)
 
         # set best solution
         if self.set_best_solution:
-            print("SET the best solution", x)
+            logger.info("SET the best solution: " + str(x))
             x = self.opt_ctrl.best_step()
             if self.dev_manager.exceed_limits(x):
                 return self.target.pen_max
@@ -332,12 +334,12 @@ class Optimizer(Thread):
 
         target_new = self.target.get_penalty()
 
-        print ('step ended changing sase from/to', target_ref, target_new)
+        logger.info('step ended changing target from/to = {}/{}.'.format(target_ref, target_new))
 
     def run(self):
         self.opt_ctrl.start()
         self.eval(self.seq)
-        print("FINISHED")
+        logger.info("FINISHED")
         #self.opt_ctrl.stop()
         return 0
 
@@ -350,7 +352,7 @@ class Action:
         self.id = id
 
     def apply(self, func=None):
-        print ('applying...', self.id)
+        logger.info('Action applying. action id: ' + str(self.id))
         if func is None:
             self.func(*self.args)
         else:

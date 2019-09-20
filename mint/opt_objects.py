@@ -399,7 +399,7 @@ class Target(object):
         try:
             ref_sase = self.mi.get_ref_sase_signal()
         except:
-            print("ERROR: could nor read ref_sase")
+            print("ERROR: could not read ref_sase")
             ref_sase = None
         self.ref_sase.append(ref_sase)
 
