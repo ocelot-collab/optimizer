@@ -112,6 +112,8 @@ class OptControl:
             return 1
         else:
             while 1:
+                if self.kill:
+                    return 1
                 if self.m_status.is_ok():
                     self.is_ok = True
                     time.sleep(self.alarm_timeout)
