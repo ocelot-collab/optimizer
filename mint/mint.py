@@ -179,7 +179,7 @@ class DeviceManager(object):
 
     def set_values(self, x):
         for i in range(len(self.devices)):
-            logger.debug('set: {} <-- {}'.format(self.devices[i].id, x[1]))
+            logger.debug('set: {} <-- {}'.format(self.devices[i].id, x[i]))
             self.devices[i].set_value(x[i])
 
     def set_triggers(self):

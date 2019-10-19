@@ -368,17 +368,8 @@ class TestMachineInterface(XFELMachineInterface):
         self.data += np.sqrt(val**2)
         return 0.0
 
-    def get_bpms_xy(self, bpms):
-        """
-        Testing method for getting bmps data
-
-        :param bpms: list of string. BPMs names
-        :return: X, Y - two arrays in [m]
-        """
-        X = np.zeros(len(bpms))
-        Y = np.zeros(len(bpms))
-        return X, Y
-
+    def get_ref_sase_signal(self):
+        return 0
 
     @staticmethod
     def send_to_logbook(*args, **kwargs):

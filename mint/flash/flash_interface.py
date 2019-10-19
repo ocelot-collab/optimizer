@@ -249,8 +249,8 @@ class FLASHMachineInterface(MachineInterface):
         return succeded
 
     def get_obj_function_module(self):
-        from mint.xfel import xfel_obj_function
-        return xfel_obj_function
+        from mint.flash import flash_obj_function
+        return flash_obj_function
 
     def get_preset_settings(self):
         """
