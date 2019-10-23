@@ -42,6 +42,7 @@ Methods:
         the (either weighted or unweighted) KL divergence-cost of the removal
 
 Change log:
+    2019-10-23 - Adi added Matern kernel
     2018-02-?? - Mitch fixed a bug where the noise parameter wasn't used
     2018-02-23 - Joe suggestions to make code more user friendly
                  1) Change hyper_noise input to stdev -- currently variance
@@ -421,10 +422,10 @@ class OGP(object):
         #   returns a matrix of size (n1 x n2)
 
         # calculate covariance with kernel
-        if matern32:
-            K = self.computeMatern(x1, x2, 1.5wroong)
-        elif matern52:
-            K = self.computeMatern(x1, x2, 2.5wrong)
+        if covar == 'MATERN32_ARD':
+            K = self.computeMatern(x1, x2, nu=1.5)
+        elif covar == 'MATERN52_ARD':
+            K = self.computeMatern(x1, x2, nu=2.5)
         else: # default to rbf
             if np.size(np.shape(self.covar_params[0])) == 2:
                 K = self.computeCBF(x1, x2)
@@ -514,7 +515,7 @@ class OGP(object):
 
         (hyp_ARD, hyp_coeff) = self.covar_params
 
-        b = np.exp(hyp_ARD) #prec
+        b = np.exp(hyp_ARD) #precision matrix
         coeff = np.exp(hyp_coeff) #amp
 
         # use ARD to scale
