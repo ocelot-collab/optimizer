@@ -72,7 +72,7 @@ class GaussProcess(Minimizer):
         # create OnlineGP model
         dim = len(self.devices)
         hyperparams = (self.precision_matrix, np.log(self.amp_variance), np.log(self.mean_noise_variance))
-        self.model = OGP(dim, hyperparams, maxBV=self.numBV, weighted=False)
+        self.model = OGP(dim, hyperparams, maxBV=self.numBV, covar=['RBF_ARD','MATERN32_ARD','MATERN52_ARD'][0], weighted=False)
 
         # initialize model on prior data if available
         if(self.prior_data is not None):
