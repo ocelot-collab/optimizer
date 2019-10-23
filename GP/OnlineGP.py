@@ -70,7 +70,7 @@ from numpy.linalg import solve, inv
 
 
 class OGP(object):
-    def __init__(self, dim, hyperparams, covar='RBF_ARD', maxBV=200,
+    def __init__(self, dim, hyperparams, covar=['RBF_ARD','MATERN32_ARD','MATERN52_ARD'][0], maxBV=200,
                  prmean=None, prmeanp=None, prvar=None, prvarp=None, proj=True, weighted=False, thresh=1e-6,
                  sparsityQ=True):
         self.nin = dim
@@ -82,7 +82,7 @@ class OGP(object):
         self.verboseQ = False
         self.nupdates = 0
 
-        if (covar in ['RBF_ARD']):
+        if (covar in ['RBF_ARD','MATERN32_ARD','MATERN52_ARD']):
             self.covar = covar
             self.covar_params = hyperparams[:2]
             self.precisionMatrix = None
@@ -94,7 +94,7 @@ class OGP(object):
             self.precisionMatrix = None
             print('Unknown covariance function')
             raise Exception("Unknown covariance function")
-
+            
         self.noise_var = np.exp(hyperparams[2])  # variance -- not stdev
 
         # prior (mean and variance): function; parameters
@@ -420,10 +420,18 @@ class OGP(object):
         # computes covariance between inputs x1 and x2
         #   returns a matrix of size (n1 x n2)
 
-        if np.size(np.shape(self.covar_params[0])) == 2:
-            K = self.computeCBF(x1, x2)
-        else:
-            K = self.computeRBF(x1, x2)
+        # calculate covariance with kernel
+        if matern32:
+            K = self.computeMatern(x1, x2, 1.5wroong)
+        elif matern52:
+            K = self.computeMatern(x1, x2, 2.5wrong)
+        else: # default to rbf
+            if np.size(np.shape(self.covar_params[0])) == 2:
+                K = self.computeCBF(x1, x2)
+            else:
+                K = self.computeRBF(x1, x2)
+                
+        # add noise
         if (is_self):
             K = K + self.noise_var * np.eye(x1.shape[0])
 
@@ -506,8 +514,8 @@ class OGP(object):
 
         (hyp_ARD, hyp_coeff) = self.covar_params
 
-        b = np.exp(hyp_ARD)
-        coeff = np.exp(hyp_coeff)
+        b = np.exp(hyp_ARD) #prec
+        coeff = np.exp(hyp_coeff) #amp
 
         # use ARD to scale
         b_sqrt = np.sqrt(b)
