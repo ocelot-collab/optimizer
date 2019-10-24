@@ -20,6 +20,8 @@ from mint.opt_objects import MachineInterface, Device, TestDevice
 from collections import OrderedDict
 from datetime import datetime
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 class AlarmDevice(Device):
     """
