@@ -46,7 +46,7 @@ def normscales_SPEARMachineInterface(mi, devices, default_length_scale=1., verbo
     
     #print('WARNING: mint.normscales.normscales_SPEARMachineInterface - method not properly implemented yet!')
     
-    length_params_file = 'parameters/spear_hyperparams.pkl'
+    length_params_file = 'parameters/spear/spear_hyperparams.pkl'
     
     try:
         #with open('test.pkl', 'wb') as f: pickle.dump({'a':1,'b':2},f, 0) # the zero stores as text so that it's sorta editable manually
