@@ -29,9 +29,6 @@ class GaussProcess(Minimizer):
         self.alt_param = -1
         self.m = 200
         self.iter_bound = False
-        filepath = os.path.join(os.getcwd(), "parameters", "hyperparameters.npy")
-        print('MINT-->Grabbing hyps from...: ', filepath)
-        self.hyper_file = filepath
         self.max_iter = 50
         self.norm_coef = 0.1
         self.multiplier = 1
