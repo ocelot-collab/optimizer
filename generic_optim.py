@@ -371,7 +371,12 @@ class OcelotInterfaceWindow(QFrame):
             minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:
-            minimizer = GaussProcessSKLearn()
+#             minimizer = GaussProcessSKLearn()
+           # must pass the Scaling Coefficient value to the Bayes Optimizer in order to control
+            # the acquisition function search range (default is 3 length scales in each dimension
+            # for Scaling Coefficient of 1.)
+            scaling_coef = self.ui.sb_scaling_coef.value()
+            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef)
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
 
         elif current_method == self.name_gauss_gpy:
