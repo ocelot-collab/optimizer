@@ -325,6 +325,12 @@ class Device(object):
         self.times = []
 
     def check_limits(self, value):
+        """
+        return True if value is out of limits, otherwise False
+
+        :param value:
+        :return:
+        """
         limits = self.get_limits()
         # Disable Limits when both are 0.
         if np.abs(limits[0]) < 1e-15 and np.abs(limits[1]) < 1e-15:
