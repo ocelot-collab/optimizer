@@ -326,9 +326,9 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 spin_box = QtGui.QDoubleSpinBox()
                 spin_box.setMaximumWidth(85)
                 if i == 0:
-                    spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 12px; background-color:#595959;")
+                    spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
                 else:
-                    spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 12px; background-color:#595959;")
+                    spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
                 spin_box.setLocale(eng)
                 spin_box.setDecimals(3)
                 spin_box.setMaximum(999999)
