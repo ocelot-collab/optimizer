@@ -100,6 +100,7 @@ class OptControl:
         self.is_ok = True
         self.timeout = 0.1
         self.alarm_timeout = 0.
+        self.target = None
 
     def wait(self):
         """
@@ -124,6 +125,8 @@ class OptControl:
 
     def stop(self):
         self.kill = True
+        if self.target is not None:
+            self.target.interval = 0.0
 
     def start(self):
         self.kill = False
@@ -309,6 +312,7 @@ class Optimizer(Thread):
 
         # target in minizer is needed for calculating normscales
         self.minimizer.target = target
+        self.opt_ctrl.target = target
         self.minimizer.opt_ctrl = self.opt_ctrl
 
         # devices are needed for "devmode"
