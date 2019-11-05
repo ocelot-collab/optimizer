@@ -67,6 +67,7 @@ class Minimizer(object):
 class MachineStatus:
     def __init__(self):
         self.alarm_device = None
+        self.alarm_value = None
         self.alarm_min = -1
         self.alarm_max = 1
 
@@ -78,7 +79,7 @@ class MachineStatus:
             return True
         logger.info(" ALARM: Machine is DOWN. alarm value: " + str(alarm_value) + ". min/max = " + str(self.alarm_min) + "/" + str(self.alarm_max))
         return False
-
+        
 
 class OptControl:
     """
@@ -118,8 +119,10 @@ class OptControl:
                     self.is_ok = True
                     time.sleep(self.alarm_timeout)
                     return 1
-                time.sleep(self.timeout)
                 self.is_ok = False
+                if self.kill==True:
+                    return 1
+                time.sleep(self.timeout)
                 print(".",)
 
     def stop(self):
@@ -299,6 +302,7 @@ class Optimizer(Thread):
         self.meta_dev.get()
 
         logger.info('sleeping ' + str(self.timeout))
+
         time.sleep(self.timeout)
 
         coef = -1
