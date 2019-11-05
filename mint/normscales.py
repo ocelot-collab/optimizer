@@ -19,6 +19,8 @@ def normscales(mi, devices, default_length_scale=1., correlationsQ=False, verbos
         return normscales_LCLSMachineInterface(mi, devices, default_length_scale, correlationsQ=False, verboseQ=verboseQ)  # np.ones(len(pvs))
     elif mi.name == 'SPEARMachineInterface':
         return normscales_SPEARMachineInterface(mi, devices, default_length_scale, verboseQ=verboseQ)  # np.ones(len(pvs))
+    elif mi.name == 'APSMachineInterface':
+        return normscales_APSMachineInterface(mi, devices, default_length_scale, verboseQ=verboseQ)
     else:
         return np.array([None] * np.size(devices)), None, None, None, None
 
@@ -82,6 +84,57 @@ def normscales_SPEARMachineInterface(mi, devices, default_length_scale=1., verbo
 
 
 #_________________________________________________________________________________________________________________________________________________
+def normscales_APSMachineInterface(mi, devices, default_length_scale=1., verboseQ=True):
+    
+    import pickle
+    
+    #print('WARNING: mint.normscales.normscales_SPEARMachineInterface - method not properly implemented yet!')
+    
+    length_params_file = 'parameters/anl_hyperparams.pkl'
+   # print('device')
+   # print(devices)
+    #print('print device done')
+   # f1 = open(length_params_file,'rb')
+   # dict1=pickle.load(f1)
+   # print(dict1)
+   # f1.close
+    try:
+        #with open('test.pkl', 'wb') as f: pickle.dump({'a':1,'b':2},f, 0) # the zero stores as text so that it's sorta editable manually
+        with open(length_params_file, 'rb') as f: hyper_dict = pickle.load(f)
+        print(hyper_dict)
+       # print(devices)
+        length_scales = np.array([hyper_dict[dev.eid] for dev in devices])
+        print(length_scales)
+    except:
+        if verboseQ: print('WARNING: mint.normscapes - Could not load length scales from file ', length_params_file)
+        length_scales = np.ones(len(devices))
+        if verboseQ: print('WARNING: mint.normscapes - setting length scales to ', length_scales)
+        
+    try:
+        amp_variance = hyper_dict['amp']
+    except:
+        amp_variance = 1.
+        if verboseQ: print('WARNING: mint.normscapes - setting amplitude scale to ', amp_variance)
+        
+    try:
+        single_noise_variance = hyper_dict['noise']
+    except:
+        single_noise_variance = 0.01
+        if verboseQ: print('WARNING: mint.normscapes - setting single sample noise variance to ', single_noise_variance)
+        
+    try:
+        mean_noise_variance = hyper_dict['noise'] / mi.points
+    except:
+        mean_noise_variance = single_noise_variance
+        if verboseQ: print('WARNING: mint.normscapes - setting average noise variance (variance of the mean) to ', mean_noise_variance)
+        
+    precision_matrix = None
+    
+    print( length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix)
+    return length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix
+
+#_________________________________________________________________________________________________________________________________________________
+
 def normscales_LCLSMachineInterface(mi, devices, default_length_scale=1., correlationsQ=False, verboseQ=True):
     
     import pandas as pd
