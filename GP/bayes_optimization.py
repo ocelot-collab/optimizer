@@ -100,7 +100,8 @@ class BayesOpt:
             print('********* BO - self.mi = self.target_func wORKED!')
         self.acq_func = (acq_func, xi, alt_param)
         #self.ucb_params = [0.01, 2.] # [nu,delta]
-        self.ucb_params = [0.002, 0.4] # [nu,delta] we like
+        self.ucb_params = [0.002, 0.4] # [nu,delta] we like for lcls2
+        self.ucb_params = [2.0, None] # [nu,delta] theortical values
         #self.ucb_params = [0.007, 1.0] # [nu,delta]
         self.max_iter = 100
         self.check = None
