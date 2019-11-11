@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-XFEL machine interface
-S.Tomin, 2017
+Linac4 machine interface
+S.Tomin, I.Agapov 2019
 """
 from __future__ import absolute_import, print_function
 import sys

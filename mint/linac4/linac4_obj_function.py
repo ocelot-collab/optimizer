@@ -47,18 +47,7 @@ class XFELTarget(Target):
         XFEL.RF/LLRF.CONTROLLER/CTRL.A1.I1/SP.AMPL
         """
         bpms = [
-        "BPM.203",
-        "BPM.303",
-        "BPM.107",
-        "BPM.207",
-        "BPM.307",
-        "BPM.407",
-        "BPM.507",
-        "BPM.607",
-        "BPM.707",
-        "BPM.107",
-        "BPM.307",
-        "BPM.507",
+
 
         ]
 
