@@ -797,6 +797,10 @@ class OcelotInterfaceWindow(QFrame):
 
     def browser_data_changed(self, index, region=False):
         x = np.array(self.objective_func.times) - self.objective_func.times[0]
+        # prevent crush if someone wants to play with browser before the optimizer finishes its work.
+        if index+1 >= len(x):
+            return
+
         if not region:
             for plot_name in ['plot_dev_browser', 'plot_obj_browser']:
                 region = self.plots_dict[plot_name]['region']
