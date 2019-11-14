@@ -393,7 +393,7 @@ class BayesOpt:
 
                 v0s = None
                 for i in isearch:
-                    vs = parallelgridsearch(aqfcn,self.X_obs[i],self.searchBoundScaleFactor * 0.6*self.lengthscales,fargs,neval,nkeep)
+                    vs = parallelgridsearch(aqfcn,self.X_obs[i],self.searchBoundScaleFactor * 0.6 * self.lengthscales,fargs,neval,nkeep)
                     if type(v0s) == type(None):
                         v0s = copy(vs)
                     else:

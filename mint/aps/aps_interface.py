@@ -1,7 +1,6 @@
 """
 Machine interface file for the APS to ocelot optimizer
 
-
 """
 from __future__ import absolute_import, print_function
 import os
