@@ -149,14 +149,7 @@ class BayesOpt:
         except:
             print('WARNING - GP.bayesian_optimization.BayesOpt: Using some unit length scales cause we messed up somehow...')
             self.lengthscales = np.ones(len(self.dev_ids))
-        
-        # initialize the prior 
-        self.model.prmean = None # prior mean fcn
-        self.model.prmeanp = None # params of prmean fcn
-        self.model.prvar = None
-        self.model.prvarp = None
-        self.model.prmean_name = ''
-        
+
     def getState(self):
         print('>>>>>>>> getState')
         x_vals = [self.mi.get_value(d) for d in self.dev_ids]
