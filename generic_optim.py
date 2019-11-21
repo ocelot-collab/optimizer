@@ -186,8 +186,6 @@ class OcelotInterfaceWindow(QFrame):
         obj_func_file = self.mi.get_obj_function_module().__file__
         self.path_to_obj_func = obj_func_file if not obj_func_file.endswith("pyc") else obj_func_file[:-1]
 
-
-        self.m_status = mint.MachineStatus()
         self.set_m_status()
 
         self.opt_control = mint.OptControl()
@@ -729,6 +727,7 @@ class OcelotInterfaceWindow(QFrame):
         Method to set the MachineStatus method self.is_ok using GUI Alarm channel and limits
         :return: None
         """
+        self.m_status = mint.MachineStatus()
         alarm_dev = str(self.ui.le_alarm.text()).replace(" ", "")
         logger.debug("set_m_status: alarm_dev" + str(alarm_dev))
         if alarm_dev == "":
