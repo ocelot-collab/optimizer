@@ -382,7 +382,7 @@ class OcelotInterfaceWindow(QFrame):
         if current_method == self.name_gauss:
             scaling_coef = self.ui.sb_scaling_coef.value()
             #minimizer = GaussProcess()
-            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef)
+            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef, bounds= self.mi.bounds)
             minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:

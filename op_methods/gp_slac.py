@@ -15,7 +15,7 @@ import pandas as pd
 from mint import normscales
 
 class GaussProcess(Minimizer):
-    def __init__(self, correlationsQ = False, searchBoundScaleFactor = None):
+    def __init__(self, correlationsQ = False, searchBoundScaleFactor = None, bounds= None):
         super(GaussProcess,self).__init__()
         self.seed_timeout = 1
         self.target = None
@@ -24,7 +24,7 @@ class GaussProcess(Minimizer):
         self.seed_iter = 0
         self.numBV = 30
         self.xi = 0.01
-        self.bounds = None
+        self.bounds = bounds
         self.acq_func = ['PI','EI','UCB'][-1]
         self.alt_param = -1
         self.m = 200
