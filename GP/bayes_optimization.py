@@ -284,10 +284,11 @@ class BayesOpt:
 
         # check to see if this is bounding step sizes
         if(self.iter_bound or True):
-            if(self.bounds is None): # looks like a scale factor
-                self.bounds = 1.0
 
             bound_lengths = self.searchBoundScaleFactor * 3. * self.lengthscales # 3x hyperparam lengths
+            if(self.bounds is not None): # looks like a scale factor
+                bound_lengths = np.min(bound_lengths,self.bounds)
+
             relative_bounds = np.transpose(np.array([-bound_lengths, bound_lengths]))
             
             #iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
