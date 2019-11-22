@@ -186,11 +186,9 @@ class OcelotInterfaceWindow(QFrame):
         obj_func_file = self.mi.get_obj_function_module().__file__
         self.path_to_obj_func = obj_func_file if not obj_func_file.endswith("pyc") else obj_func_file[:-1]
 
-        self.set_m_status()
 
         self.opt_control = mint.OptControl()
         self.opt_control.alarm_timeout = self.ui.sb_alarm_timeout.value()
-        self.opt_control.m_status = self.m_status
 
         #timer for plots, starts when scan starts
         self.update_plot_timer = QtCore.QTimer()
@@ -200,6 +198,9 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.browser_data_slider.valueChanged.connect(self.browser_slider_changed)
         self.ui.browser_restore_btn.clicked.connect(self.browser_restore_clicked)
         self.mi.customize_ui(self)
+
+        self.m_state_indicator = QtCore.QTimer()
+        self.m_state_indicator.timeout.connect(self.indicate_machine_state)
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser(description="Ocelot Optimizer",
@@ -263,7 +264,6 @@ class OcelotInterfaceWindow(QFrame):
         self.plots_dict[name]['region'] = pg.LinearRegionItem((0,0))
         region = self.plots_dict[name]['region']
         region.setMovable(False)
-        # region.setZValue(-10)
         plot.addItem(region)
 
     def setup_objhist_plot(self):
@@ -404,7 +404,8 @@ class OcelotInterfaceWindow(QFrame):
             self.ui.save_state(self.set_file)
         if self.ui.pb_start_scan.text() == "Stop optimization":
             self.opt.opt_ctrl.stop()
-            self.m_status.is_ok = lambda: True
+            self.m_state_indicator.stop()
+            self.set_widget_style("background-color:323232;")
             del(self.opt)
             self.ui.pb_start_scan.setStyleSheet("color: rgb(85, 255, 127);")
             self.ui.pb_start_scan.setText("Start optimization")
@@ -420,7 +421,8 @@ class OcelotInterfaceWindow(QFrame):
             # stop the optimization
             self.opt.opt_ctrl.stop()
             self.opt.join()
-            self.m_status.is_ok = lambda: True
+            self.m_state_indicator.stop()
+            self.set_widget_style("background-color:323232;")
 
             # Save the optimization parameters to the database
             #try:
@@ -561,6 +563,7 @@ class OcelotInterfaceWindow(QFrame):
 
         #self.opt.eval(seq)
         self.opt.start()
+        self.m_state_indicator.start(500)
 
         # Setting the button
         self.ui.pb_start_scan.setText("Stop optimization")
@@ -613,22 +616,26 @@ class OcelotInterfaceWindow(QFrame):
             devices.append(dev)
         return devices
 
+    def set_widget_style(self, style="background-color:323232;"):
+        """
+        method to set widget_2 and widget_3 style
+        :param style: "background-color:323232;"
+        :return:
+        """
+        if self.ui.widget_3.styleSheet() == style:
+            return
+        self.ui.widget_2.setStyleSheet(style)
+        self.ui.widget_3.setStyleSheet(style)
+
     def indicate_machine_state(self):
         """
         Method to indicate of the machine status. Red frames around graphics means that machine status is not OK.
         :return:
         """
-        if not self.opt_control.is_ok:
-            if self.ui.widget_3.styleSheet() == "background-color:red;":
-                return
-            self.ui.widget_2.setStyleSheet("background-color:red;")
-            self.ui.widget_3.setStyleSheet("background-color:red;")
-
+        if not self.m_status.is_ok():
+            self.set_widget_style("background-color:red;")
         else:
-            if self.ui.widget_3.styleSheet() == "background-color:323232;":
-                return
-            self.ui.widget_2.setStyleSheet("background-color:323232;")
-            self.ui.widget_3.setStyleSheet("background-color:323232;")
+            self.set_widget_style("background-color:323232;")
 
     def set_obj_fun(self, update_objfunc_text=True):
         """
@@ -1072,10 +1079,6 @@ def main():
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(window.scan_finished)
     timer.start(300)
-
-    indicator = QtCore.QTimer()
-    indicator.timeout.connect(window.indicate_machine_state)
-    indicator.start(300)
 
     #show app
 
