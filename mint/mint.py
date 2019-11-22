@@ -156,7 +156,7 @@ class OptControl:
         self.nsteps = 0
 
 
-class DeviceManager(object):
+class MetaDevice(object):
     """
     The class is an intermediary between the Devices and the Optimizer.
     The idea is to be able to work with real devices (e.g. Quads) through virtual devices, e.g. beta functions. d
@@ -244,7 +244,7 @@ class Optimizer(Thread):
         self.target = None
         self.timeout = 0
         self.opt_ctrl = OptControl()
-        self.dev_manager = DeviceManager()
+        self.dev_manager = MetaDevice()
         self.seq = []
         self.set_best_solution = True
         self.norm_coef = 0.05
