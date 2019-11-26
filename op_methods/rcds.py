@@ -1,14 +1,59 @@
+from __future__ import print_function, absolute_import
+from mint.mint import *
+from scipy import optimize
 import math
-import numpy as np
+
+class RCDS(Minimizer):
+    def __init__(self):
+        super(RCDS, self).__init__()
+        self.xtol = 1e-5
+        self.dev_steps = None
+
+    def preprocess(self):
+        """
+        defining attribute self.dev_steps
+
+        :return:
+        """
+
+        self.dev_steps = []
+        for dev in self.devices:
+            if "istep" not in dev.__dict__:
+                self.dev_steps = None
+                return
+            elif dev.istep is None or dev.istep == 0:
+                self.dev_steps = None
+                return
+            else:
+                self.dev_steps.append(dev.istep)
+
+    def minimize(self,  error_func, x):
+
+        nvar = len(x)
+
+        g_vrange = np.zeros((nvar, 2))
+
+        for idev, dev in enumerate(self.devices):
+            low_limit, high_limit = dev.get_limits()
+            if np.abs(low_limit) < 1e-7 and np.abs(high_limit) < 1e-7:
+                low_limit, high_limit = -10, 10
+            g_vrange[idev, 0], g_vrange[idev, 1] = low_limit, high_limit
+
+        p0 = np.array(x)
+        x0 = ((p0 - g_vrange[:, 0])/(g_vrange[:, 1] - g_vrange[:, 0])).reshape(-1)
+        step = 0.01
+        g_noise = 0.001
+        g_cnt = 0
+        g_data = np.zeros([1, nvar + 2])
+        Imat = np.identity(nvar)
+
+        rcds = RCDSMethod(error_func, g_noise, g_cnt, nvar, g_vrange, g_data, Imat)
+        (xm, fm, nf) = rcds.powellmain(x0, step, Imat, maxIt=self.max_iter, max_eval=self.max_iter)
+
+        return 0
 
 
-# Created by X. Huang, SLAC, 10/6/2016
-# Disclaimer: The RCDS algorithm or the Matlab RCDS code come with absolutely
-# NO warranty. The author of the RCDS method and the Matlab RCDS code does not
-# take any responsibility for any damage to equipments or personnel injury
-# that may result from the use of the algorithm or the code.
-
-class RCDS:
+class RCDSMethod:
     def __init__(self, func, g_noise=0.1, g_cnt=0, Nvar=6, g_vrange=None, g_data=None, Imat=None):
         self.g_noise = g_noise
         self.g_cnt = g_cnt
@@ -18,7 +63,7 @@ class RCDS:
         self.Imat = Imat
         self.objfunc = func
 
-    def powellmain(self, x0, step, Dmat0, tol=1.0E-5, maxIt=100, maxEval=1500):
+    def powellmain(self, x0, step, Dmat0, tol=1.0E-5, maxIt=100, max_eval=100):
         '''RCDS main self.func_objtion, implementing Powell's direction set update method
         Created by X. Huang, 10/5/2016
         Input:
@@ -26,7 +71,7 @@ class RCDS:
                  step, tol : floating number
                  x0: NumPy vector
                         Dmat0: a matrix
-                        maxIt, maxEval: Integer
+                        maxIt, max_eval: Integer
         Output:
                  x1, f1,
                         nf: integer, number of evaluations
@@ -38,22 +83,20 @@ class RCDS:
         xm = x0
         fm = f0
 
+
         it = 0
         Dmat = Dmat0
         Npmin = 6  # number of points for fitting
         while it < maxIt:
-            print('iteration {}'.format(it))
             it += 1
             step /= 1.2
 
             k = 1
             dl = 0
             for ii in range(self.Nvar):
-                dv = Dmat[:, ii]
-                # print('bracketmin', xm,fm,dv,step)
-                (x1, f1, a1, a2, xflist, ndf) = self.bracketmin(xm, fm, dv, step)
+                dv = Dmat[:, ii].T.reshape(-1)
+                (x1, f1, a1, a2, xflist, ndf) = self.bracketmin(xm, fm, dv, step, max_eval)
                 nf += ndf
-                # print([it, ii, a1,a2, f1])
 
                 print("iter %d, dir %d: begin\t%d\t%f" % (it, ii, self.g_cnt, f1))
                 (x1, f1, ndf) = self.linescan(x1, f1, dv, a1, a2, Npmin, xflist)
@@ -89,7 +132,7 @@ class RCDS:
 
                     # move to the minimum of the new direction
                     dv = Dmat[:, -1]
-                    (x1, f1, a1, a2, xflist, ndf) = self.bracketmin(xm, fm, dv, step)
+                    (x1, f1, a1, a2, xflist, ndf) = self.bracketmin(xm, fm, dv, step, max_eval)
                     nf += ndf
                     print("iter %d, new dir %d: begin\t%d\t%f " % (it, k, self.g_cnt, f1))
                     (x1, f1, ndf) = self.linescan(x1, f1, dv, a1, a2, Npmin, xflist)
@@ -100,22 +143,22 @@ class RCDS:
                 else:
                     print("    , skipped new direction %d, max dot product %f\n" % (k, max(dotp)))
 
-            print('g count is ', self.g_cnt, 'and maxEval is ', maxEval)
+            print('g count is ', self.g_cnt, 'and max_eval is ', max_eval)
             # termination
-            if self.g_cnt > maxEval:
-                print("terminated, reaching self.func_objtion evaluation limit: %d > %d\n" % (self.g_cnt, maxEval))
+            if self.g_cnt > max_eval:
+                print("terminated, reaching self.func_objtion evaluation limit: %d > %d\n" % (self.g_cnt, max_eval))
                 break
 
             if 2.0 * abs(f0 - fm) < tol * (abs(f0) + abs(fm)) and tol > 0:
                 print("terminated: f0=%4.2e\t, fm=%4.2e, f0-fm=%4.2e\n" % (f0, fm, f0 - fm))
-                break;
+                break
 
-            f0 = fm;
-            x0 = xm;
+            f0 = fm
+            x0 = xm
 
         return xm, fm, nf
 
-    def bracketmin(self, x0, f0, dv, step):
+    def bracketmin(self, x0, f0, dv, step, max_eval):
         '''bracket the minimum
         Created by X. Huang, 10/5/2016
         Input:
@@ -129,6 +172,8 @@ class RCDS:
                         nf: integer, number of evaluations
         '''
         # global g_noise
+
+
 
         nf = 0
         if math.isnan(f0):
@@ -153,7 +198,7 @@ class RCDS:
             xm = x1
 
         gold_r = 1.618
-        while f1 < fm + self.g_noise * 3:
+        while f1 < fm + self.g_noise * 3 and nf < max_eval:
             step0 = step
             if abs(step) < 0.1:  # maximum step
                 step = step * (1.0 + gold_r)
@@ -192,7 +237,7 @@ class RCDS:
             am = step
             xm = x2
 
-        while f2 < fm + self.g_noise * 3:
+        while f2 < fm + self.g_noise * 3 and nf < max_eval:
             step0 = step
             if abs(step) < 0.1:
                 step = step * (1.0 + gold_r)
@@ -220,7 +265,6 @@ class RCDS:
         a2 -= am
         xflist[:, 0] -= am
         # sort by alpha
-        # print(xflist)
         xflist = xflist[np.argsort(xflist[:, 0])]
 
         return xm, fm, a1, a2, xflist, nf
@@ -285,7 +329,6 @@ class RCDS:
             fm = flist[imin]
             return xm, fm, nf
         else:
-            # print(np.c_[alist,flist])
             (p) = np.polyfit(alist, flist, 2)
             pf = np.poly1d(p)
 
@@ -297,27 +340,24 @@ class RCDS:
             imin = yv.argmin()
             xm = x0 + av[imin] * dv
             fm = yv[imin]
-            # print(x0, xm, fm)
             return xm, fm, nf
 
+
     def func_obj(self, x):
-        '''Objective self.func_objtion for test
+        """
+        Objective self.func_objtion for test
         Input:
                 x : a column vector
         Output:
                 obj : an floating number
-        '''
-        # global g_cnt, g_data, g_vrange
-        # global g_noise
+        """
+
         self.Nvar = len(x)
-        # print(x)
-        # print(self.g_vrange[:,0])
         p = self.g_vrange[:, 0] + np.multiply((self.g_vrange[:, 1] - self.g_vrange[:, 0]), x)
-        # print(p)
         if min(x) < 0 or max(x) > 1:
             obj = float('NaN')
         else:
-            obj = self.objfunc(p)
+            obj = self.objfunc(p.flatten())
         self.g_cnt += 1
 
         return obj

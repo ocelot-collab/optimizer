@@ -471,6 +471,3 @@ class Target_test(Target):
     def get_value(self):
         values = np.array([dev.get_value() for dev in self.devices])
         return np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
-
-
-

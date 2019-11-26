@@ -108,7 +108,6 @@ class OptControl:
 
         :return:
         """
-
         if self.m_status.is_ok():
             return 1
         else:
@@ -371,4 +370,3 @@ class Action:
         :return:
         """
         pass
-
