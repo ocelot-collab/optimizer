@@ -365,7 +365,7 @@ class RCDSMethod:
         if min(x) < 0 or max(x) > 1:
             obj = float('NaN')
         else:
-            obj = self.objfunc(p)
+            obj = self.objfunc(p.flatten())
         self.g_cnt += 1
 
         return obj

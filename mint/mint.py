@@ -212,7 +212,7 @@ class Optimizer(Thread):
 
     def error_func(self, x):
 
-        x = self.minimizer.unnormalize(x.flatten(), self.norm_coef, self.scaling_coef)
+        x = self.minimizer.unnormalize(x, self.norm_coef, self.scaling_coef)
 
         if self.opt_ctrl.kill:
             #self.minimizer.kill = self.opt_ctrl.kill
