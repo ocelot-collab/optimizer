@@ -1,14 +1,66 @@
+from __future__ import print_function, absolute_import
+from mint.mint import *
+from scipy import optimize
 import math
-import numpy as np
+
+class RCDS(Minimizer):
+    def __init__(self):
+        super(RCDS, self).__init__()
+        self.xtol = 1e-5
+        self.dev_steps = None
+
+    def preprocess(self):
+        """
+        defining attribute self.dev_steps
+
+        :return:
+        """
+
+        self.dev_steps = []
+        for dev in self.devices:
+            if "istep" not in dev.__dict__:
+                self.dev_steps = None
+                return
+            elif dev.istep is None or dev.istep == 0:
+                self.dev_steps = None
+                return
+            else:
+                self.dev_steps.append(dev.istep)
+
+    def minimize(self,  error_func, x):
+        print("start RCDS")
+        print(x)
+
+        nvar = len(x)
+
+        g_vrange = np.zeros((nvar, 2))
+
+        for idev, dev in enumerate(self.devices):
+            g_vrange[idev, 0], g_vrange[idev, 1] =  dev.get_limits()
+
+        p0 = np.array(x)
+        print(g_vrange)
+        #x0 = np.divide(p0 - g_vrange[:, 0], g_vrange[:, 1] - g_vrange[:, 0])
+        print('rcds: minimize: p0=',p0)
+        x0 = ((p0 - g_vrange[:, 0])/(g_vrange[:, 1] - g_vrange[:, 0])).reshape(-1)
+        print(f"rcds: momimize: x0= {x0}")
+        step = 0.01
+        g_noise = 0.001
+        g_cnt = 0
+        g_data = np.zeros([1, nvar + 2])
+        Imat = np.matrix(np.identity(nvar))
+
+        rcds = RCDSMethod(error_func, g_noise, g_cnt, nvar, g_vrange, g_data, Imat)
+        # rcds = RCDS(fuc_test0, g_noise, g_cnt, Nvar, g_vrange, g_data, Imat)
+        (xm, fm, nf) = rcds.powellmain(x0, step, Imat, maxIt=self.max_iter, maxEval=self.max_iter)
+        #print('start', x0)
+        #print('end', xm)
+
+        #print("finish seed")
+        return 0
 
 
-# Created by X. Huang, SLAC, 10/6/2016
-# Disclaimer: The RCDS algorithm or the Matlab RCDS code come with absolutely
-# NO warranty. The author of the RCDS method and the Matlab RCDS code does not
-# take any responsibility for any damage to equipments or personnel injury
-# that may result from the use of the algorithm or the code.
-
-class RCDS:
+class RCDSMethod:
     def __init__(self, func, g_noise=0.1, g_cnt=0, Nvar=6, g_vrange=None, g_data=None, Imat=None):
         self.g_noise = g_noise
         self.g_cnt = g_cnt
@@ -17,6 +69,7 @@ class RCDS:
         self.g_data = g_data
         self.Imat = Imat
         self.objfunc = func
+        self.func_obj = lambda x: func(np.array(x.reshape(-1)))
 
     def powellmain(self, x0, step, Dmat0, tol=1.0E-5, maxIt=100, maxEval=1500):
         '''RCDS main self.func_objtion, implementing Powell's direction set update method
@@ -38,6 +91,9 @@ class RCDS:
         xm = x0
         fm = f0
 
+        print(f"powelmain: x0={x0}")
+        print(f"powelmain: f0={f0}")
+
         it = 0
         Dmat = Dmat0
         Npmin = 6  # number of points for fitting
@@ -49,7 +105,7 @@ class RCDS:
             k = 1
             dl = 0
             for ii in range(self.Nvar):
-                dv = Dmat[:, ii]
+                dv = Dmat[:, ii].T.reshape(-1)
                 # print('bracketmin', xm,fm,dv,step)
                 (x1, f1, a1, a2, xflist, ndf) = self.bracketmin(xm, fm, dv, step)
                 nf += ndf
@@ -130,6 +186,10 @@ class RCDS:
         '''
         # global g_noise
 
+        print(f"bracketmin: x0={x0}")
+        print(f"bracketmin: f0={f0}")
+        print(f"bracketmin: dv={dv}")
+
         nf = 0
         if math.isnan(f0):
             f0 = self.func_obj(x0)
@@ -143,6 +203,7 @@ class RCDS:
         step_init = step
 
         x1 = x0 + dv * step
+        print(f"bracketmin: x1={x1}")
         f1 = self.func_obj(x1)
         nf += 1
 
@@ -299,7 +360,7 @@ class RCDS:
             fm = yv[imin]
             # print(x0, xm, fm)
             return xm, fm, nf
-
+    """
     def func_obj(self, x):
         '''Objective self.func_objtion for test
         Input:
@@ -321,4 +382,4 @@ class RCDS:
         self.g_cnt += 1
 
         return obj
-
+    """

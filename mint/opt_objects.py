@@ -325,6 +325,7 @@ class Device(object):
         self.times = []
 
     def check_limits(self, value):
+        print('value',value)
         limits = self.get_limits()
         # Disable Limits when both are 0.
         if np.abs(limits[0]) < 1e-15 and np.abs(limits[1]) < 1e-15:
@@ -465,6 +466,3 @@ class Target_test(Target):
     def get_value(self):
         values = np.array([dev.get_value() for dev in self.devices])
         return np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
-
-
-
