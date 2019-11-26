@@ -99,6 +99,7 @@ class OptControl:
         self.is_ok = True
         self.timeout = 0.1
         self.alarm_timeout = 0.
+        self.target = None
 
     def wait(self):
         """
@@ -106,11 +107,12 @@ class OptControl:
 
         :return:
         """
-
         if self.m_status.is_ok():
             return 1
         else:
             while 1:
+                if self.kill:
+                    return 1
                 if self.m_status.is_ok():
                     self.is_ok = True
                     time.sleep(self.alarm_timeout)
@@ -121,6 +123,8 @@ class OptControl:
 
     def stop(self):
         self.kill = True
+        if self.target is not None:
+            self.target.interval = 0.0
 
     def start(self):
         self.kill = False
@@ -255,6 +259,7 @@ class Optimizer(Thread):
         self.minimizer.devices = devices
         self.minimizer.maximize = self.maximization
         self.minimizer.target = target
+        self.opt_ctrl.target = target
         self.minimizer.opt_ctrl = self.opt_ctrl
 
         self.target.devices = self.devices
