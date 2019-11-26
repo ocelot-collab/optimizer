@@ -95,10 +95,8 @@ class RCDSMethod:
             dl = 0
             for ii in range(self.Nvar):
                 dv = Dmat[:, ii].T.reshape(-1)
-                # print('bracketmin', xm,fm,dv,step)
                 (x1, f1, a1, a2, xflist, ndf) = self.bracketmin(xm, fm, dv, step, max_eval)
                 nf += ndf
-                # print([it, ii, a1,a2, f1])
 
                 print("iter %d, dir %d: begin\t%d\t%f" % (it, ii, self.g_cnt, f1))
                 (x1, f1, ndf) = self.linescan(x1, f1, dv, a1, a2, Npmin, xflist)
@@ -175,9 +173,7 @@ class RCDSMethod:
         '''
         # global g_noise
 
-        print(f"bracketmin: x0={x0}")
-        print(f"bracketmin: f0={f0}")
-        print(f"bracketmin: dv={dv}")
+
 
         nf = 0
         if math.isnan(f0):
@@ -192,7 +188,6 @@ class RCDSMethod:
         step_init = step
 
         x1 = x0 + dv * step
-        print(f"bracketmin: x1={x1}")
         f1 = self.func_obj(x1)
         nf += 1
 
@@ -270,7 +265,6 @@ class RCDSMethod:
         a2 -= am
         xflist[:, 0] -= am
         # sort by alpha
-        # print(xflist)
         xflist = xflist[np.argsort(xflist[:, 0])]
 
         return xm, fm, a1, a2, xflist, nf
@@ -335,7 +329,6 @@ class RCDSMethod:
             fm = flist[imin]
             return xm, fm, nf
         else:
-            # print(np.c_[alist,flist])
             (p) = np.polyfit(alist, flist, 2)
             pf = np.poly1d(p)
 
@@ -347,7 +340,6 @@ class RCDSMethod:
             imin = yv.argmin()
             xm = x0 + av[imin] * dv
             fm = yv[imin]
-            # print(x0, xm, fm)
             return xm, fm, nf
 
 
