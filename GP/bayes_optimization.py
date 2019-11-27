@@ -88,7 +88,7 @@ class BayesOpt:
                 self.searchBoundScaleFactor = abs(searchBoundScaleFactor)
             except:
                 print(('BayesOpt - ERROR: ', searchBoundScaleFactor, ' is not a valid searchBoundScaleFactor (scaling coeff).'))
-        self.iter_bound = iter_bound 
+        self.iter_bound = iter_bound
         self.prior_data = prior_data # for seeding the GP with data acquired by another optimizer
         self.target_func = target_func
         print('target_func = ', target_func)
@@ -101,7 +101,10 @@ class BayesOpt:
         self.acq_func = (acq_func, xi, alt_param)
         #self.ucb_params = [0.01, 2.] # [nu,delta]
         self.ucb_params = [0.002, 0.4] # [nu,delta] we like for lcls2
-        self.ucb_params = [2.0, None] # [nu,delta] theortical values
+        #self.ucb_params = [2.0, None] # [nu,delta] theortical values
+        #self.ucb_params = [0.006, 0.4] # [nu,delta] we like
+        #self.ucb_params = [2., None] #change per Adi's guide, aps -> FOR APS
+        #self.ucb_params = [0.01, 0.4]
         #self.ucb_params = [0.007, 1.0] # [nu,delta]
         self.max_iter = 100
         self.check = None
@@ -189,8 +192,17 @@ class BayesOpt:
         self.current_x = np.array(np.array(x).flatten(), ndmin=2)
         self.X_obs = np.array(self.current_x)
         self.Y_obs = [np.array([[inverse_sign*error_func(x)]])]
+        print("******* DEBUG: opt_control_alarm: ", self.opt_ctrl.m_status.alarm_device, " - ",  self.opt_ctrl.m_status.alarm_min, " - ",  self.opt_ctrl.m_status.alarm_max)
         # iterate though the GP method
         for i in range(self.max_iter):
+            print("******* DEBUG: opt_control_alarm - state: ",self.opt_ctrl.m_status.alarm_device, " - ", self.opt_ctrl.m_status.alarm_min, " - ", self.opt_ctrl.m_status.alarm_max, " - ",self.opt_ctrl.m_status.is_ok())
+            print("******* DEBUG: opt_control_alarm - state: ",
+                  self.opt_ctrl.m_status.alarm_device, " - ",
+                  self.opt_ctrl.m_status.alarm_min, " - ",
+                  self.opt_ctrl.m_status.alarm_max, " - ",
+                  self.opt_ctrl.m_status.is_ok(),
+                  self.opt_ctrl.m_status.alarm_device
+                  )
             # get next point to try using acquisition function
             x_next = self.acquire(self.alpha)
             # check for problems with the beam
@@ -295,11 +307,18 @@ class BayesOpt:
                 self.bounds = 1.0
 
             bound_lengths = self.searchBoundScaleFactor * 3. * self.lengthscales # 3x hyperparam lengths
-            relative_bounds = np.transpose(np.array([-bound_lengths, bound_lengths]))
+
+            if self.mi.name == "APSMachineInterface":
+                print(self.bounds)
+                print(bound_lengths)
+                bound_lengths = [min(a, self.bounds) for a in bound_lengths]
+                bound_lengths = np.array(bound_lengths)
             
+            relative_bounds = np.transpose(np.array([-bound_lengths, bound_lengths]))
+
             #iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
             iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
-
+            print(iter_bounds)
         else:
             iter_bounds = self.bounds
 
@@ -465,9 +484,11 @@ def negUCB(x_new, model, ndim, nsteps, nu = 1., delta = 1.):
 
     if nsteps==0: nsteps += 1
     (y_mean, y_var) = model.predict(np.array(x_new,ndmin=2))
-
-    tau = 2.*np.log(nsteps**(0.5*ndim+2.)*(np.pi**2.)/3./delta)
-    GPUCB = y_mean + np.sqrt(nu * tau * y_var)
+    if delta==None:
+        GPUCB = y_mean + 2* np.sqrt(y_var)
+    else:
+        tau = 2.*np.log(nsteps**(0.5*ndim+2.)*(np.pi**2.)/3./delta)
+        GPUCB = y_mean + np.sqrt(nu * tau * y_var)
 
     return -GPUCB
 
