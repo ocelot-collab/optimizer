@@ -17,7 +17,7 @@ try:
    sklearn_version = sklearn.__version__
 except:
    sklearn_version = None
-   
+
 import functools
 import inspect
 import parameters
@@ -52,6 +52,7 @@ from mint import opt_objects as obj
 
 from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
+from mint.spear.spear_interface import *
 from mint.aps.aps_interface import *
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
@@ -60,6 +61,7 @@ from sint.multinormal.multinormal_interface import *
 from op_methods.simplex import *
 from op_methods.gp_slac import *
 from op_methods.es import *
+from op_methods.rcds import *
 from op_methods.custom_minimizer import *
 from op_methods.powell import *
 from op_methods.gp_sklearn import *
@@ -117,6 +119,7 @@ class OcelotInterfaceWindow(QFrame):
         self.name_es = "Extremum Seeking"
         self.name_powell = "Powell"
         self.name_gauss_gpy = "GP GPy"
+        self.name_rcds = "RCDS"
         # self.name4 = "Conjugate Gradient"
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
@@ -126,6 +129,7 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.cb_select_alg.addItem(self.name_simplex_norm)
         self.ui.cb_select_alg.addItem(self.name_es)
         self.ui.cb_select_alg.addItem(self.name_powell)
+        self.ui.cb_select_alg.addItem(self.name_rcds)
         #self.ui.cb_select_alg.addItem(self.name_gauss_gpy)
         # if sklearn_version >= "0.18":
         #     self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
@@ -369,11 +373,16 @@ class OcelotInterfaceWindow(QFrame):
         if current_method == self.name_gauss:
             scaling_coef = self.ui.sb_scaling_coef.value()
             #minimizer = GaussProcess()
-            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef)
+            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef, bounds= self.mi.bounds)
             minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:
-            minimizer = GaussProcessSKLearn()
+#             minimizer = GaussProcessSKLearn()
+           # must pass the Scaling Coefficient value to the Bayes Optimizer in order to control
+            # the acquisition function search range (default is 3 length scales in each dimension
+            # for Scaling Coefficient of 1.)
+            scaling_coef = self.ui.sb_scaling_coef.value()
+            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef)
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
 
         elif current_method == self.name_gauss_gpy:
@@ -390,6 +399,8 @@ class OcelotInterfaceWindow(QFrame):
             minimizer = ESMin()
         elif current_method == self.name_powell:
             minimizer = Powell()
+        elif current_method == self.name_rcds:
+            minimizer = RCDS()
         #simplex Method
         else:
             minimizer = Simplex()
