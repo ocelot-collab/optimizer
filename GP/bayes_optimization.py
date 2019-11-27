@@ -88,6 +88,7 @@ class BayesOpt:
                 self.searchBoundScaleFactor = abs(searchBoundScaleFactor)
             except:
                 print(('BayesOpt - ERROR: ', searchBoundScaleFactor, ' is not a valid searchBoundScaleFactor (scaling coeff).'))
+        print('self.searchBoundScaleFactor = ',self.searchBoundScaleFactor)
         self.iter_bound = iter_bound 
         self.prior_data = prior_data # for seeding the GP with data acquired by another optimizer
         self.target_func = target_func
