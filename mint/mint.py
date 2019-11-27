@@ -65,19 +65,20 @@ class Minimizer(object):
 class MachineStatus:
     def __init__(self):
         self.alarm_device = None
+        self.alarm_value = None
         self.alarm_min = -1
         self.alarm_max = 1
 
     def is_ok(self):
         if self.alarm_device is None:
             return True
-        alarm_value = self.alarm_device.get_value()
-
-        print("ALARM: ", alarm_value, self.alarm_min, self.alarm_max)
-        if self.alarm_min <= alarm_value <= self.alarm_max:
+        self.alarm_value = self.alarm_device.get_value()
+        print('alarm value %f' % self.alarm_value)
+        print("ALARM: ", self.alarm_value, self.alarm_min, self.alarm_max)
+        if self.alarm_min <= self.alarm_value <= self.alarm_max:
                 return True
         return False
-
+        
 
 class OptControl:
     """
@@ -106,7 +107,7 @@ class OptControl:
 
         :return:
         """
-
+        print(self.m_status.alarm_device)
         if self.m_status.is_ok():
             return 1
         else:
@@ -115,8 +116,10 @@ class OptControl:
                     self.is_ok = True
                     time.sleep(self.alarm_timeout)
                     return 1
-                time.sleep(self.timeout)
                 self.is_ok = False
+                if self.kill==True:
+                    return 1
+                time.sleep(self.timeout)
                 print(".",)
 
     def stop(self):
@@ -187,6 +190,7 @@ class Optimizer(Thread):
         return False
 
     def get_values(self):
+        print(time.time())
         for i in range(len(self.devices)):
             print('reading ', self.devices[i].id)
             self.devices[i].get_value(save=True)
@@ -203,7 +207,7 @@ class Optimizer(Thread):
 
     def do_wait(self):
         for i in range(len(self.devices)):
-            #print('waiting ', self.devices[i].id)
+            print('waiting ', self.devices[i].id)
             self.devices[i].wait()
 
     def error_func(self, x):
@@ -225,8 +229,18 @@ class Optimizer(Thread):
         self.set_values(x)
         self.set_triggers()
         self.do_wait()
+        self.opt_ctrl.wait()
         self.get_values()
-
+        if self.opt_ctrl.m_status.alarm_device!=None:
+            while 1:
+                self.opt_ctrl.m_status.alarm_value=self.opt_ctrl.m_status.alarm_device.get_value()
+                if self.opt_ctrl.m_status.alarm_min<=self.opt_ctrl.m_status.alarm_value<=self.opt_ctrl.m_status.alarm_max:
+                    break
+                if self.opt_ctrl.kill==True:
+                    break
+                print('alarm ...')
+                time.sleep(0.5)
+        
         print('sleeping ' + str(self.timeout))
         time.sleep(self.timeout)
 

@@ -52,7 +52,7 @@ from mint import opt_objects as obj
 
 from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
-from mint.spear.spear_interface import * 
+from mint.aps.aps_interface import *
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
 from mint.petra.petra_interface import *
@@ -67,9 +67,9 @@ from op_methods.gp_sklearn import *
 
 from stats import stats
 
-AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
+AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface, APSMachineInterface,
                                 TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
-                                DemoInterface, SPEARMachineInterface]
+                                DemoInterface]
 
 
 class OcelotInterfaceWindow(QFrame):
@@ -367,7 +367,9 @@ class OcelotInterfaceWindow(QFrame):
 
         #GP Method
         if current_method == self.name_gauss:
-            minimizer = GaussProcess()
+            scaling_coef = self.ui.sb_scaling_coef.value()
+            #minimizer = GaussProcess()
+            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef, bounds= self.mi.bounds)
             minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:
