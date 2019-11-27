@@ -53,6 +53,7 @@ from mint import opt_objects as obj
 from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
 from mint.spear.spear_interface import *
+from mint.aps.aps_interface import *
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
 from mint.petra.petra_interface import *
@@ -68,9 +69,9 @@ from op_methods.gp_sklearn import *
 
 from stats import stats
 
-AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
+AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface, APSMachineInterface,
                                 TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
-                                DemoInterface, SPEARMachineInterface]
+                                DemoInterface]
 
 
 class OcelotInterfaceWindow(QFrame):
@@ -370,11 +371,18 @@ class OcelotInterfaceWindow(QFrame):
 
         #GP Method
         if current_method == self.name_gauss:
-            minimizer = GaussProcess()
+            scaling_coef = self.ui.sb_scaling_coef.value()
+            #minimizer = GaussProcess()
+            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef, bounds= self.mi.bounds)
             minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:
-            minimizer = GaussProcessSKLearn()
+#             minimizer = GaussProcessSKLearn()
+           # must pass the Scaling Coefficient value to the Bayes Optimizer in order to control
+            # the acquisition function search range (default is 3 length scales in each dimension
+            # for Scaling Coefficient of 1.)
+            scaling_coef = self.ui.sb_scaling_coef.value()
+            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef)
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
 
         elif current_method == self.name_gauss_gpy:

@@ -422,9 +422,9 @@ class OGP(object):
         #   returns a matrix of size (n1 x n2)
 
         # calculate covariance with kernel
-        if covar == 'MATERN32_ARD':
+        if self.covar == 'MATERN32_ARD':
             K = self.computeMatern(x1, x2, nu=1.5)
-        elif covar == 'MATERN52_ARD':
+        elif self.covar == 'MATERN52_ARD':
             K = self.computeMatern(x1, x2, nu=2.5)
         else: # default to rbf
             if np.size(np.shape(self.covar_params[0])) == 2:
