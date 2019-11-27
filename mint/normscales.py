@@ -43,13 +43,13 @@ def normscales_MultinormalInterface(mi):
 
 #_________________________________________________________________________________________________________________________________________________
 def normscales_SPEARMachineInterface(mi, devices, default_length_scale=1., verboseQ=True):
-    
+
     import pickle
-    
+
     #print('WARNING: mint.normscales.normscales_SPEARMachineInterface - method not properly implemented yet!')
-    
-    length_params_file = 'parameters/spear/spear_hyperparams.pkl'
-    
+
+    length_params_file = 'parameters/spear_hyperparams.pkl'
+
     try:
         #with open('test.pkl', 'wb') as f: pickle.dump({'a':1,'b':2},f, 0) # the zero stores as text so that it's sorta editable manually
         with open(length_params_file, 'rb') as f: hyper_dict = pickle.load(f)
@@ -58,30 +58,39 @@ def normscales_SPEARMachineInterface(mi, devices, default_length_scale=1., verbo
         if verboseQ: print('WARNING: mint.normscapes - Could not load length scales from file ', length_params_file)
         length_scales = np.ones(len(devices))
         if verboseQ: print('WARNING: mint.normscapes - setting length scales to ', length_scales)
-        
+
     try:
         amp_variance = hyper_dict['amp']
     except:
         amp_variance = 1.
         if verboseQ: print('WARNING: mint.normscapes - setting amplitude scale to ', amp_variance)
-        
+
     try:
         single_noise_variance = hyper_dict['noise']
     except:
         single_noise_variance = 0.01
         if verboseQ: print('WARNING: mint.normscapes - setting single sample noise variance to ', single_noise_variance)
-        
+
     try:
         mean_noise_variance = hyper_dict['noise'] / mi.points
     except:
         mean_noise_variance = single_noise_variance
         if verboseQ: print('WARNING: mint.normscapes - setting average noise variance (variance of the mean) to ', mean_noise_variance)
-        
-    precision_matrix = None
-    
-    print( length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix)
-    return length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix
 
+    try:
+        precision_matrix = hyper_dict['precision_matrix']
+    except:
+        precision_matrix = None
+        if verboseQ: print('WARNING: mint.normscapes - setting precision_matrix scale to ', precision_matrix)
+
+    try:
+        offset = hyper_dict['offset']
+    except:
+        offset = 1.
+        if verboseQ: print('WARNING: mint.normscapes - setting offset scale to ', offset)
+
+    print( length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix, offset)
+    return length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix, offset
 
 #_________________________________________________________________________________________________________________________________________________
 def normscales_APSMachineInterface(mi, devices, default_length_scale=1., verboseQ=True):
@@ -127,8 +136,12 @@ def normscales_APSMachineInterface(mi, devices, default_length_scale=1., verbose
     except:
         mean_noise_variance = single_noise_variance
         if verboseQ: print('WARNING: mint.normscapes - setting average noise variance (variance of the mean) to ', mean_noise_variance)
-        
-    precision_matrix = None
+
+    try:
+        precision_matrix = hyper_dict['precision_matrix']
+    except:
+        precision_matrix = None
+        if verboseQ: print('WARNING: mint.normscapes - setting precision_matrix scale to ', precision_matrix)
     
     print( length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix)
     return length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix
@@ -347,7 +360,10 @@ def normscales_LCLSMachineInterface(mi, devices, default_length_scale=1., correl
         amp_variance = 1.                                # signal amplitude
         single_noise_variance = 0.1**2                      # noise vsarince of 1 point
         mean_noise_variance = 0.01**2                       # noise variance of mean of n points
-        
 
-    return length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix
+
+    offset = None # constant offset for the prior mean
+
+    return length_scales, amp_variance, single_noise_variance, mean_noise_variance, precision_matrix, None
+
 
