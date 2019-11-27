@@ -155,6 +155,9 @@ class MainWindow(Ui_Form):
 
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
+            # create folder "obj_funcs" incide new folder
+            obj_funcs_name = os.path.dirname(filename) + os.sep + "obj_funcs"
+            os.makedirs(obj_funcs_name)
 
         with open(filename, 'w') as f:
             json.dump(table, f)
@@ -222,7 +225,6 @@ class MainWindow(Ui_Form):
 
             self.cb_set_best_sol.setCheckState(table["set_best_sol"])
             if "maximization" in table.keys():
-                print("MAX 232323", table["maximization"], table["maximization"] == True)
                 #if table["maximization"] == True:
                 self.rb_maximize.setChecked(table["maximization"])
                 self.rb_minimize.setChecked(not table["maximization"])
@@ -242,13 +244,13 @@ class MainWindow(Ui_Form):
         if filename:
             name = filename.split("/")[-1]
             parts = name.split(".")
-            #print(parts)
             body_name = parts[0]
 
             if len(parts)<2 or parts[1] !="json":
                 part = filename.split(".")[0]
                 filename = part + ".json"
-            copy(self.Form.path_to_obj_func, self.Form.obj_save_path + body_name +".py")
+
+            copy(self.Form.path_to_obj_func, self.Form.obj_save_path + os.sep + body_name +".py")
             #self.Form.set_file = filename
             self.save_state(filename)
 
@@ -261,13 +263,14 @@ class MainWindow(Ui_Form):
 
     def load_settings(self, filename):
         print("Load Settings with: ", filename)
-        (body_name, extension) = filename.split("/")[-1].split(".")
+        path, file = os.path.split(filename)
+        (body_name, extension) = file.split(".")
         copy(os.path.join(self.Form.obj_save_path,  body_name + ".py"), self.Form.path_to_obj_func)
         self.restore_state(filename)
 
     def get_hyper_file(self):
         #filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters', filter="txt (*.npy *.)")
-        filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters',
+        filename, _ = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters',
                                                      self.Form.optimizer_path + "parameters", "txt (*.npy)"
                                                      )
         if filename:

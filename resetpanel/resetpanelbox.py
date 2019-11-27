@@ -13,6 +13,7 @@ from __future__ import absolute_import, print_function
 import os, sys
 import functools
 import numpy as np
+import traceback
 
 from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialog
@@ -188,8 +189,9 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 continue
             try:
                 dev = self.parent.create_devices(pvs=[pv])[0]
-            except:
-                print ("bad string")
+            except Exception as e:
+                print ("Failed to create device {}. Error was: ".format(pv), e)
+                traceback.print_exc()
                 continue
 
             state = dev.state()

@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 import json
 
-from PyQt5.QtWidgets import QWidget
+#from PyQt5.QtWidgets import QWidget
 
 
 class MachineInterface(object):
@@ -96,8 +96,8 @@ class MachineInterface(object):
         text = ""
 
         if not gui.cb_use_predef.checkState():
-            text += "obj func: A   : " + str(gui.le_a.text()).split("/")[-2] + "/" + str(gui.le_a.text()).split("/")[
-                -1] + "\n"
+            if str(gui.le_a.text()) != "" and gui.is_le_addr_ok(gui.le_b):
+                text += "obj func: A   : " + str(gui.le_a.text()).split("/")[-2] + "/" + str(gui.le_a.text()).split("/")[-1] + "\n"
             if str(gui.le_b.text()) != "" and gui.is_le_addr_ok(gui.le_b):
                 text += "obj func: B   : " + str(gui.le_b.text()).split("/")[-2] + "/" + \
                         str(gui.le_b.text()).split("/")[-1] + "\n"
@@ -198,87 +198,24 @@ class MachineInterface(object):
 
         :return: status (bool), error_msg (str)
         """
-        from utils import db as utils_db
-
-        dbname = os.path.join(self.config_dir, "test.db")  # "../parameters/test.db"
 
         if objective_func is None:
             return False, "Objective Function required to save data."
 
-        try:
-            db = utils_db.PerfDB(dbname=dbname)
-        except:
-            db = None
-            print("Database is not available")
-
 
         dump2json = {}
-        scan_params = {"devs": [], "currents": [], "iter":0, "sase": [0,0],"pen":[0,0], "obj":[]}
-        d_names = []
-        d_start = []
-        d_stop = []
+
         for dev in devices:
-            scan_params["devs"].append(dev.eid)
-            d_names.append(dev.eid + "_val")
-            d_start.append(dev.values[0])
-            d_stop.append(dev.values[-1])
-
-            scan_params["currents"].append([dev.values[0], dev.values[-1]])
-
-            d_names.append(dev.eid + "_lim")
-            d_start.append(dev.get_limits()[0])
-            d_stop.append(dev.get_limits()[1])
             dump2json[dev.eid] = dev.values
 
-        scan_params["iter"] = len(objective_func.penalties)
-
-        scan_params["sase"] = [objective_func.values[0], objective_func.values[-1]]
-        scan_params["pen"] = [objective_func.penalties[0], objective_func.penalties[-1]]
-        scan_params["method"] = method_name
-
-        o_names = ["obj_id", "obj_value", "obj_pen", "niter"]
-        o_start = [objective_func.eid, objective_func.values[0], objective_func.penalties[0], max_iter]
-        o_stop = [objective_func.eid, objective_func.values[-1], objective_func.penalties[-1],  len(objective_func.penalties)]
-
-
-        start_sase = objective_func.values[0]
-        stop_sase = objective_func.values[-1]
-
-        #print('current actions in tuning', [(t.id, t.tuning_id, t.sase_start, t.sase_end) for t in db.get_actions()])
-
-
-        # add new data here START
-        new_data_name = ["method"]
-        new_data_start = [method_name]
-        new_data_end = [method_name]
-        # add new data here END
-
-        param_names = o_names + d_names + new_data_name
-        start_vals = o_start+d_start + new_data_start
-        end_vals = o_stop+d_stop + new_data_end
-
-        try:
-            if db is not None:
-                db.new_tuning({'wl': 13.6, 'charge': self.get_charge(), 'comment': 'test tuning'})
-                tune_id = db.current_tuning_id()
-                db.new_action(tune_id, start_sase=start_sase, end_sase=stop_sase)
-
-                action_id = db.current_action_id()
-                db.add_action_parameters(tune_id, action_id, param_names=param_names, start_vals=start_vals,
-                                         end_vals=end_vals)
-
-                print('current actions', [(t.id, t.tuning_id, t.sase_start, t.sase_end) for t in db.get_actions()])
-                print('current action parameters', [(p.tuning_id, p.action_id, p.par_name, p.start_value, p.end_value) for p in
-                                                    db.get_action_parameters(tune_id, action_id)])
-        except Exception as ex:
-            print("Database error. Exception was: " + str(ex))
-
+        dump2json["method"] = method_name
         dump2json["dev_times"] = devices[0].times
         dump2json["obj_values"] = objective_func.values
         dump2json["obj_times"] = objective_func.times
         dump2json["maximization"] = maximization
-
-
+        dump2json["std"] = objective_func.std_dev
+        dump2json["nreadings"] = objective_func.nreadings
+        dump2json["function"] = objective_func.eid
         if not os.path.exists(self.path2jsondir):
             os.makedirs(self.path2jsondir)
 
@@ -339,6 +276,7 @@ class Device(object):
         self.low_limit = 0.
         self.high_limit = 0.
         self._can_edit_limits = True
+        self.istep = None               # inital step
 
     def set_value(self, val):
         self.values.append(val)
@@ -364,7 +302,7 @@ class Device(object):
             return
 
         start_time = time.time()
-        while start_time + self.timeout <= time.time():
+        while  time.time() <= start_time + self.timeout:
             if np.abs(self.get_value()-self.target) < self.tol:
                 return
             time.sleep(0.05)
@@ -448,15 +386,25 @@ class Target(object):
         self.id = eid
         self.pen_max = 100
 
-        self.penalties = []
-        self.values = []
-        self.alarms = []
-        self.times = []
+        self.clean()
         self.nreadings = 1
         self.interval = 0.0
         self.stats = None
         self.points = None
         self.mi = None
+        self.clean_ref_data()
+        self.devices = []
+
+    def collect_ref_data(self):
+        try:
+            ref_sase = self.mi.get_ref_sase_signal()
+        except:
+            print("ERROR: could nor read ref_sase")
+            ref_sase = None
+        self.ref_sase.append(ref_sase)
+
+    def clean_ref_data(self):
+        self.ref_sase = []
 
     def get_value(self):
         return 0
@@ -468,12 +416,11 @@ class Target(object):
 
         :return: penalty
         """
-        sase = self.get_value()
-        for i in range(self.nreadings):
-            sase += self.get_value()
+        data = []
+        for i in range(self.nreadings ):
+            data.append(self.get_value())
             time.sleep(self.interval)
-        sase = sase/self.nreadings
-        print("SASE", sase)
+        sase = np.mean(data)
         alarm = self.get_alarm()
         pen = 0.0
         if alarm >= 0.95:
@@ -484,10 +431,13 @@ class Target(object):
         pen -= sase
         self.niter += 1
         # print("niter = ", self.niter)
+        self.objective_acquisitions.append(np.array(data))
+        self.std_dev.append(np.std(data))
         self.penalties.append(pen)
         self.times.append(time.time())
         self.values.append(sase)
         self.alarms.append(alarm)
+        self.collect_ref_data()
         return pen
 
     def get_alarm(self):
@@ -499,6 +449,8 @@ class Target(object):
         self.times = []
         self.alarms = []
         self.values = []
+        self.objective_acquisitions = []
+        self.std_dev = []
 
 
 class Target_test(Target):
@@ -509,56 +461,10 @@ class Target_test(Target):
         :param eid: ID
         """
         self.mi = mi
-        self.debug = False
-        self.kill = False
-        self.pen_max = 100
-        self.niter = 0
-        self.penalties = []
-        self.times = []
-        self.alarms = []
-        self.values = []
-
-    def get_penalty(self):
-        sase = self.get_value()
-        alarm = self.get_alarm()
-
-        if self.debug: print('alarm:', alarm)
-        if self.debug: print('sase:', sase)
-        pen = 0.0
-        if alarm > 1.0:
-            return self.pen_max
-        if alarm > 0.7:
-            return alarm * 50.0
-        pen += alarm
-        pen -= sase
-        if self.debug: print('penalty:', pen)
-        self.niter += 1
-        print("niter = ", self.niter)
-        self.penalties.append(pen)
-        self.times.append(time.time())
-        self.values.append(sase)
-        self.alarms.append(alarm)
-        return pen
 
     def get_value(self):
         values = np.array([dev.get_value() for dev in self.devices])
         return np.sum(np.exp(-np.power((values - np.ones_like(values)), 2) / 5.))
 
-    def get_spectrum(self):
-        return [0, 0]
-
-    def get_stat_params(self):
-        #spetrum = self.get_spectrum()
-        #ave = np.mean(spetrum[(2599 - 5 * 120):-1])
-        #std = np.std(spetrum[(2599 - 5 * 120):-1])
-        ave = self.get_value()
-        std = 0.1
-        return ave, std
-
-    def get_alarm(self):
-        return 0
-
-    def get_energy(self):
-        return 3
 
 

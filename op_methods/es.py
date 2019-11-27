@@ -5,9 +5,22 @@ Created on Mon Dec  4 12:07:24 2017
 
 @author: Alexander Scheinker
 """
-
+from __future__ import print_function, absolute_import
 import numpy as np
 import time
+from mint.mint import *
+
+class ESMin(Minimizer):
+    def __init__(self):
+        super(ESMin, self).__init__()
+        self.ES = ES_min()
+
+    def minimize(self, error_func, x):
+        self.ES.bounds = self.bounds
+        self.ES.max_iter = self.max_iter
+        self.ES.norm_coef = self.norm_coef
+        self.ES.minimize(error_func, x)
+        return
 
 class ES_min: 
     def __init__(self):

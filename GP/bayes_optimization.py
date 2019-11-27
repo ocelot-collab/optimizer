@@ -89,6 +89,7 @@ class BayesOpt:
             except:
                 print(('BayesOpt - ERROR: ', searchBoundScaleFactor, ' is not a valid searchBoundScaleFactor (scaling coeff).'))
         print('self.searchBoundScaleFactor = ',self.searchBoundScaleFactor)
+
         self.iter_bound = iter_bound 
         self.prior_data = prior_data # for seeding the GP with data acquired by another optimizer
         self.target_func = target_func
@@ -101,9 +102,9 @@ class BayesOpt:
             print('********* BO - self.mi = self.target_func wORKED!')
         self.acq_func = (acq_func, xi, alt_param)
         #self.ucb_params = [0.01, 2.] # [nu,delta]
-        #self.ucb_params = [0.006, 0.4] # [nu,delta] we like
-        self.ucb_params = [2., None] #change per Adi's guide, aps
-        #self.ucb_params = [0.01, 0.4]
+        self.ucb_params = [0.002, 0.4] # [nu,delta] we like for lcls2
+        self.ucb_params = [2.0, None] # [nu,delta] theortical values
+
         #self.ucb_params = [0.007, 1.0] # [nu,delta]
         self.max_iter = 100
         self.check = None
@@ -191,7 +192,9 @@ class BayesOpt:
         self.current_x = np.array(np.array(x).flatten(), ndmin=2)
         self.X_obs = np.array(self.current_x)
         self.Y_obs = [np.array([[inverse_sign*error_func(x)]])]
-        print("******* DEBUG: opt_control_alarm: ", self.opt_ctrl.m_status.alarm_device, " - ",  self.opt_ctrl.m_status.alarm_min, " - ",  self.opt_ctrl.m_status.alarm_max)
+
+#         print("******* DEBUG: opt_control_alarm: ", self.opt_ctrl.m_status.alarm_device, " - ",  self.opt_ctrl.m_status.alarm_min, " - ",  self.opt_ctrl.m_status.alarm_max)
+
         # iterate though the GP method
         for i in range(self.max_iter):
             print("******* DEBUG: opt_control_alarm - state: ",self.opt_ctrl.m_status.alarm_device, " - ", self.opt_ctrl.m_status.alarm_min, " - ", self.opt_ctrl.m_status.alarm_max, " - ",self.opt_ctrl.m_status.is_ok())
@@ -305,19 +308,18 @@ class BayesOpt:
             if(self.bounds is None): # looks like a scale factor
                 self.bounds = 1.0
 
-            # bound_lengths = self.searchBoundScaleFactor * 3. * self.lengthscales # 3x hyperparam lengths
-            bound_lengths = self.searchBoundScaleFactor * self.lengthscales #H.S reduce the length for APS linac
-            print(self.bounds)
-            print(bound_lengths)
+            bound_lengths = self.searchBoundScaleFactor * 3. * self.lengthscales # 3x hyperparam lengths
+           
+#             print(self.bounds)
+#             print(bound_lengths)
             if (self.bounds is not None):
-                #bound_lengths = np.min(bound_lengths,self.bounds)
                 bound_lengths = [min(a, self.bounds) for a in bound_lengths]
                 bound_lengths = np.array(bound_lengths)
             
             relative_bounds = np.transpose(np.array([-bound_lengths, bound_lengths]))
-            #iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
+
             iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
-            print(iter_bounds)
+#             print(iter_bounds)
         else:
             iter_bounds = self.bounds
 
@@ -483,7 +485,7 @@ def negUCB(x_new, model, ndim, nsteps, nu = 1., delta = 1.):
 
     if nsteps==0: nsteps += 1
     (y_mean, y_var) = model.predict(np.array(x_new,ndmin=2))
-    if delta==None:
+    if delta == None:
         GPUCB = y_mean + 2* np.sqrt(y_var)
     else:
         tau = 2.*np.log(nsteps**(0.5*ndim+2.)*(np.pi**2.)/3./delta)
@@ -504,4 +506,4 @@ def negUCB(x_new, model, ndim, nsteps, nu = 1., delta = 1.):
     #UCB = y_new + mult * np.sqrt(var)
     #return -UCB
 
-# Thompson sampling
+
