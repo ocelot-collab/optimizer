@@ -290,7 +290,7 @@ class BayesOpt:
                 bound_lengths = np.min(bound_lengths,self.bounds)
 
             relative_bounds = np.transpose(np.array([-bound_lengths, bound_lengths]))
-            
+
             #iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
             iter_bounds = np.transpose(np.array([x_start - bound_lengths, x_start + bound_lengths]))
 
