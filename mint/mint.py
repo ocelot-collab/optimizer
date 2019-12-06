@@ -158,7 +158,10 @@ class OptControl:
 class MetaDevice(object):
     """
     The class is an intermediary between the Devices and the Optimizer.
-    The idea is to be able to work with real devices (e.g. Quads) through virtual devices, e.g. beta functions. d
+    The class allows to work with real devices (e.g. Quads) through virtual devices, e.g. beta functions.
+
+    NOTE: The MetaDevice is only to be used via scripted optimization and it is not valid for UI optimizations.
+          In a scripted optimization, the child class can have methods to map abstract values into machine parameters.
     """
 
     def __init__(self):
@@ -172,6 +175,13 @@ class MetaDevice(object):
         pass
 
     def get_values(self):
+        """
+        Method gets values from devices. In Child class of MetaDevice it can be redefined.
+        Example: converting physical parameters (PhysDevices) e.g. Quads strength, Undulator gaps, etc. into
+        abstract parameters "x" (Virtual Devices which Optimizer class controls) e.g. beta mismatch, tapering coefficients etc.
+
+        :return: values
+        """
         x = []
         for i in range(len(self.devices)):
             val = self.devices[i].get_value(save=True)
@@ -180,6 +190,14 @@ class MetaDevice(object):
         return x
 
     def set_values(self, x):
+        """
+        Method sets values to devices. In Child class of MetaDevice it can be redefined.
+        Example: converting abstract parameters "x" e.g. beta mismatch, tapering coefficients etc. into physical params
+        e.g. Quads strength, Undulator gaps, etc.
+
+        :param x:
+        :return:
+        """
         for i in range(len(self.devices)):
             logger.debug('set: {} <-- {}'.format(self.devices[i].id, x[i]))
             self.devices[i].set_value(x[i])
@@ -194,7 +212,7 @@ class MetaDevice(object):
 
     def set(self, x):
         """
-        Method sets new values to the Diveces. The method is used in the Optimizer.
+        Method sets new values to the Devices. The method is used in the Optimizer.
 
         :param x: list of values
         :return:
@@ -243,7 +261,7 @@ class Optimizer(Thread):
         self.target = None
         self.timeout = 0
         self.opt_ctrl = OptControl()
-        self.dev_manager = MetaDevice()
+        self.meta_dev = MetaDevice()
         self.seq = []
         self.set_best_solution = True
         self.norm_coef = 0.05
@@ -274,11 +292,11 @@ class Optimizer(Thread):
         self.opt_ctrl.wait()
 
         # check limits
-        if self.dev_manager.exceed_limits(x):
+        if self.meta_dev.exceed_limits(x):
             return self.target.pen_max
 
-        self.dev_manager.set(x)
-        self.dev_manager.get()
+        self.meta_dev.set(x)
+        self.meta_dev.get()
 
         logger.info('sleeping ' + str(self.timeout))
         time.sleep(self.timeout)
@@ -297,10 +315,10 @@ class Optimizer(Thread):
         """
         Direct target function optimization with simplex/GP, using Devices as a multiknob
         """
-        self.dev_manager.devices = devices
-        self.dev_manager.preprocess()
+        self.meta_dev.devices = devices
+        self.meta_dev.preprocess()
 
-        self.dev_manager.clean()
+        self.meta_dev.clean()
         target.clean()
         self.target = target
         self.devices = devices
@@ -319,7 +337,7 @@ class Optimizer(Thread):
 
         target_ref = self.target.get_penalty()
 
-        x = self.dev_manager.get()
+        x = self.meta_dev.get()
         x_init = x
 
         self.minimizer.x_init = x_init
@@ -333,9 +351,9 @@ class Optimizer(Thread):
         if self.set_best_solution:
             logger.info("SET the best solution: " + str(x))
             x = self.opt_ctrl.best_step()
-            if self.dev_manager.exceed_limits(x):
+            if self.meta_dev.exceed_limits(x):
                 return self.target.pen_max
-            self.dev_manager.set(x)
+            self.meta_dev.set(x)
 
         target_new = self.target.get_penalty()
 
