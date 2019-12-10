@@ -55,9 +55,13 @@ class MainWindow(Ui_Form):
         """
         if self.le_alarm.hasFocus():
             return
-        dev = str(self.le_alarm.text())
+        dev_name = str(self.le_alarm.text())
+
+        # check if device name (str) is not empty
+        if not dev_name:
+            return
         try:
-            value = self.Form.mi.get_value(dev)
+            value = self.Form.mi.get_value(dev_name)
             self.label_alarm.setText(str(np.round(value, 2)))
         except:
             self.label_alarm.setText(str("None"))
@@ -84,6 +88,9 @@ class MainWindow(Ui_Form):
         if not line_edit.isEnabled():
             return False
         dev = str(line_edit.text())
+        # check if device name (str) is not empty
+        if not dev:
+            return False
         state = True
         try:
             val = self.Form.mi.get_value(dev)

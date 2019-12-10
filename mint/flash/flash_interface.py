@@ -20,8 +20,6 @@ from mint.opt_objects import MachineInterface, Device, TestDevice
 from collections import OrderedDict
 from datetime import datetime
 import json
-import logging
-logger = logging.getLogger(__name__)
 
 class AlarmDevice(Device):
     """
@@ -31,17 +29,17 @@ class AlarmDevice(Device):
         super(AlarmDevice, self).__init__(eid=eid)
 
 
-class XFELMachineInterface(MachineInterface):
+class FLASHMachineInterface(MachineInterface):
     """
     Machine Interface for European XFEL
     """
     name = 'XFELMachineInterface'
 
     def __init__(self, args=None):
-        super(XFELMachineInterface, self).__init__(args)
+        super(FLASHMachineInterface, self).__init__(args)
         if 'pydoocs' not in sys.modules:
             print('error importing doocs library')
-        self.logbook_name = "xfellog"
+        self.logbook_name = "ttflog"
 
         path2root = os.path.abspath(os.path.join(__file__ , "../../../.."))
         self.config_dir = os.path.join(path2root, "config_optim")
@@ -69,70 +67,65 @@ class XFELMachineInterface(MachineInterface):
 
 
     def get_charge(self):
-        return self.get_value("XFEL.DIAG/CHARGE.ML/TORA.25.I1/CHARGE.SA1")
+        try:
+            fl1 = self.get_value("FLASH.DIAG/TOROID/3GUN/CHARGE.FLASH1")
+        except:
+            fl1 = None
+        try:
+            fl2 = self.get_value("FLASH.DIAG/TOROID/3GUN/CHARGE.FLASH2")
+        except:
+            fl2 = None
+        return [fl1, fl2]
 
     def get_sases(self):
         try:
-            sa1 = self.get_value("XFEL.FEL/XGM/XGM.2643.T9/INTENSITY.SA1.SLOW.TRAIN")
+            fl1 = self.get_value("TTF2.FEL/BKR.FLASH.STATE/BKR.FLASH.STATE/SLOW.INTENSITY")
         except:
-            sa1 = None
+            fl1 = None
         try:
-            sa2 = self.get_value("XFEL.FEL/XGM/XGM.2595.T6/INTENSITY.SLOW.TRAIN")
+            fl2 = self.get_value("FLASH.FEL/XGM.PHOTONFLUX/FL2.TUNNEL/PHOTONFLUX.UJ")
         except:
-            sa2 = None
-        try:
-            sa3 = self.get_value("XFEL.FEL/XGM/XGM.3130.T10/INTENSITY.SA3.SLOW.TRAIN")
-        except:
-            sa3 = None
-        return [sa1, sa2, sa3]
+            fl2 = None
+        return [fl1, fl2]
 
     def get_beam_energy(self):
         try:
-            tld = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/TLD/ENERGY.DUD")
+            fl1 = self.get_value("FLASH.RF/LLRF.ENERGYGAIN.ML/M2.ACC67/ENERGYGAIN_TOTAL.1")
         except:
-            tld = None
-        #t3 = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T3/ENERGY.SA2")
-        #t4 = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T4/ENERGY.SA1")
-        #t5 = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T5/ENERGY.SA2")
+            fl1 = None
         try:
-            t4d = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T4D/ENERGY.SA1")
+            fl2 = self.get_value("FLASH.RF/LLRF.ENERGYGAIN.ML/M2.ACC67/ENERGYGAIN_TOTAL.2")
         except:
-            t4d = None
-        try:
-            t5d = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T5D/ENERGY.SA2")
-        except:
-            t5d = None
-        return [tld, t4d, t5d]
+            fl2 = None
+
+        return [fl1, fl2]
 
     def get_wavelength(self):
         try:
-            sa1 = self.get_value("XFEL.FEL/XGM.PHOTONFLUX/XGM.2643.T9/WAVELENGTH")
+            fl1 = self.get_value("TTF2.DAQ/ENERGY.DOGLEG/LAMBDA_MEAN/VAL")
         except:
-            sa1 = None
+            fl1 = None
         try:
-            sa2 = self.get_value("XFEL.FEL/XGM.PHOTONFLUX/XGM.2595.T6/WAVELENGTH")
+            fl2 = self.get_value("TTF2.FEEDBACK/FL2.WAVELENGTHCONTROL/FLASH2/WAVELENGTH.USED")
         except:
-            sa2 = None
-        try:
-            sa3 = self.get_value("XFEL.FEL/XGM.PHOTONFLUX/XGM.3130.T10/WAVELENGTH")
-        except:
-            sa3 = None
-        return [sa1, sa2, sa3]
+            fl2 = None
+
+        return [fl1, fl2]
 
     def get_ref_sase_signal(self):
         try:
-            sa1 = self.get_value("XFEL.FEL/XGM/XGM.2643.T9/INTENSITY.SA1.SLOW.TRAIN")
+            fl1 = self.get_value("TTF2.FEL/BKR.FLASH.STATE/BKR.FLASH.STATE/SLOW.INTENSITY")
         except:
-            sa1 = None
+            fl1 = None
         try:
-            sa2 = self.get_value("XFEL.FEL/XGM/XGM.2595.T6/INTENSITY.SLOW.TRAIN")
+            fl2 = self.get_value("FLASH.FEL/XGM.PHOTONFLUX/FL2.TUNNEL/PHOTONFLUX.UJ")
         except:
-            sa2 = None
+            fl2 = None
         #try:
         #    sa3 = self.get_value("XFEL.FEL/XGM.PHOTONFLUX/XGM.3130.T10/WAVELENGTH")
         #except:
         #    sa3 = None
-        return [sa1, sa2]
+        return [fl1, fl2]
 
     def write_data(self, method_name, objective_func, devices=[], maximization=False, max_iter=0):
         """
@@ -256,8 +249,8 @@ class XFELMachineInterface(MachineInterface):
         return succeded
 
     def get_obj_function_module(self):
-        from mint.xfel import xfel_obj_function
-        return xfel_obj_function
+        from mint.flash import flash_obj_function
+        return flash_obj_function
 
     def get_preset_settings(self):
         """
@@ -332,80 +325,3 @@ class XFELMachineInterface(MachineInterface):
         return None
 # test interface
 
-
-class TestMachineInterface(XFELMachineInterface):
-    """
-    Machine interface for testing
-    """
-    name = 'TestMachineInterface'
-
-    def __init__(self, args):
-        super(TestMachineInterface, self).__init__(args)
-        self.data = 1.
-        pass
-
-    def get_alarms(self):
-        return np.random.rand(4)#0.0, 0.0, 0.0, 0.0]
-
-    def get_value(self, device_name):
-        """
-        Testing getter function for XFEL.
-
-        :param channel: (str) String of the devices name used in doocs
-        :return: Data from pydoocs.read(), variable data type depending on channel
-        """
-        #if "QUAD" in device_name:
-        #    return 0
-        return np.random.rand(1)[0]-0.5 #self.data
-
-    def set_value(self, device_name, val):
-        """
-        Testing Method to set value to a channel
-
-        :param channel: (str) String of the devices name used in doocs
-        :param val: value
-        :return: None
-        """
-        #print("set:", device_name,  "-->", val)
-        self.data += np.sqrt(val**2)
-        return 0.0
-
-    def get_ref_sase_signal(self):
-        return 0
-
-    @staticmethod
-    def send_to_logbook(*args, **kwargs):
-        """
-        Send information to the electronic logbook.
-
-        :param args:
-            Values sent to the method without keywork
-        :param kwargs:
-            Dictionary with key value pairs representing all the metadata
-            that is available for the entry.
-        :return: bool
-            True when the entry was successfully generated, False otherwise.
-        """
-        author = kwargs.get('author', '')
-        title = kwargs.get('title', '')
-        severity = kwargs.get('severity', '')
-        text = kwargs.get('text', '')
-        elog = kwargs.get('elog', '')
-        image = kwargs.get('image', None)
-
-        # TODO: @sergey.tomin Figure out what to do for logbook at the TestMachineInterface
-        print('Send to Logbook not implemented for TestMachineInterface.')
-        return True
-
-    def get_obj_function_module(self):
-        from mint.xfel import xfel_obj_function
-        return xfel_obj_function
-
-    def device_factory(self, pv):
-        """
-        Create a device for the given PV using the proper Device Class.
-
-        :param pv: (str) The process variable for which to create the device.
-        :return: (Device) The device instance for the given PV.
-        """
-        return TestDevice(eid=pv)

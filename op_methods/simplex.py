@@ -15,7 +15,8 @@ class Simplex(Minimizer):
 
         :return:
         """
-
+        if self.dev_steps is not None:
+            return 
         self.dev_steps = []
         for dev in self.devices:
             if "istep" not in dev.__dict__:

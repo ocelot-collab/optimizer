@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 import json
 
-#from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget
 
 
 class MachineInterface(object):
@@ -276,7 +276,7 @@ class Device(object):
         self.low_limit = 0.
         self.high_limit = 0.
         self._can_edit_limits = True
-        self.istep = None               # inital step
+        self.istep = None               # initial step
 
     def set_value(self, val):
         self.values.append(val)
@@ -325,6 +325,12 @@ class Device(object):
         self.times = []
 
     def check_limits(self, value):
+        """
+        return True if value is out of limits, otherwise False
+
+        :param value:
+        :return:
+        """
         limits = self.get_limits()
         # Disable Limits when both are 0.
         if np.abs(limits[0]) < 1e-15 and np.abs(limits[1]) < 1e-15:
@@ -399,7 +405,7 @@ class Target(object):
         try:
             ref_sase = self.mi.get_ref_sase_signal()
         except:
-            print("ERROR: could nor read ref_sase")
+            print("ERROR: could not read ref_sase")
             ref_sase = None
         self.ref_sase.append(ref_sase)
 
