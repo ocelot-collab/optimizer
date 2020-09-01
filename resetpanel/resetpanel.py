@@ -130,7 +130,7 @@ class ResetpanelWindow(QFrame):
 
             if self.startValues[dev.eid] is None and value is not None:
                 self.startValues[dev.eid] = value
-                logger.info(" updateCurrentValues: startValues[{}}] = {}}".format(dev.eid, value))
+                logger.info(" updateCurrentValues: startValues[{}] = {}".format(dev.eid, value))
 
             if self.startValues[dev.eid] is None or value is None:
                 item = self.ui.tableWidget.item(row, 5)

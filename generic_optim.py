@@ -32,6 +32,12 @@ print("PATH", os.path.realpath(__file__))
 # for pyqtgraph import
 #sys.path.append(path[:indx]+"ocelot")
 
+# Hack to import matlab before anything else
+if '--matlab' in sys.argv:
+    from utils.matlab import Matlab
+    matlab = Matlab()
+
+
 from PyQt5.QtWidgets import (QApplication, QFrame, QGroupBox, QLabel, QComboBox,
                              QPushButton, QSpacerItem, QVBoxLayout, QDesktopWidget,
                              QFormLayout, QLineEdit)
