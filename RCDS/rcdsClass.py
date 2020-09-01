@@ -258,7 +258,7 @@ class RCDS:
         Nlist = np.shape(xflist)[0]
         for ii in range(Nlist):
             if xflist[ii,1]>=alo and xflist[ii,1]<=ahi:
-                ik = math.round((xflist[ii,1]-alo)/delta)
+                ik = math.floor((xflist[ii,1]-alo)/delta)
                 #print('test', ik, ii, len(alist),len(xflist),xflist[ii,0])
                 alist[ik]=xflist[ii,0]
                 flist[ik]=xflist[ii,1]
