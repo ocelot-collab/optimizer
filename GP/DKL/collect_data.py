@@ -6,9 +6,9 @@ import scipy.io as sio
 
 base_path = '/u1/lcls/matlab/data/2018/2018-01/'
 quadlist = ['620', '640', '660', '680']
-quadlist = sorted(['QUAD_LTU1_' + x + '_BCTRL' for x in quadlist])
+quadlist = sorted(['QUAD_LTUH_' + x + '_BCTRL' for x in quadlist])
 gdet = 'GDET_FEE1_241_ENRCHSTBR'
-energy = 'BEND_DMP1_400_BDES'
+energy = 'BEND_DMPH_400_BDES'
 
 X = np.zeros((0,len(quadlist)+1))
 
