@@ -186,10 +186,10 @@ class BESSYMachineInterface(MachineInterface):
                               "QUAD:LI26:501:BCTRL"]),
             ("LI26 601-901", ["QUAD:LI26:601:BCTRL", "QUAD:LI26:701:BCTRL", "QUAD:LI26:801:BCTRL",
                               "QUAD:LI26:901:BCTRL"]),
-            ("LTU M. Quads", ["QUAD:LTUH:620:BCTRL", "QUAD:LTUH:640:BCTRL", "QUAD:LTUH:660:BCTRL",
-                              "QUAD:LTUH:680:BCTRL"]),
+            ("LTU M. Quads", ["QUAD:LTU1:620:BCTRL", "QUAD:LTU1:640:BCTRL", "QUAD:LTU1:660:BCTRL",
+                              "QUAD:LTU1:680:BCTRL"]),
             ("Dispersion Quads", ["QUAD:LI21:221:BCTRL", "QUAD:LI21:251:BCTRL", "QUAD:LI24:740:BCTRL",
-                                  "QUAD:LI24:860:BCTRL", "QUAD:LTUH:440:BCTRL", "QUAD:LTUH:460:BCTRL"]),
+                                  "QUAD:LI24:860:BCTRL", "QUAD:LTU1:440:BCTRL", "QUAD:LTU1:460:BCTRL"]),
             ("CQ01/SQ01/Sol.", ["SOLN:IN20:121:BCTRL", "QUAD:IN20:121:BCTRL", "QUAD:IN20:122:BCTRL"]),
             ("DMD PVs", ["DMD:IN20:1:DELAY_1", "DMD:IN20:1:DELAY_2", "DMD:IN20:1:WIDTH_2", "SIOC:SYS0:ML03:AO956"])
         ])
