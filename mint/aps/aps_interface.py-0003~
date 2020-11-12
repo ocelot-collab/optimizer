@@ -61,6 +61,7 @@ class APSMachineInterface(MachineInterface):
         self._save_at_exit = False
         self._use_num_points = True
         self.read_only = False
+       # self.mi.bounds=0.2 #maximum step size of variables
 
         if 'epics' not in sys.modules:
             raise Exception('No module named epics. APSMachineInterface will not work. Try simulation mode instead.')
@@ -345,13 +346,19 @@ class APSMachineInterface(MachineInterface):
             ("L3 Charge Opt NoSteering ", ["L1:RG2:QM1:CurrentAO", "L1:RG2:QM2:CurrentAO","L1:RG2:QM3:CurrentAO","L1:RG2:QM4:CurrentAO",
                                 "L1:QM3:CurrentAO", "L1:QM4:CurrentAO", "L1:RG2:SC1:VL:CurrentAO", "L1:RG2:SC2:HZ:CurrentAO",
                                 "L1:RG2:SC2:VL:CurrentAO", "L1:RG2:SC3:HZ:CurrentAO", "L1:RG2:SC3:VL:CurrentAO", "L1:QM5:CurrentAO"]),
+            ("L3 Charge Opt-All ", ["L1:RG2:QM1:CurrentAO", "L1:RG2:QM2:CurrentAO","L1:RG2:QM3:CurrentAO","L1:RG2:QM4:CurrentAO",
+                                "L1:QM3:CurrentAO", "L1:QM4:CurrentAO", "L1:RG2:SC1:VL:CurrentAO", "L1:RG2:SC2:HZ:CurrentAO",
+                                "L1:RG2:SC2:VL:CurrentAO", "L1:RG2:SC3:HZ:CurrentAO", "L1:RG2:SC3:VL:CurrentAO", "L1:SC3:HZ:CurrentAO",
+                                "L1:SC3:VL:CurrentAO", "L1:QM5:CurrentAO", "L1:SC4:HZ:CurrentAO", "L1:SC4:VL:CurrentAO",
+                                "L2:SC1:HZ:PS:setCurrentAO", "L2:SC1:VL:PS:setCurrentAO","L2:SC2:HZ:PS:setCurrentAO","L2:SC2:VL:PS:setCurrentAO",
+                                "L2:SC3:HZ:PS:setCurrentAO","L2:SC3:VL:PS:setCurrentAO","L2:SC4:HZ:PS:setCurrentAO","L2:SC4:VL:PS:setCurrentAO",
+                                "L3:SM:SC1:HZ:PS:setCurrentAO","L3:SM:SC1:VL:PS:setCurrentAO","L3:SC2:HZ:PS:CurrentAO","L3:SC2:VL:PS:CurrentAO"]),
             ("L3 Charge Opt ", ["L1:RG2:QM1:CurrentAO", "L1:RG2:QM2:CurrentAO","L1:RG2:QM3:CurrentAO","L1:RG2:QM4:CurrentAO",
                                 "L1:QM3:CurrentAO", "L1:QM4:CurrentAO", "L1:RG2:SC1:VL:CurrentAO", "L1:RG2:SC2:HZ:CurrentAO",
                                 "L1:RG2:SC2:VL:CurrentAO", "L1:RG2:SC3:HZ:CurrentAO", "L1:RG2:SC3:VL:CurrentAO", "L1:SC3:HZ:CurrentAO",
                                 "L1:SC3:VL:CurrentAO", "L1:QM5:CurrentAO", "L1:SC4:HZ:CurrentAO", "L1:SC4:VL:CurrentAO"]),
             ("ITS test", ["LTS:H1:CurrentAO", "LTS:V1:CurrentAO", "LTS:H2:CurrentAO"]),
-            ("LI26 601-901", ["QUAD:LI26:601:BCTRL", "QUAD:LI26:701:BCTRL", "QUAD:LI26:801:BCTRL",
-                              "QUAD:LI26:901:BCTRL"]),
+            ("RG1", ["L1:RG1:QM3:CurrentAO","L1:RG1:QM2:CurrentAO","L1:RG1:QM1:CurrentAO"]),
             ("LTU M. Quads", ["QUAD:LTU1:620:BCTRL", "QUAD:LTU1:640:BCTRL", "QUAD:LTU1:660:BCTRL",
                               "QUAD:LTU1:680:BCTRL"]),
             ("Dispersion Quads", ["QUAD:LI21:221:BCTRL", "QUAD:LI21:251:BCTRL", "QUAD:LI24:740:BCTRL",
@@ -563,6 +570,13 @@ class APSMachineInterface(MachineInterface):
             start=3
             end=-1
             objective_func.niter -=4
+
+        if objvals-vals==2:
+            #for rcds optimizer, the objective has 2 more values than the variables
+            #the first 2 and the last of objective should be removed (first point is redundant)
+            start=2
+            end=-1
+            objective_func.niter -=3
         
         objective_func.values = objective_func.values[start:end]
         objective_func.objective_means = objective_func.objective_means[start:end]
@@ -625,6 +639,8 @@ class APSMachineInterface(MachineInterface):
         sddsData.defineSimpleParameter("Number_Of_Iterations", sddsData.SDDS_LONG)
         sddsData.defineSimpleParameter("DataPoints",sddsData.SDDS_LONG)
         sddsData.defineSimpleParameter("HyperParFile",sddsData.SDDS_STRING)
+        sddsData.defineSimpleParameter("KernelFile",sddsData.SDDS_STRING)
+        sddsData.defineSimpleParameter("RCDSFile",sddsData.SDDS_STRING)
         sddsData.defineSimpleColumn("Time",sddsData.SDDS_DOUBLE)
         sddsData.defineSimpleColumn("DeviceTime",sddsData.SDDS_DOUBLE)
         sddsData.defineSimpleColumn(objective_func_pv, sddsData.SDDS_DOUBLE)
@@ -633,7 +649,8 @@ class APSMachineInterface(MachineInterface):
            # print(device)
             sddsData.defineSimpleColumn(device,sddsData.SDDS_DOUBLE)
         for ipv in range(len(self.losspvs)):
-            sddsData.defineSimpleColumn(self.losspvs[ipv], sddsData.SDDS_DOUBLE)
+            if self.losspvs[ipv] not in self.data['pv_list']:
+                sddsData.defineSimpleColumn(self.losspvs[ipv], sddsData.SDDS_DOUBLE)
             self.data[self.losspvs[ipv]] = [a[ipv] for a in objective_func.losses]
 
         sddsData.setParameterValue("Objective", str(objective_func_pv), 1)
@@ -641,7 +658,11 @@ class APSMachineInterface(MachineInterface):
         sddsData.setParameterValue("Number_Of_Iterations",int(self.data["niter"]), 1)
         sddsData.setParameterValue("DataPoints",objective_func.points,1)
         parFile='/usr/local/oag/3rdParty/OcelotOptimizer-dev/parameters/anl_hyperparams.pkl'
+        kernelFile='/usr/local/oag/3rdParty/OcelotOptimizer-dev/GP/OnlineGP.py'
+        rcdsFile='/usr/local/oag/3rdParty/OcelotOptimizer-dev/op_methods/rcds.py'
         sddsData.setParameterValue('HyperParFile',os.readlink(parFile),1)
+        sddsData.setParameterValue('KernelFile',os.readlink(kernelFile),1)
+        sddsData.setParameterValue('RCDSFile',os.readlink(rcdsFile),1)
         print('timestamp from objective function')
         print(self.data['timestamps'][0])
         for pv in self.data['pv_list']:
@@ -665,13 +686,15 @@ class APSMachineInterface(MachineInterface):
         #    sddsData.setColumnValueList(pv, self.data[pv][0],1)
         for ipv in range(len(self.losspvs)):
            # print(self.data[self.losspvs[ipv]])
-           sddsData.setColumnValueList(self.losspvs[ipv], self.data[self.losspvs[ipv]],1)
+           if self.losspvs[ipv] not in self.data['pv_list']:
+               sddsData.setColumnValueList(self.losspvs[ipv], self.data[self.losspvs[ipv]],1)
         print('save sdds')
-        sddsData.save(fout)
-        # save data
-        self.last_filename = fout
-
-        print('Saved scan data to ', self.last_filename)
+        try:
+            sddsData.save(fout)
+            self.last_filename = fout
+            print('Saved scan data to ', self.last_filename)
+        except:
+            print('Error saving sdds file')
 
         # clear for next run
         self.data = dict()

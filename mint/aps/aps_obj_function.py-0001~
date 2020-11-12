@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import os
 
 from mint.opt_objects import Target
 import stats.stats as stats
@@ -80,7 +81,21 @@ class LINACTarget(Target):
         #    print("Something went wrong with the beam rate calculation. Let's sleep 1 second.")
         #    print("Exception was: ", ex)
         nap_time = 0.5
-        time.sleep(nap_time)
+        #time.sleep(nap_time)
+        
+        #wait for objective value to stablize
+        timeout=10
+        stoptime=time.time()+timeout
+        #while (time.time()<stoptime):
+        #    data0=[]
+        #    for i in range(5):
+        #        data0.append(self.mi.get_value(self.eid))
+        #        time.sleep(nap_time)
+        #    obj_error=np.std(data0)
+        #    if obj_error<0.005:
+        #       break
+        #run system command to check the steering controllaw convergence
+        #os.system('/home/helios/SHANG/oag/apps/src/tcltkapp/oagapp/measL3Charge')
         data0=[]
         for i in range(self.points):
             data0.append(self.mi.get_value(self.eid))
@@ -103,7 +118,7 @@ class LINACTarget(Target):
             self.objective_mean = datain
             self.objective_stdev = -1
             self.statistic = datain
-
+        print(time.time())
         print(self.stats.display_name, ' of ', len(self.objective_acquisitions), ' points is ', self.statistic,
               ' and standard deviation is ', self.objective_stdev)
 

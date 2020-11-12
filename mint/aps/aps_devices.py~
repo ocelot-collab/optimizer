@@ -9,6 +9,8 @@ class APSDevice(Device):
         self.mi = mi
         self.value_percent = 25.0
         self.range_percent = 2.0
+        self.tol=0.01
+        self.mi.bounds=0.2 #maximum variable step size
 
     def get_delta(self):
         """
@@ -81,6 +83,11 @@ class APSQuad(APSDevice):
             prefix = eid[:eid.rfind(':')+1]
         else:
             prefix = eid+":"
+        self.timeout=30
+        self.mi = mi
+        self.tol=0.01
+        self.mi.bounds = 0.2 #maximim variable step size
+        self.stepSizeLimit=0.2 
         self.pv_set = "{}{}".format(prefix, "CurrentAO")
         self.pv_read = "{}{}".format(prefix, "CurrentAI")
         self.pv_low = "{}{}".format(prefix, "CurrentAO.DRVL")
@@ -90,8 +97,13 @@ class APSQuad(APSDevice):
         self.update_limits_from_pv()
 
     def set_value(self, val):
-        self.target = val
-        self.mi.set_value(self.eid, val)
+        corrector_pvs = np.array(['L1:SC3:HZ:CurrentAO','L1:SC3:VL:CurrentAO','L1:SC4:HZ:CurrentAO','L1:SC4:VL:CurrentAO'])
+        corrector_check = np.any(self.eid == corrector_pvs)
+        if corrector_check:
+            print('WARNING: disabling caput for device', self.eid)
+        else:
+            self.target = val
+            self.mi.set_value(self.eid, val)
 
     def get_value(self, save=False):
         if self.mi.read_only:
