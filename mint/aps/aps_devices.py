@@ -1,6 +1,7 @@
 import time
 import numpy as np
 from ..opt_objects import Device
+import re
 
 
 class APSDevice(Device):
@@ -9,6 +10,8 @@ class APSDevice(Device):
         self.mi = mi
         self.value_percent = 25.0
         self.range_percent = 2.0
+        self.tol=0.01
+        self.mi.bounds=0.2 #maximum variable step size
 
     def get_delta(self):
         """
@@ -77,22 +80,41 @@ class APSQuad(APSDevice):
     def __init__(self, eid=None, mi=None):
         super(APSQuad, self).__init__(eid=eid, mi=mi)
         self._can_edit_limits = True
-        if eid.endswith(':CurrentAO') or eid.endswith(":BCTRL"):
+        if eid.endswith('CurrentAO') or eid.endswith(":BCTRL"):
             prefix = eid[:eid.rfind(':')+1]
         else:
             prefix = eid+":"
-        self.timeout=15
-        self.pv_set = "{}{}".format(prefix, "CurrentAO")
-        self.pv_read = "{}{}".format(prefix, "CurrentAI")
-        self.pv_low = "{}{}".format(prefix, "CurrentAO.DRVL")
-        self.pv_high = "{}{}".format(prefix, "CurrentAO.DRVH")
-        print(self.pv_high)
+        self.timeout=30
+        self.mi = mi
+        self.tol=0.01
+        self.mi.bounds = 0.1 #maximim variable step size
+        self.stepSizeLimit=0.1
+        #self.pv_set = "{}{}".format(prefix, "CurrentAO")
+        self.pv_set = self.eid
+        #L3:SM:SC1:VL:PS:setCurrentAO L3:SM:SC1:VL:PS:setCurrentAO read back are special (different from others)
+        if re.search("L3:SM:SC1", eid):
+            self.pv_read = eid.replace("setCurrentAO","measCurrAI")
+        elif re.search("setCurrentAO", eid):
+            self.pv_read = eid.replace("setCurrentAO","measCurrentAI")
+        else:
+            self.pv_read = eid.replace(":CurrentAO",":CurrentAI")
+        self.pv_low = eid + ".DRVL"
+        self.pv_high = eid + ".DRVH"
+        #self.pv_read = "{}{}".format(prefix, "CurrentAI")
+        #self.pv_low = "{}{}".format(prefix, "CurrentAO.DRVL")
+        #self.pv_high = "{}{}".format(prefix, "CurrentAO.DRVH")
+        print(self.pv_read)
         print("Let's get the limits....")
         self.update_limits_from_pv()
 
     def set_value(self, val):
-        self.target = val
-        self.mi.set_value(self.eid, val)
+        corrector_pvs = np.array(['L1:SC3:HZ:CurrentAO','L1:SC3:VL:CurrentAO','L1:SC4:HZ:CurrentAO','L1:SC4:VL:CurrentAO'])
+        corrector_check = np.any(self.eid == corrector_pvs)
+        if corrector_check:
+            print('WARNING: disabling caput for device', self.eid)
+        else:
+            self.target = val
+            self.mi.set_value(self.eid, val)
 
     def get_value(self, save=False):
         if self.mi.read_only:
@@ -101,6 +123,7 @@ class APSQuad(APSDevice):
                 val = self.mi.get_value(self.pv_read)
         else:
             val = self.mi.get_value(self.pv_read)
+        
         if save:
             self.values.append(val)
             self.times.append(time.time())
