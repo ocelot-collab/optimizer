@@ -67,7 +67,6 @@ class Minimizer(object):
 class MachineStatus:
     def __init__(self):
         self.alarm_device = None
-        self.alarm_value = None
         self.alarm_min = -1
         self.alarm_max = 1
 
