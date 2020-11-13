@@ -14,7 +14,6 @@ from re import sub
 from xml.etree import ElementTree
 from shutil import copy
 from datetime import datetime
-import sdds
 import mint.aps.simlog as simlog
 
 from PyQt5.QtWidgets import QWidget
@@ -506,6 +505,8 @@ class APSMachineInterface(MachineInterface):
 
         :return: status (bool), error_msg (str)
         """
+        import sdds
+
         """
         H. Shang, found the first point of the devices are reduandant, should be removed
         for GP optimizer, the first 3 points and the last point of the objective should be removed.
