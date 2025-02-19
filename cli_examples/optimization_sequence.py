@@ -1,6 +1,5 @@
 #from optimizer import *
 import sys
-sys.path.append("/home/xfeloper/user/tomins/ocelot_new/optimizer")
 from mint.opt_objects import *
 from mint.xfel.xfel_interface import *
 from mint.mint import *

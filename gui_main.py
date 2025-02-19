@@ -9,14 +9,16 @@ import json
 import scipy
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QFileDialog
+from PyQt5 import QtGui
 import subprocess
 import base64
 import numpy as np
 import sys
 import webbrowser
 from shutil import copy
-
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QSize
 
 class MainWindow(Ui_Form):
     def __init__(self, Form):
@@ -47,6 +49,22 @@ class MainWindow(Ui_Form):
         self.read_alarm = QtCore.QTimer()
         self.read_alarm.timeout.connect(self.alarm_value)
         self.read_alarm.start(1000)
+
+        # Initial sound state
+        self.sound_on = True
+        self.pb_sound.setCheckable(True)  # Enable toggle mode
+        self.pb_sound.setIcon(QIcon("sound_on.svg"))
+        self.pb_sound.setIconSize(QSize(32, 32))  # Adjust icon size
+        self.pb_sound.setFixedSize(40, 40)  # Small square button
+
+        # Connect button click event
+        self.pb_sound.clicked.connect(self.toggle_sound)
+
+    def toggle_sound(self):
+        """Toggle sound on/off and change the button icon."""
+        self.sound_on = not self.sound_on
+        icon_path = "sound_on.svg" if self.sound_on else "sound_off.svg"
+        self.pb_sound.setIcon(QIcon(icon_path))
 
     def alarm_value(self):
         """
@@ -159,6 +177,7 @@ class MainWindow(Ui_Form):
 
         table["algorithm"] = str(self.cb_select_alg.currentText())
         table["maximization"] = self.rb_maximize.isChecked()
+        table["sound_on"] = self.sound_on
 
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
@@ -231,6 +250,11 @@ class MainWindow(Ui_Form):
             self.pb_hyper_file.setText(self.Form.hyper_file)
 
             self.cb_set_best_sol.setCheckState(table["set_best_sol"])
+            if "sound_on" in table.keys():
+                self.sound_on = table["sound_on"]
+                icon_path = "sound_on.svg" if self.sound_on else "sound_off.svg"
+                self.pb_sound.setIcon(QIcon(icon_path))
+
             if "maximization" in table.keys():
                 #if table["maximization"] == True:
                 self.rb_maximize.setChecked(table["maximization"])
@@ -245,9 +269,9 @@ class MainWindow(Ui_Form):
             print("RESTORE STATE: ERROR")
 
     def save_state_as(self):
-        filename = QtGui.QFileDialog.getSaveFileName(self.Form, 'Save State',
+        filename = QFileDialog.getSaveFileName(self.Form, 'Save State',
                                                      self.Form.config_dir, "txt (*.json)", None,
-                                                     QtGui.QFileDialog.DontUseNativeDialog)[0]
+                                                     QFileDialog.DontUseNativeDialog)[0]
         if filename:
             name = filename.split("/")[-1]
             parts = name.split(".")
@@ -262,9 +286,9 @@ class MainWindow(Ui_Form):
             self.save_state(filename)
 
     def load_state_from(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load State',
+        filename = QFileDialog.getOpenFileName(self.Form, 'Load State',
                                                      self.Form.config_dir, "txt (*.json)", None,
-                                                     QtGui.QFileDialog.DontUseNativeDialog)[0]
+                                                     QFileDialog.DontUseNativeDialog)[0]
         if filename:
             self.load_settings(filename)
 
@@ -276,8 +300,8 @@ class MainWindow(Ui_Form):
         self.restore_state(filename)
 
     def get_hyper_file(self):
-        #filename = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters', filter="txt (*.npy *.)")
-        filename, _ = QtGui.QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters',
+        #filename = QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters', filter="txt (*.npy *.)")
+        filename, _ = QFileDialog.getOpenFileName(self.Form, 'Load Hyper Parameters',
                                                      self.Form.optimizer_path + "parameters", "txt (*.npy)"
                                                      )
         if filename:

@@ -10,6 +10,7 @@ from __future__ import absolute_import, print_function
 import sys
 
 from PyQt5.QtWidgets import QApplication, QFrame
+from PyQt5 import QtWidgets
 from PyQt5 import QtGui, QtCore, uic
 from mint.opt_objects import *
 
@@ -82,24 +83,26 @@ class ResetpanelWindow(QFrame):
         self.getStartValues()
         for row in range(len(self.pvs)):
             pv = self.pvs[row]
-            self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
+            self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
         self.ui.updateReference.setText("Update Reference")
 
     def initTable(self):
         """ Initialize the UI table object """
         headers = ["PVs", "Reference Value", "Current Value"]
+        self.ui.tableWidget.setAlternatingRowColors(True)
         self.ui.tableWidget.setColumnCount(len(headers))
         self.ui.tableWidget.setHorizontalHeaderLabels(headers)
-        self.ui.tableWidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)  # No user edits on talbe
-        self.ui.tableWidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        self.ui.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)  # No user edits on talbe
+        self.ui.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         for row in range(len(self.pvs)):
 
             self.ui.tableWidget.setRowCount(row + 1)
             pv = self.pvs[row]
             # put PV in the table
-            self.ui.tableWidget.setItem(row, 0, QtGui.QTableWidgetItem(str(pv)))
+            self.ui.tableWidget.setItem(row, 0, QtWidgets.QTableWidgetItem(str(pv)))
             #self.ui.tableWidget.item(row, 0).setTextColor(QtGui.QColor(0, 255, 255))
             self.ui.tableWidget.item(row, 0).setForeground(QtGui.QColor(0, 255, 255))
+            #self.ui.tableWidget.item(row, 0).setBackground(QtGui.QColor(255, 255, 255))
             tip = "/".join(str(pv).split("/")[-2:])
             self.ui.tableWidget.item(row, 0).setToolTip(tip)
             # self.ui.tableWidget.item(row, 0).setFont(font)
@@ -107,7 +110,8 @@ class ResetpanelWindow(QFrame):
             s_val = self.startValues[pv]
             if s_val != None:
                 s_val = np.around(s_val, 4)
-            self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(s_val)))
+            self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(s_val)))
+        
 
     def updateCurrentValues(self):
         """
@@ -130,7 +134,7 @@ class ResetpanelWindow(QFrame):
 
             if self.startValues[dev.eid] is None and value is not None:
                 self.startValues[dev.eid] = value
-                logger.info(" updateCurrentValues: startValues[{}] = {}".format(dev.eid, value))
+                logger.info(" updateCurrentValues: startValues[{}}] = {}}".format(dev.eid, value))
 
             if self.startValues[dev.eid] is None or value is None:
                 item = self.ui.tableWidget.item(row, 5)
@@ -143,18 +147,22 @@ class ResetpanelWindow(QFrame):
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(255, 0, 0))  # red
 
                 if self.startValues[dev.eid] is None:
-                    self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str("None")))
+                    self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str("None")))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(255, 0, 0))  # red
                 else:
-                    self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(value, 4))))
+                    if value is not None:
+                        str_val = str(np.around(value, 4))
+                    else:
+                        str_val = str(None)
+                    self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str_val))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(89, 89, 89))  # grey
 
                 if value is None:
-                    self.ui.tableWidget.setItem(row, 2, QtGui.QTableWidgetItem(str("None")))
+                    self.ui.tableWidget.setItem(row, 2, QtWidgets.QTableWidgetItem(str("None")))
                     self.ui.tableWidget.item(row, 2).setBackground(QtGui.QColor(255, 0, 0))  # red
                 else:
                     self.ui.tableWidget.setItem(row, 2,
-                                                QtGui.QTableWidgetItem(str(np.around(self.currentValues[dev.eid], 4))))
+                                                QtWidgets.QTableWidgetItem(str(np.around(self.currentValues[dev.eid], 4))))
                     self.ui.tableWidget.item(row, 2).setBackground(QtGui.QColor(89, 89, 89))  # grey
 
                 continue
@@ -193,7 +201,7 @@ class ResetpanelWindow(QFrame):
 
             self.currentValues[pv] = value  # dev.get_value()
             if self.ui.tableWidget.item(row, 2) is None:
-                self.ui.tableWidget.setItem(row, 2, QtGui.QTableWidgetItem(str(np.around(self.currentValues[pv], 4))))
+                self.ui.tableWidget.setItem(row, 2, QtWidgets.QTableWidgetItem(str(np.around(self.currentValues[pv], 4))))
             else:
                 self.ui.tableWidget.item(row, 2).setText(str(np.around(self.currentValues[pv], 4)))
             # print(self.currentValues[pv])
@@ -211,7 +219,10 @@ class ResetpanelWindow(QFrame):
             for col in [0, 1, 2, 5]:
                 # self.ui.tableWidget.item(row, col).setFlags(
                 #    QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(89, 89, 89))
+                if row%2 == 0:
+                    self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(89, 89, 89))
+                else:
+                    self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(100, 100, 100))
             #print("check rest = ", time.time() - start)
 
         QApplication.processEvents()
@@ -231,7 +242,7 @@ class ResetpanelWindow(QFrame):
         self.ui_check.reset.clicked.connect(self.resetAll)
         self.ui_check.reset.clicked.connect(self.ui_check.close)
         frame_gm = self.ui_check.frameGeometry()
-        center_point = QtGui.QDesktopWidget().availableGeometry().center()
+        center_point = QtWidgets.QDesktopWidget().availableGeometry().center()
         frame_gm.moveCenter(center_point)
         self.ui_check.move(frame_gm.topLeft())
         self.ui_check.show()

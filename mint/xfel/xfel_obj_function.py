@@ -14,6 +14,7 @@ class XFELTarget(Target):
     Objective function
 
     :param mi: Machine interface
+    :param dp: Device property
     :param pen_max: 100, maximum penalty
     :param niter: 0, calls number get_penalty()
     :param penalties: [], appending penalty
@@ -21,36 +22,17 @@ class XFELTarget(Target):
     :param nreadings: 1, number of objective function readings
     :param interval: 0 (secunds), interval between readings
     """
-    def __init__(self, mi=None, eid="orbit"):
+    def __init__(self, mi=None, dp=None, eid="x57**2 + y57**2 + x59**2 + y59"):
         super(XFELTarget, self).__init__(eid=eid)
-        self.mi = mi
-
-    def read_bpms(self, bpms, nreadings):
-        orbits = np.zeros((nreadings, len(bpms)))
-        for i in range(nreadings):
-            for j, bpm in enumerate(bpms):
-                orbits[i, j] = self.mi.get_value(bpm)
-            time.sleep(0.1)
-        return np.mean(orbits, axis=0)
 
     def get_value(self):
         """
         Method to get signal of target function (e.g. SASE signal).
 
         :return: value
-        XFEL.RF/LLRF.CONTROLLER/CTRL.A1.I1/SP.AMPL
         """
-        bpms = [
-        "XFEL.DIAG/BPM/BPME.2252.SA2/X.ALL",
-        "XFEL.DIAG/BPM/BPME.2258.SA2/X.ALL",
-        "XFEL.DIAG/BPM/BPME.2264.SA2/X.ALL",
-        
-        ]
-
-        orbit1 = self.read_bpms(bpms=bpms, nreadings=7)
-        
-        orbit2 = np.zeros(len(bpms))  # just [0, 0, 0, ... ] 
-        
-
-        target = np.sqrt(np.sum((orbit2 - orbit1)**2))
-        return target
+        x57 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.57.I1/X.SA1")
+        y57 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.57.I1/Y.SA1")
+        x59 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.59.I1/X.SA1")
+        y59 = self.mi.get_value("XFEL.DIAG/ORBIT/BPMA.59.I1/Y.SA1")
+        return -np.sqrt(x57 ** 2 + y57 ** 2 + x59 ** 2 + y59 ** 2)

@@ -15,7 +15,7 @@ import pandas as pd
 from mint import normscales
 
 class GaussProcess(Minimizer):
-    def __init__(self, correlationsQ = False, searchBoundScaleFactor = None, bounds= None):
+    def __init__(self, correlationsQ = False, searchBoundScaleFactor = None):
         super(GaussProcess,self).__init__()
         self.seed_timeout = 1
         self.target = None
@@ -24,7 +24,7 @@ class GaussProcess(Minimizer):
         self.seed_iter = 0
         self.numBV = 30
         self.xi = 0.01
-        self.bounds = bounds
+        self.bounds = None
         self.acq_func = ['PI','EI','UCB'][-1]
         self.alt_param = -1
         self.m = 200
@@ -55,15 +55,12 @@ class GaussProcess(Minimizer):
         self.prior_data = pd.DataFrame(seed_data)
         self.seed_y_data = opt_smx.opt_ctrl.penalty
 
-    def gp_offset_prior_mean(self,x, params): # params should be a float: offset
-        return np.array([params for myx in x], ndmin=2)
-
     def preprocess(self):
         self.target.mi.target = self.target
         
     # assemble hyper parameters
-        self.length_scales, self.amp_variance, self.single_noise_variance, self.mean_noise_variance, self.precision_matrix, self.offset = normscales.normscales(self.target.mi, self.devices, correlationsQ=self.correlationsQ)
-
+        self.length_scales, self.amp_variance, self.single_noise_variance, self.mean_noise_variance, self.precision_matrix = normscales.normscales(self.target.mi, self.devices, correlationsQ=self.correlationsQ)
+        
         # build precision_matrix if not returned
         print('Precision before',  self.precision_matrix ) 
         if self.precision_matrix is None:
@@ -75,7 +72,7 @@ class GaussProcess(Minimizer):
         # create OnlineGP model
         dim = len(self.devices)
         hyperparams = (self.precision_matrix, np.log(self.amp_variance), np.log(self.mean_noise_variance))
-        self.model = OGP(dim, hyperparams, maxBV=self.numBV, covar=['RBF_ARD','MATERN32_ARD','MATERN52_ARD'][0], weighted=False)
+        self.model = OGP(dim, hyperparams, maxBV=self.numBV, weighted=False)
 
         # initialize model on prior data if available
         if(self.prior_data is not None):
@@ -90,12 +87,6 @@ class GaussProcess(Minimizer):
         self.scanner = BayesOpt(model=self.model, target_func=self.target, acq_func=self.acq_func, xi=self.xi, alt_param=self.alt_param, m=self.m, bounds=self.bounds, iter_bound=self.iter_bound, prior_data=self.prior_data, start_dev_vals=dev_vals, dev_ids=dev_ids, searchBoundScaleFactor=self.searchBoundScaleFactor)
         self.scanner.max_iter = self.max_iter
         self.scanner.opt_ctrl = self.opt_ctrl
-
-        # overwrite the default prior mean
-        if self.offset is not None:
-            self.model.prmean = self.gp_offset_prior_mean
-            self.model.prmeanp = self.offset
-            print('***Warnning: overwrite the default prior mean (None) *** Using prior mean of ', self.offset)
 
     def minimize(self,  error_func, x):
         self.energy = self.mi.get_energy()

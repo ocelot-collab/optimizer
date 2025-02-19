@@ -32,15 +32,11 @@ print("PATH", os.path.realpath(__file__))
 # for pyqtgraph import
 #sys.path.append(path[:indx]+"ocelot")
 
-# Hack to import matlab before anything else
-if '--matlab' in sys.argv:
-    from utils.matlab import Matlab
-    matlab = Matlab()
-
-
 from PyQt5.QtWidgets import (QApplication, QFrame, QGroupBox, QLabel, QComboBox,
                              QPushButton, QSpacerItem, QVBoxLayout, QDesktopWidget,
-                             QFormLayout, QLineEdit)
+                             QFormLayout, QLineEdit, QSizePolicy, QAbstractItemView,
+                             QHeaderView, QTableWidgetItem, QMessageBox)
+from PyQt5.QtMultimedia import QSound
 import platform
 import pyqtgraph as pg
 if sys.version_info[0] == 2:
@@ -58,7 +54,6 @@ from mint import opt_objects as obj
 from mint.xfel.xfel_interface import *
 from mint.lcls.lcls_interface import *
 from mint.spear.spear_interface import *
-from mint.aps.aps_interface import *
 from mint.bessy.bessy_interface import *
 from mint.demo.demo_interface import *
 from mint.petra.petra_interface import *
@@ -71,7 +66,7 @@ from op_methods.rcds import *
 from op_methods.custom_minimizer import *
 from op_methods.powell import *
 from op_methods.gp_sklearn import *
-
+from op_methods.cobyla import *
 
 from stats import stats
 
@@ -80,7 +75,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface, APSMachineInterface,
+AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
                                 TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
                                 DemoInterface, SPEARMachineInterface, FLASHMachineInterface]
 
@@ -131,6 +126,7 @@ class OcelotInterfaceWindow(QFrame):
         self.name_powell = "Powell"
         self.name_gauss_gpy = "GP GPy"
         self.name_rcds = "RCDS"
+        self.name_cobyla = "COBYLA"
         # self.name4 = "Conjugate Gradient"
         # self.name5 = "Powell's Method"
         # switch of GP and custom Mininimizer
@@ -141,6 +137,7 @@ class OcelotInterfaceWindow(QFrame):
         self.ui.cb_select_alg.addItem(self.name_es)
         self.ui.cb_select_alg.addItem(self.name_powell)
         self.ui.cb_select_alg.addItem(self.name_rcds)
+        self.ui.cb_select_alg.addItem(self.name_cobyla)
         #self.ui.cb_select_alg.addItem(self.name_gauss_gpy)
         # if sklearn_version >= "0.18":
         #     self.ui.cb_select_alg.addItem(self.name_gauss_sklearn)
@@ -262,8 +259,8 @@ class OcelotInterfaceWindow(QFrame):
         table = self.ui.browser_data_table
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
-        table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)  # No user edits on talbe
-        table.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        table.setEditTriggers(QAbstractItemView.NoEditTriggers)  # No user edits on talbe
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         table.setRowCount(0)
 
         self.setup_region('plot_obj_browser')
@@ -348,11 +345,11 @@ class OcelotInterfaceWindow(QFrame):
 
     def browser_restore_clicked(self):
         confirm_msg = "Are you sure you want to restore the selected values?"
-        reply = QtGui.QMessageBox.question(self, 'Message',
-                                           confirm_msg, QtGui.QMessageBox.Yes,
-                                           QtGui.QMessageBox.No)
+        reply = QMessageBox.question(self, 'Message',
+                                           confirm_msg, QMessageBox.Yes,
+                                           QMessageBox.No)
 
-        if reply != QtGui.QMessageBox.Yes:
+        if reply != QMessageBox.Yes:
             return
 
         index = self.ui.browser_data_slider.value()
@@ -380,18 +377,11 @@ class OcelotInterfaceWindow(QFrame):
 
         #GP Method
         if current_method == self.name_gauss:
-            scaling_coef = self.ui.sb_scaling_coef.value()
-            #minimizer = GaussProcess()
-            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef, bounds= self.mi.bounds)
+            minimizer = GaussProcess()
             minimizer.seedScanBool = self.ui.cb_use_live_seed.isChecked()
 
         elif current_method == self.name_gauss_sklearn:
-#             minimizer = GaussProcessSKLearn()
-           # must pass the Scaling Coefficient value to the Bayes Optimizer in order to control
-            # the acquisition function search range (default is 3 length scales in each dimension
-            # for Scaling Coefficient of 1.)
-            scaling_coef = self.ui.sb_scaling_coef.value()
-            minimizer = GaussProcess(searchBoundScaleFactor=scaling_coef)
+            minimizer = GaussProcessSKLearn()
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
 
         elif current_method == self.name_gauss_gpy:
@@ -410,6 +400,8 @@ class OcelotInterfaceWindow(QFrame):
             minimizer = Powell()
         elif current_method == self.name_rcds:
             minimizer = RCDS()
+        elif current_method == self.name_cobyla:
+            minimizer = Cobyla()
         #simplex Method
         else:
             minimizer = Simplex()
@@ -486,11 +478,14 @@ class OcelotInterfaceWindow(QFrame):
 
         # configure the Minimizer
         minimizer.mi = self.mi
+        minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
+        minimizer.scaling_coef = self.ui.sb_scaling_coef.value()
+
         if minimizer.__class__ in [GaussProcess, GaussProcessSKLearn]:
             minimizer.seed_iter = self.ui.sb_seed_iter.value()
             minimizer.seed_timeout = self.ui.sb_tdelay.value()
             minimizer.hyper_file = self.hyper_file
-            minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
+
 
             if self.ui.cb_use_isim.checkState():
                 if self.ui.cb_use_isim.checkState():
@@ -532,14 +527,10 @@ class OcelotInterfaceWindow(QFrame):
                             dev.istep = d_lims * rel_step / 100.
 
         elif minimizer.__class__ in [ESMin]:
-
-
             bounds = []
             for dev in self.devices:
                 bounds.append(dev.get_limits())
             minimizer.bounds = bounds
-
-            minimizer.norm_coef = self.ui.sb_isim_rel_step.value() / 100.
 
         elif minimizer.__class__ == CustomMinimizer:
             minimizer.dev_steps = []
@@ -557,15 +548,13 @@ class OcelotInterfaceWindow(QFrame):
         # Optimizer initialization
         self.opt = mint.Optimizer()
 
-        self.opt.scaling_coef = self.ui.sb_scaling_coef.value()
-        logger.debug("Using Scaling Coeficient of: " + str(self.opt.scaling_coef))
+        logger.debug("Using Scaling Coeficient of: " + str(minimizer.scaling_coef))
 
         # solving minimization or maximization problem
         self.opt.maximization = self.ui.rb_maximize.isChecked()
 
         if self.ui.cb_select_alg.currentText() in [self.name_simplex_norm]:
             self.opt.normalization = True
-            self.opt.norm_coef = self.ui.sb_isim_rel_step.value()*0.01
         # Option - set best solution after optimization or not
         self.opt.set_best_solution = self.ui.cb_set_best_sol.checkState()
 
@@ -590,15 +579,20 @@ class OcelotInterfaceWindow(QFrame):
 
     def scan_finished(self):
         try:
-            if self.ui.pb_start_scan.text() == "Stop optimization" and not (self.opt.isAlive()):
+            if self.ui.pb_start_scan.text() == "Stop optimization" and not (self.opt.is_alive()):
                 self.ui.pb_start_scan.setStyleSheet("color: rgb(85, 255, 127);")
                 self.ui.pb_start_scan.setText("Start optimization")
+                if self.ui.sound_on:
+                    self.scan_finished_sound()
                 ret, msg = self.save2db()
                 if not ret:
                     self.error_box(message=msg)
                 logger.info("scan_finished: OK")
         except Exception as ex:
             logger.warning("scan_finished: ERROR. Exception was: " + str(ex))
+
+    def scan_finished_sound(self):
+        QSound.play("microwave_timer.wav")
 
     def save2db(self):
         # first try to gather minimizer data
@@ -844,7 +838,7 @@ class OcelotInterfaceWindow(QFrame):
             val = getattr(self.objective_func, histogram_data_key)[index+1]
             hist, bins = np.histogram(val, bins='auto')
             line = self.plots_dict['plot_objhist_browser']['curves']['histogram']
-            line.setData(x=bins, y=hist)
+            line.setData(x=bins, y=hist, stepMode="center")
         except Exception as ex:
             logger.warning("No data to plot histogram. Exception was: " + str(ex))
 
@@ -871,8 +865,8 @@ class OcelotInterfaceWindow(QFrame):
 
         for row, data in enumerate(table_data):
             label, value = data
-            table.setItem(row, 0, QtGui.QTableWidgetItem(str(label)))
-            table.setItem(row, 1, QtGui.QTableWidgetItem(str(value)))
+            table.setItem(row, 0, QTableWidgetItem(str(label)))
+            table.setItem(row, 1, QTableWidgetItem(str(value)))
 
     def update_plot_obj_labels(self):
         for plot_name in ['plot_obj', 'plot_obj_browser']:
@@ -946,7 +940,7 @@ class OcelotInterfaceWindow(QFrame):
         self.set_obj_fun()
 
     def error_box(self, message):
-        QtGui.QMessageBox.about(self, "Error box", message)
+        QMessageBox.about(self, "Error box", message)
         #QtGui.QMessageBox.critical(self, "Error box", message)
 
     def assemble_quick_add_box(self):
@@ -1028,7 +1022,7 @@ class OcelotInterfaceWindow(QFrame):
                 inner_layout.addWidget(btn)
                 part = functools.partial(self.ui.load_settings,os.path.join(self.path2preset, m["filename"]))
                 btn.clicked.connect(part)
-            vert_spacer = QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+            vert_spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
             inner_layout.addItem(vert_spacer)
             layout.addWidget(gb)
 

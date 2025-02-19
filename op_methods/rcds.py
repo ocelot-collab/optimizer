@@ -3,11 +3,15 @@ from mint.mint import *
 from scipy import optimize
 import math
 
+
 class RCDS(Minimizer):
     def __init__(self):
         super(RCDS, self).__init__()
         self.xtol = 1e-5
         self.dev_steps = None
+        self.def_low_limit = -10
+        self.def_high_limit = 10
+
 
     def preprocess(self):
         """
@@ -33,11 +37,16 @@ class RCDS(Minimizer):
 
         g_vrange = np.zeros((nvar, 2))
 
-        for idev, dev in enumerate(self.devices):
-            low_limit, high_limit = dev.get_limits()
+        for i in range(len(x)):
+            if self.devices is not None:
+                low_limit, high_limit = self.devices[i].get_limits()
+            else:
+                low_limit, high_limit = self.def_low_limit, self.def_high_limit
+
             if np.abs(low_limit) < 1e-7 and np.abs(high_limit) < 1e-7:
-                low_limit, high_limit = -10, 10
-            g_vrange[idev, 0], g_vrange[idev, 1] = low_limit, high_limit
+                low_limit, high_limit = self.def_low_limit, self.def_high_limit
+
+            g_vrange[i, 0], g_vrange[i, 1] = low_limit, high_limit
 
         p0 = np.array(x)
         x0 = ((p0 - g_vrange[:, 0])/(g_vrange[:, 1] - g_vrange[:, 0])).reshape(-1)
@@ -304,7 +313,7 @@ class RCDSMethod:
         Nlist = np.shape(xflist)[0]
         for ii in range(Nlist):
             if xflist[ii, 1] >= alo and xflist[ii, 1] <= ahi:
-                ik = math.round((xflist[ii, 1] - alo) / delta)
+                ik = np.round((xflist[ii, 1] - alo) / delta).astype(int)
                 # print('test', ik, ii, len(alist),len(xflist),xflist[ii,0])
                 alist[ik] = xflist[ii, 0]
                 flist[ik] = xflist[ii, 1]

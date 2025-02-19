@@ -10,35 +10,35 @@ import numpy as np
 import time
 from mint.mint import *
 
+
 class ESMin(Minimizer):
     def __init__(self):
         super(ESMin, self).__init__()
         self.ES = ES_min()
+        self.bounds = None
 
     def minimize(self, error_func, x):
         self.ES.bounds = self.bounds
         self.ES.max_iter = self.max_iter
+        self.ES.opt_ctrl = self.opt_ctrl
         self.ES.norm_coef = self.norm_coef
         self.ES.minimize(error_func, x)
         return
+
 
 class ES_min: 
     def __init__(self):
 
         self.norm_coef = 0.05
-
-
         w0 = 500.0
-
-
+        self.opt_ctrl = None
         self.kES = 0.5
         self.alphaES = 1
         self.w0 = w0
         self.dtES = 2*np.pi/(10*1.75*w0)
         self.max_iter = 500
         self.bounds = [] # [[min, max], [], []] # n = len(x)
-        
-        
+
     def minimize(self, error_func, x):
         """
         Error_func is a function of the vector x, where x is all of the
@@ -64,10 +64,13 @@ class ES_min:
         # Set upper and lower bounds
         #self.pmax = np.array(x) + np.array([2, 2,2, 100, 10000])
         #self.pmin = np.array(x) - np.array([2, 2,2, 100, 10000])
+        if self.bounds is None:
+            self.bounds = np.zeros((len(x), 2))
+
         print("bounds = ", self.bounds)
         self.pmax = np.array([bound[1] for bound in self.bounds])
         self.pmin = np.array([bound[0] for bound in self.bounds])
-        print(self.pmax, self.pmin)
+        print(self.pmax, self.pmin, x)
         for i, xi in enumerate(x):
             pmax = self.pmax[i]
             pmin = self.pmin[i]
@@ -76,7 +79,7 @@ class ES_min:
                 delta = 0.1 if delta == 0 else delta  
                 self.pmax[i] = xi + delta
                 self.pmin[i] = xi - delta
-        print("test = ", self.norm_coef, self.pmax - self.pmin, self.wES,(self.alphaES/self.wES)**0.5 )
+        print("test = ", self.norm_coef, self.pmax - self.pmin, self.wES, (self.alphaES/self.wES)**0.5)
         self.alphaES = (self.norm_coef * 2)**2*self.wES/4
         
 
@@ -85,15 +88,17 @@ class ES_min:
         pnew = x
 
         for step in np.arange(self.max_iter):
-            
+
+            if self.opt_ctrl is not None and self.opt_ctrl.kill:
+                # kill the minimization from external process
+                return
             print("step number: ", step)
 
-               
             # Normalize parameters within [-1 1]
             pnorm = self.ES_normalize(pnew)
 
             # Do the ES update
-            pnorm = pnorm + self.dtES*np.cos(self.wES*step*self.dtES+self.kES*cost_val)*(self.alphaES*self.wES)**0.5
+            pnorm = pnorm + self.dtES*np.cos(self.wES*step*self.dtES + self.kES * cost_val) * (self.alphaES*self.wES)**0.5
             
             # Check that parameters stay within normalized range [-1, 1]
             for jn in np.arange(self.nparams):

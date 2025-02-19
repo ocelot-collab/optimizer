@@ -39,7 +39,7 @@ class Beamconfig:
                 sys.exit()
             else:
                 self.quads, self.und_quads, self.mquad_names = self.get_model()[0:3]
-                self.beamEnergyMeV = 1000.*epics.caget('BEND:DMPH:400:BDES') ##################### Check units! Should this factor of 1000 be here?
+                self.beamEnergyMeV = 1000.*epics.caget('BEND:DMP1:400:BDES') ##################### Check units! Should this factor of 1000 be here?
                 self.emitx = epics.caget('WIRE:IN20:561:EMITN_X')
                 self.emity = epics.caget('WIRE:IN20:561:EMITN_Y')
         if config_type == 'archive':
@@ -232,8 +232,8 @@ class Beamconfig:
 
         plt.imshow(corrplot, cmap='hot', interpolation='nearest', extent=extent)
         plt.title('Avg Beam Size in Undulator')
-        plt.xlabel('QUAD:LTUH:620 (kG)')
-        plt.ylabel('QUAD:LTUH:640 (kG)')
+        plt.xlabel('QUAD:LTU1:620 (kG)')
+        plt.ylabel('QUAD:LTU1:640 (kG)')
         cbar = plt.colorbar()
         cbar.set_label('Meters')
         if type(filename) != type(None):
@@ -354,8 +354,8 @@ class Beamconfig:
 
         plt.imshow(corrplot, cmap='hot', interpolation='nearest', extent=extent)
         plt.title('Est FEL Powers (Genesis)')
-        plt.xlabel('QUAD:LTUH:620 (kG)')
-        plt.ylabel('QUAD:LTUH:640 (kG)')
+        plt.xlabel('QUAD:LTU1:620 (kG)')
+        plt.ylabel('QUAD:LTU1:640 (kG)')
         cbar = plt.colorbar()
         cbar.set_label('Watts')
         if type(filename) != type(None):
@@ -415,8 +415,8 @@ class Beamconfig:
         for corrplot in corrplot_list:
             plt.imshow(corrplot[1], cmap='hot', interpolation='nearest', extent=extent)
             plt.title('Est FEL Powers (Genesis)')
-            plt.xlabel('QUAD:LTUH:620 (kG)')
-            plt.ylabel('QUAD:LTUH:640 (kG)')
+            plt.xlabel('QUAD:LTU1:620 (kG)')
+            plt.ylabel('QUAD:LTU1:640 (kG)')
             cbar = plt.colorbar()
             cbar.set_label('Watts')
             if type(filename) != type(None):
@@ -470,8 +470,8 @@ class Beamconfig:
 
         plt.imshow(corrplot, cmap='hot', interpolation='nearest', extent=extent)
         plt.title('Est FEL Powers (Genesis)')
-        plt.xlabel('QUAD:LTUH:620 (kG)')
-        plt.ylabel('QUAD:LTUH:640 (kG)')
+        plt.xlabel('QUAD:LTU1:620 (kG)')
+        plt.ylabel('QUAD:LTU1:640 (kG)')
         cbar = plt.colorbar()
         cbar.set_label('Watts')
         if type(filename) != type(None):
@@ -502,12 +502,12 @@ class Beamconfig:
 
 
     def get_arc_config(self, ttime): #time format '2017-07-01T00:00:01'
-        pvlist = ['QUAD:LTUH:620:BCTRL', 'QUAD:LTUH:640:BCTRL', 'QUAD:LTUH:660:BCTRL', 'QUAD:LTUH:665:BCTRL', 'QUAD:LTUH:680:BCTRL', 'QUAD:LTUH:720:BCTRL', 'QUAD:LTUH:730:BCTRL', 'QUAD:LTUH:740:BCTRL', 'QUAD:LTUH:750:BCTRL', 'QUAD:LTUH:760:BCTRL', 'QUAD:LTUH:770:BCTRL', 'QUAD:LTUH:820:BCTRL', 'QUAD:LTUH:840:BCTRL', 'QUAD:LTUH:860:BCTRL', 'QUAD:LTUH:880:BCTRL', 'QUAD:UND1:180:BCTRL']
+        pvlist = ['QUAD:LTU1:620:BCTRL', 'QUAD:LTU1:640:BCTRL', 'QUAD:LTU1:660:BCTRL', 'QUAD:LTU1:665:BCTRL', 'QUAD:LTU1:680:BCTRL', 'QUAD:LTU1:720:BCTRL', 'QUAD:LTU1:730:BCTRL', 'QUAD:LTU1:740:BCTRL', 'QUAD:LTU1:750:BCTRL', 'QUAD:LTU1:760:BCTRL', 'QUAD:LTU1:770:BCTRL', 'QUAD:LTU1:820:BCTRL', 'QUAD:LTU1:840:BCTRL', 'QUAD:LTU1:860:BCTRL', 'QUAD:LTU1:880:BCTRL', 'QUAD:UND1:180:BCTRL']
         quad_vals = []
         for pv in pvlist:
             val = pullData(pv, ttime, ttime )[1][0]
             quad_vals.append(val)
-        energy = pullData('BEND:DMPH:400:BDES', ttime, ttime)[1][0]
+        energy = pullData('BEND:DMP1:400:BDES', ttime, ttime)[1][0]
         return np.array(quad_vals), energy
 
 
@@ -660,12 +660,12 @@ class Beamconfig:
         df = pd.DataFrame(myarray, columns=keys)
 
         for ii in range(len(df)):
-            if (df['EPICS_CHANNEL_ACCESS_NAME'][ii] == 'QUAD:LTUH:620' and df['POSITION_INDEX'][ii] == 'BEGIN'):
+            if (df['EPICS_CHANNEL_ACCESS_NAME'][ii] == 'QUAD:LTU1:620' and df['POSITION_INDEX'][ii] == 'BEGIN'):
                 cut_start = ii
-        df1 = df[cut_start:] #cut the dataframe down to only the quads after and including LTUH:620
-        df1 = df1.reset_index(drop=True) #reindex so quad LTUH:620 is at index 0 of dataframe df1
+        df1 = df[cut_start:] #cut the dataframe down to only the quads after and including LTU1:620
+        df1 = df1.reset_index(drop=True) #reindex so quad LTU1:620 is at index 0 of dataframe df1
 
-        #df1 now has 3 entries (one each for beginning, middle, end) for every quad between and including quads LTUH:620 - UND1:3380
+        #df1 now has 3 entries (one each for beginning, middle, end) for every quad between and including quads LTU1:620 - UND1:3380
         #len(df1) should therefore be divisible by 3, and the result len(df1)/3 should be the number of full quads in this section
         num_quads = len(df1)/3
         quads_pos = []
@@ -686,9 +686,9 @@ class Beamconfig:
         df2 = pd.DataFrame(myarray2, index=['Z_POSITION','FULL_LENGTH'], columns=keys2)
 
         ##df2 should now be able to be queried. Example:
-        #z_pos = df2['QUAD:LTUH:620'].loc['Z_POSITION']
-        #full_length = df2['QUAD:LTUH:620'].loc['FULL_LENGTH']
-        #print (     'QUAD:LTUH:620 -- \n' +
+        #z_pos = df2['QUAD:LTU1:620'].loc['Z_POSITION']
+        #full_length = df2['QUAD:LTU1:620'].loc['FULL_LENGTH']
+        #print (     'QUAD:LTU1:620 -- \n' +
         #            'Z_POSITION = ' + str(z_pos) + '\n' +
         #            'FULL_LENGTH = ' + str(full_length)    )
 
@@ -1166,8 +1166,8 @@ class Beamconfig:
         #extent = [left, right, bottom, top] #left, right, bottom, top
         #plt.imshow(corrplot, cmap='hot', interpolation='nearest', extent=extent)
         #plt.title('Gaussian Beam Size FIT')
-        #plt.xlabel('QUAD:LTUH:620 (kG)')
-        #plt.ylabel('QUAD:LTUH:640 (kG)')
+        #plt.xlabel('QUAD:LTU1:620 (kG)')
+        #plt.ylabel('QUAD:LTU1:640 (kG)')
         #cbar = plt.colorbar()
         #cbar.set_label('Meters')
         #plt.show()

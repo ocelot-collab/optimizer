@@ -27,6 +27,8 @@ class Minimizer(object):
         self.target = None       # Target class
         self.opt_ctrl = None     # OptControl class
         self.x_init = None       # array of initial actuators values
+        self.norm_coef = 0.05    # normalization coefficient, step_size = delta * norm_coef (relative step, see GUI)
+        self.scaling_coef = 1    # scaling coefficient, step_size *= scaling_coef (Scaling Coefficient, see GUI)
 
     def minimize(self, error_func, x):
         pass
@@ -42,7 +44,7 @@ class Minimizer(object):
         """
         return x
 
-    def unnormalize(self, xnorm, norm_coef, scaling_coef):
+    def unnormalize(self, xnorm):
         """
         Un normalize parameters back to physical values.
         The method is used when the function "minimize" cannot be controlled
@@ -78,7 +80,7 @@ class MachineStatus:
             return True
         logger.info(" ALARM: Machine is DOWN. alarm value: " + str(alarm_value) + ". min/max = " + str(self.alarm_min) + "/" + str(self.alarm_max))
         return False
-        
+
 
 class OptControl:
     """
@@ -118,10 +120,8 @@ class OptControl:
                     self.is_ok = True
                     time.sleep(self.alarm_timeout)
                     return 1
-                self.is_ok = False
-                if self.kill==True:
-                    return 1
                 time.sleep(self.timeout)
+                self.is_ok = False
                 print(".",)
 
     def stop(self):
@@ -266,9 +266,7 @@ class Optimizer(Thread):
         self.meta_dev = MetaDevice()
         self.seq = []
         self.set_best_solution = True
-        self.norm_coef = 0.05
         self.maximization = True
-        self.scaling_coef = 1.0
 
     def eval(self, seq=None, logging=False, log_file=None):
         """
@@ -283,7 +281,7 @@ class Optimizer(Thread):
 
     def error_func(self, x):
 
-        x = self.minimizer.unnormalize(x, self.norm_coef, self.scaling_coef)
+        x = self.minimizer.unnormalize(x)
 
         if self.opt_ctrl.kill:
             #self.minimizer.kill = self.opt_ctrl.kill
@@ -301,7 +299,6 @@ class Optimizer(Thread):
         self.meta_dev.get()
 
         logger.info('sleeping ' + str(self.timeout))
-
         time.sleep(self.timeout)
 
         coef = -1

@@ -17,6 +17,7 @@ import traceback
 
 from resetpanel.resetpanel import ResetpanelWindow
 from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialog
+from PyQt5 import QtWidgets
 from PyQt5 import QtGui, QtCore, uic
 from PyQt5.QtGui import QClipboard
 import logging
@@ -30,6 +31,7 @@ class customTW(QTableWidget):
     def __init__(self, parent):
         """Init for the table widget, nothing special here"""
         QTableWidget.__init__(self, parent)
+        #self.setMinimumWidth(800)
         self.parent = parent
 
     def mouseReleaseEvent(self, evt):
@@ -46,7 +48,7 @@ class customTW(QTableWidget):
         #print("TW Release event: ", button, self.parent.enableMiddleClick)
         if (button == 4) and (self.parent.enableMiddleClick):
 
-            pv = QtGui.QApplication.clipboard().text()
+            pv = QtWidgets.QApplication.clipboard().text()
             self.parent.addPv(pv)
             #print(QtGui.QApplication.clipboard().text())
         else:
@@ -64,20 +66,20 @@ class customTW(QTableWidget):
         """
         button = evt.button()
         if (button == 4) and (self.parent.enableMiddleClick):
-            pv = QtGui.QApplication.clipboard().text(mode=QClipboard.Selection)
+            pv = QtWidgets.QApplication.clipboard().text(mode=QClipboard.Selection)
             self.parent.addPv(pv)
         else:
             QTableWidget.mouseReleaseEvent(self, evt)
 
     def contextMenuEvent(self, event):
-        self.menu = QtGui.QMenu(self)
+        self.menu = QtWidgets.QMenu(self)
         if self.selectionModel().selection().indexes():
             rows = []
             for i in self.selectionModel().selection().indexes():
                 row, column = i.row(), i.column()
                 rows.append(row)
             #self.menu = QtGui.QMenu(self)
-            deleteAction = QtGui.QAction('Delete', self)
+            deleteAction = QtWidgets.QAction('Delete', self)
 
             deleteAction.triggered.connect(lambda: self.deleteSlot(rows))
 
@@ -88,7 +90,7 @@ class customTW(QTableWidget):
             # add other required actions
             #self.menu.popup(QtGui.QCursor.pos())
 
-        addChannel = QtGui.QAction('Add Channel', self)
+        addChannel = QtWidgets.QAction('Add Channel', self)
         addChannel.triggered.connect(self.addRow)
         self.menu.addAction(addChannel)
         self.menu.popup(QtGui.QCursor.pos())
@@ -164,7 +166,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         button = evt.button()
         #print("Release event: ", button, self.parent.enableMiddleClick)
         if (button == 4) and (self.enableMiddleClick):
-            pv = QtGui.QApplication.clipboard().text(mode=QClipboard.Selection)
+            pv = QtWidgets.QApplication.clipboard().text(mode=QClipboard.Selection)
             self.addPv(pv)
 
     def set_parent(self, parent):
@@ -314,16 +316,16 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.ui.tableWidget.setColumnCount(len(headers))
         self.ui.tableWidget.setHorizontalHeaderLabels(headers)
         header = self.ui.tableWidget.horizontalHeader()
-        header.setResizeMode(0, QtGui.QHeaderView.Stretch)
-        header.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-        header.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
-        header.setResizeMode(3, QtGui.QHeaderView.ResizeToContents)
-        header.setResizeMode(4, QtGui.QHeaderView.ResizeToContents)
-        header.setResizeMode(5, QtGui.QHeaderView.Fixed)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QtWidgets.QHeaderView.Fixed)
         for row in range(len(self.pvs)):
             eng = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates)
             for i in range(2):
-                spin_box = QtGui.QDoubleSpinBox()
+                spin_box = QtWidgets.QDoubleSpinBox()
                 spin_box.setMaximumWidth(85)
                 if i == 0:
                     spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
@@ -343,7 +345,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 self.ui.tableWidget.resizeColumnsToContents()
 
             #spin_box
-            checkBoxItem = QtGui.QTableWidgetItem()
+            checkBoxItem = QtWidgets.QTableWidgetItem()
             checkBoxItem.setCheckState(QtCore.Qt.Checked)
             flags = checkBoxItem.flags()
             checkBoxItem.setFlags(flags)
@@ -414,7 +416,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 if val is not None:
                     self.startValues[pv] = val
                     logger.info(" updateReference: startValues[{}] <-- {}".format(dev.eid, val))
-                    self.ui.tableWidget.setItem(row, 1, QtGui.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
+                    self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
         self.ui.updateReference.setText("Update Reference")
 
     def getPvsFromCbState(self):
@@ -447,7 +449,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.ui_check.reset.clicked.connect(self.ui_check.close)
         self.ui_check.label.setText("Are you sure you want to implement \nchanges to checkbox selected PVs?")
         frame_gm = self.ui_check.frameGeometry()
-        center_point = QtGui.QDesktopWidget().availableGeometry().center()
+        center_point = QtWidgets.QDesktopWidget().availableGeometry().center()
         frame_gm.moveCenter(center_point)
         self.ui_check.move(frame_gm.topLeft())
         self.ui_check.show()

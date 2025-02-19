@@ -332,8 +332,6 @@ class Device(object):
         :return:
         """
         limits = self.get_limits()
-        if limits is None or any([l is None for l in limits]):
-            return False
         # Disable Limits when both are 0.
         if np.abs(limits[0]) < 1e-15 and np.abs(limits[1]) < 1e-15:
             return False

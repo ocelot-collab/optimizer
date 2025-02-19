@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import
 from mint.mint import *
 from scipy import optimize
 
+
 class Powell(Minimizer):
     def __init__(self):
         super(Powell, self).__init__()

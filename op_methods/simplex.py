@@ -68,8 +68,10 @@ class SimplexNorm(Simplex):
 
         :return: np.array() - device_delta_limits * norm_coef
         """
-        self.norm_scales = normscales.normscales(self.target.mi, self.devices)
+        # TODO: normscales.normscales() after last upgrade was broken. Fix or delete
+        #self.norm_scales = normscales.normscales(self.target.mi, self.devices)
 
+        self.norm_scales = None
 
         if self.norm_scales is None:
             self.norm_scales = [None] * np.size(self.devices)
@@ -86,15 +88,15 @@ class SimplexNorm(Simplex):
         self.norm_scales *= np.sign(np.random.randn(self.norm_scales.size))
         return self.norm_scales
 
-    def unnormalize(self, xnorm, norm_coef, scaling_coef):
+    def unnormalize(self, xnorm):
         # 0.00025 is used for Simplex because of the fmin steps.
 
-        delta_x = np.array(xnorm)*scaling_coef
-        delta_x_scaled = delta_x/0.00025*self.norm_scales * norm_coef
+        delta_x = np.array(xnorm)*self.scaling_coef
+        delta_x_scaled = delta_x/0.00025*self.norm_scales * self.norm_coef
         x = self.x_init + delta_x_scaled
         print("norm_scales = ", self.norm_scales )
-        print("norm_coef = ", norm_coef)
-        print("scaling_coef = ", scaling_coef)
+        print("norm_coef = ", self.norm_coef)
+        print("scaling_coef = ", self.scaling_coef)
         print("delta_x = ", delta_x)
         print("X Init: ", self.x_init)
         print("X: ", x)

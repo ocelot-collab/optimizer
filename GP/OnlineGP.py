@@ -42,7 +42,6 @@ Methods:
         the (either weighted or unweighted) KL divergence-cost of the removal
 
 Change log:
-    2019-10-23 - Adi added Matern kernel
     2018-02-?? - Mitch fixed a bug where the noise parameter wasn't used
     2018-02-23 - Joe suggestions to make code more user friendly
                  1) Change hyper_noise input to stdev -- currently variance
@@ -71,7 +70,7 @@ from numpy.linalg import solve, inv
 
 
 class OGP(object):
-    def __init__(self, dim, hyperparams, covar=['RBF_ARD','MATERN32_ARD','MATERN52_ARD'][0], maxBV=200,
+    def __init__(self, dim, hyperparams, covar='RBF_ARD', maxBV=200,
                  prmean=None, prmeanp=None, prvar=None, prvarp=None, proj=True, weighted=False, thresh=1e-6,
                  sparsityQ=True):
         self.nin = dim
@@ -83,7 +82,7 @@ class OGP(object):
         self.verboseQ = False
         self.nupdates = 0
 
-        if (covar in ['RBF_ARD','MATERN32_ARD','MATERN52_ARD']):
+        if (covar in ['RBF_ARD']):
             self.covar = covar
             self.covar_params = hyperparams[:2]
             self.precisionMatrix = None
@@ -95,7 +94,7 @@ class OGP(object):
             self.precisionMatrix = None
             print('Unknown covariance function')
             raise Exception("Unknown covariance function")
-            
+
         self.noise_var = np.exp(hyperparams[2])  # variance -- not stdev
 
         # prior (mean and variance): function; parameters
@@ -421,18 +420,10 @@ class OGP(object):
         # computes covariance between inputs x1 and x2
         #   returns a matrix of size (n1 x n2)
 
-        # calculate covariance with kernel
-        if self.covar == 'MATERN32_ARD':
-            K = self.computeMatern(x1, x2, nu=1.5)
-        elif self.covar == 'MATERN52_ARD':
-            K = self.computeMatern(x1, x2, nu=2.5)
-        else: # default to rbf
-            if np.size(np.shape(self.covar_params[0])) == 2:
-                K = self.computeCBF(x1, x2)
-            else:
-                K = self.computeRBF(x1, x2)
-                
-        # add noise
+        if np.size(np.shape(self.covar_params[0])) == 2:
+            K = self.computeCBF(x1, x2)
+        else:
+            K = self.computeRBF(x1, x2)
         if (is_self):
             K = K + self.noise_var * np.eye(x1.shape[0])
 
@@ -515,7 +506,6 @@ class OGP(object):
 
         (hyp_ARD, hyp_coeff) = self.covar_params
 
-        # turn to normal units
         b = np.exp(hyp_ARD)
         coeff = np.exp(hyp_coeff)
 
@@ -524,12 +514,17 @@ class OGP(object):
         x1 = x1 * b_sqrt
         x2 = x2 * b_sqrt
 
-        x1_sum_sq = np.reshape(np.sum(x1 * x1, axis=1), (n1, 1))
-        x2_sum_sq = np.reshape(np.sum(x2 * x2, axis=1), (1, n2))
+        if (n1 != n2 or np.any(x1 - x2)):
+            x1_sum_sq = np.reshape(np.sum(x1 * x1, axis=1), (n1, 1))
+            x2_sum_sq = np.reshape(np.sum(x2 * x2, axis=1), (1, n2))
 
-        dist_sq = x1_sum_sq  -2 * np.dot(x1, x2.transpose()) + x2_sum_sq
-        dist = np.sqrt(dist_sq + 1e-14)
-       
+            dist_sq = -2 * np.dot(x1, x2.transpose())
+            dist_sq = dist_sq + x1_sum_sq + x2_sum_sq
+            dist = np.sqrt(dist_sq)
+        else:
+            dist = np.zeros((n1, n2))
+            dist_sq = np.zeros((n1, n2))
+
         if (nu == 1.5):
             poly = 1 + np.sqrt(3.0) * dist
         elif (nu == 2.5):

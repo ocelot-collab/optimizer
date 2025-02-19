@@ -268,25 +268,36 @@ class XFELMachineInterface(MachineInterface):
             {"display": "Text of the PushButton", "filename": "my_file.json"}
         """
         presets = {
-            "SASE1 opt 1": [
-                {"display": "1. Launch orbit", "filename": "sase1_1.json"},
-                {"display": "2. Match Quads", "filename": "sase1_2.json"},
-                 {"display": "3. SASE1 CAX CAY", "filename": "SASE1_CAX_CAY.json"}],
-        "SASE1 opt 2": [
-                  {"display": "4. SASE1 CAX CBX", "filename": "SASE1_CAX_CBX.json"},
-                {"display": "5. SASE1 phase-shifters", "filename": "SASE1_phase_shifter.json"},
-                {"display": "6. SASE1 inj elements", "filename": "SASE1_tuning_with_injector_elements.json"},
+            "Dispersion optimization": [
+                {"display": "Injector horizontal", "filename": "disp_1.json"},
+				{"display": "Injector vertical", "filename": "disp_2.json"},
+                {"display": "B1 horizontal", "filename": "disp_b1_hor.json"}, 
+                {"display": "B1 vertical", "filename": "disp_b1_ver.json"}, 
+                {"display": "B2 horizontal", "filename": "disp_b2_hor.json"}, 
+                {"display": "B2 vertical", "filename": "disp_b2_ver.json"}, 
+                {"display": "TL horizontal", "filename": "disp_TL_hor.json"}, 
+                {"display": "TL vertical", "filename": "disp_TL_ver.json"}, 
+			],
+        "common tuning": [
+				{"display": "I1 elements", "filename": "SASE_tuning_with_injector_elements.json"}, 
             ],
-            
-            "SASE2 Opt": [
-                 {"display": "1. Match Quads", "filename": "SASE2_matching_quads.json"},
-                  {"display": "2. AirCoils", "filename": "SASE2_CAX_CBX_CAY_CBY.json"},
-                  {"display": "3. Phase-shifters", "filename": "SASE2_BPS.json"},
+        "SASE1 tuning": [
+                {"display": "matching quads", "filename": "SASE1_matching_quads.json"}, 
+                {"display": "CAX CAY aircoils", "filename": "SASE1_CAX_CAY.json"}, 
+                {"display": "CBX CBY aircoils", "filename": "SASE1_CBX_CBY.json"}, 
+                {"display": "phase shifter", "filename": "SASE1_phase_shifter.json"},
             ],
-            
-            "Dispersion Minimization": [
-                {"display": "1. I1 Horizontal", "filename": "disp_1.json"},
-                {"display": "2. I1 Vertical", "filename": "disp_2.json"},
+        "SASE2 tuning": [
+                {"display": "matching quads", "filename": "SASE2_matching_quads.json"}, 
+                {"display": "CAX CAY aircoils", "filename": "SASE2_CAX_CAY.json"}, 
+                {"display": "CBX CBY aircoils", "filename": "SASE2_CBX_CBY.json"}, 
+                {"display": "phase shifter", "filename": "SASE2_phaseshifter.json"},
+            ],
+        "SASE3 tuning": [
+                {"display": "matching quads", "filename": "SASE3_matching_quad.json"}, 
+                {"display": "CAX CAY aircoils", "filename": "SASE3_CAX_CAY.json"}, 
+                {"display": "CBX CBX aircoils", "filename": "SASE3_CAX_CBX.json"}, 
+                #{"display": "phase shifter", "filename": ".json"},
             ]
         }
         
