@@ -14,8 +14,10 @@ from PyQt5 import QtGui, QtCore, uic
 from mint.opt_objects import *
 
 from resetpanel.UIresetpanel import Ui_Form
-
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 sys.path.append("..")
 
@@ -59,16 +61,18 @@ class ResetpanelWindow(QFrame):
                 self.setStyleSheet(style)
                 QApplication.instance().setStyleSheet(style)
         except IOError:
-            print('No style sheet found!')
+            logger.warning('No style sheet found!')
 
     def getStartValues(self):
         """ Initializes start values for the PV list. """
         for dev in self.devices:
             try:
-                self.startValues[dev.eid] = dev.get_value()
+                val = dev.get_value()
+                self.startValues[dev.eid] = val
+                logger.info(" getStartValues: startValues[{}] <-- {}".format(dev.eid, val))
             except Exception as ex:
                 self.startValues[dev.eid] = None
-                print("Get Start Value: ", dev.eid, " not working. Exception was: ", ex)
+                logger.warning("Get Start Value: " + str(dev.eid) + " not working. Exception was: " + str(ex))
                 # print(self.startValues[dev.eid])
                 # self.pv_objects[pv].add_callback(callback=self.PvGetCallBack)
 
@@ -121,8 +125,12 @@ class ResetpanelWindow(QFrame):
                 # print("ERROR getting value. Device:", dev.eid)
                 value = None
 
+            if "prev_lim_status" not in dev.__dict__:
+                dev.prev_lim_status = not dev.check_limits(value)
+
             if self.startValues[dev.eid] is None and value is not None:
                 self.startValues[dev.eid] = value
+                logger.info(" updateCurrentValues: startValues[{}] = {}".format(dev.eid, value))
 
             if self.startValues[dev.eid] is None or value is None:
                 item = self.ui.tableWidget.item(row, 5)
@@ -150,35 +158,46 @@ class ResetpanelWindow(QFrame):
                     self.ui.tableWidget.item(row, 2).setBackground(QtGui.QColor(89, 89, 89))  # grey
 
                 continue
+            # if value out of the limits
+            if dev.prev_lim_status is not dev.check_limits(value):
 
+                if dev.check_limits(value):
+                    for col in [3, 4]:
+                        spin_box = self.ui.tableWidget.cellWidget(row, col)
+                        spin_box.setStyleSheet("color: yellow; font-size: 16px; background-color:red;")
+
+                else:
+                    for col in [3, 4]:
+                        spin_box = self.ui.tableWidget.cellWidget(row, col)
+                        if col == 3:
+                            spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
+                        if col == 4:
+                            spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
+            dev.prev_lim_status = dev.check_limits(value)
 
             lim_low, lim_high = dev.get_limits()
-            spin_box = self.ui.tableWidget.cellWidget(row, 3)
-            spin_box.setValue(lim_low)
-            spin_box.setEnabled(dev._can_edit_limits)
-            spin_box = self.ui.tableWidget.cellWidget(row, 4)
-            spin_box.setValue(lim_high)
-            spin_box.setEnabled(dev._can_edit_limits)
+            
+            # stop update min spinbox if it has focus
+            if not self.ui.tableWidget.cellWidget(row, 3).hasFocus():
+                spin_box = self.ui.tableWidget.cellWidget(row, 3)
+                spin_box.setValue(lim_low)
+                spin_box.setEnabled(dev._can_edit_limits)
 
-            # if value out of the limits
-            if dev.check_limits(value):
-                for col in [3, 4]:
-                    spin_box = self.ui.tableWidget.cellWidget(row, col)
-                    spin_box.setStyleSheet("color: yellow; font-size: 16px; background-color:red;")
-
-            else:
-                for col in [3, 4]:
-                    spin_box = self.ui.tableWidget.cellWidget(row, col)
-                    if col == 3:
-                        spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
-                    if col == 4:
-                        spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
+            # stop update max spinbox if it has focus
+            if not self.ui.tableWidget.cellWidget(row, 4).hasFocus():
+                spin_box = self.ui.tableWidget.cellWidget(row, 4)
+                spin_box.setValue(lim_high)
+                spin_box.setEnabled(dev._can_edit_limits)
 
             pv = dev.eid
 
             self.currentValues[pv] = value  # dev.get_value()
-            self.ui.tableWidget.setItem(row, 2, QtGui.QTableWidgetItem(str(np.around(self.currentValues[pv], 4))))
+            if self.ui.tableWidget.item(row, 2) is None:
+                self.ui.tableWidget.setItem(row, 2, QtGui.QTableWidgetItem(str(np.around(self.currentValues[pv], 4))))
+            else:
+                self.ui.tableWidget.item(row, 2).setText(str(np.around(self.currentValues[pv], 4)))
             # print(self.currentValues[pv])
+            #print(self.ui.tableWidget.item(row, 2) is None)
             tol = abs(self.startValues[pv] * percent)
             diff = abs(abs(self.startValues[pv]) - abs(self.currentValues[pv]))
             if diff > tol:
@@ -193,13 +212,16 @@ class ResetpanelWindow(QFrame):
                 # self.ui.tableWidget.item(row, col).setFlags(
                 #    QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
                 self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(89, 89, 89))
+            #print("check rest = ", time.time() - start)
 
         QApplication.processEvents()
+
 
     def resetAll(self):
         """Set all PVs back to their reference values."""
         for dev in self.devices:
             val = self.startValues[dev.eid]
+            logger.info(" resetAll: {} <-- {}".format(dev.eid, val))
             dev.set_value(val)  # epics.caput(pv,val)
 
     def launchPopupAll(self):

@@ -176,7 +176,7 @@ class LCLSMachineInterface(MachineInterface):
 
         :return: (float)
         """
-        return self.get_value("BEND:DMP1:400:BDES")
+        return self.get_value("BEND:DMPH:400:BDES")
 
     def get_charge(self):
         """
@@ -202,7 +202,8 @@ class LCLSMachineInterface(MachineInterface):
         return rate
 
     def get_losses(self):
-        losses = [self.get_value(pv) for pv in self.losspvs]
+        #losses = [self.get_value(pv) for pv in self.losspvs]
+	losses = [0 for pv in self.losspvs]
         return losses
 
     def logbook(self, gui):
@@ -335,10 +336,10 @@ class LCLSMachineInterface(MachineInterface):
                               "QUAD:LI26:501:BCTRL"]),
             ("LI26 601-901", ["QUAD:LI26:601:BCTRL", "QUAD:LI26:701:BCTRL", "QUAD:LI26:801:BCTRL",
                               "QUAD:LI26:901:BCTRL"]),
-            ("LTU M. Quads", ["QUAD:LTU1:620:BCTRL", "QUAD:LTU1:640:BCTRL", "QUAD:LTU1:660:BCTRL",
-                              "QUAD:LTU1:680:BCTRL"]),
+            ("LTU M. Quads", ["QUAD:LTUH:620:BCTRL", "QUAD:LTUH:640:BCTRL", "QUAD:LTUH:660:BCTRL",
+                              "QUAD:LTUH:680:BCTRL"]),
             ("Dispersion Quads", ["QUAD:LI21:221:BCTRL", "QUAD:LI21:251:BCTRL", "QUAD:LI24:740:BCTRL",
-                                  "QUAD:LI24:860:BCTRL", "QUAD:LTU1:440:BCTRL", "QUAD:LTU1:460:BCTRL"]),
+                                  "QUAD:LI24:860:BCTRL", "QUAD:LTUH:440:BCTRL", "QUAD:LTUH:460:BCTRL"]),
             ("CQ01/SQ01/Sol.", ["SOLN:IN20:121:BCTRL", "QUAD:IN20:121:BCTRL", "QUAD:IN20:122:BCTRL"]),
             ("DMD PVs", ["DMD:IN20:1:DELAY_1", "DMD:IN20:1:DELAY_2", "DMD:IN20:1:WIDTH_2", "SIOC:SYS0:ML03:AO956"])
         ])
@@ -449,7 +450,7 @@ class LCLSMachineInterface(MachineInterface):
             self.data["epicsname"] = epics.name  # returns fakeepics if caput has been disabled
         except:
             pass
-        self.data["BEND_DMP1_400_BDES"] = self.get_value("BEND:DMP1:400:BDES")
+        self.data["BEND_DMPH_400_BDES"] = self.get_value("BEND:DMPH:400:BDES")
         self.data["Energy"] = self.get_energy()
         self.data["ScanAlgorithm"] = str(method_name)  # string of the algorithm name
         self.data["ObjFuncPv"] = str(objective_func_pv)  # string identifing obj func pv

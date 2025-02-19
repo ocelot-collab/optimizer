@@ -1,0 +1,5 @@
+L1:RG2:KIK:VoltSetSendAO
+L1:RG2:LFA:CurrentAI
+L1:RG2:KIK:PFNVoltageAI
+L1:RG2:CM1:measCurrentCM
+L1:SCR:XL:positionCC

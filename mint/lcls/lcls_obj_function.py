@@ -70,6 +70,8 @@ class SLACTarget(Target):
 
         try:
             rate = self.mi.get_beamrate()
+	        print("BEAM RATE: ", rate)
+	        print("\n\n\n")
             nap_time = self.points/(rate*1.0)
         except Exception as ex:
             nap_time = 1

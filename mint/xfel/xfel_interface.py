@@ -16,8 +16,12 @@ import sys
 import numpy as np
 import subprocess
 import base64
-from mint.opt_objects import MachineInterface, Device
+from mint.opt_objects import MachineInterface, Device, TestDevice
 from collections import OrderedDict
+from datetime import datetime
+import json
+import logging
+logger = logging.getLogger(__name__)
 
 class AlarmDevice(Device):
     """
@@ -40,7 +44,8 @@ class XFELMachineInterface(MachineInterface):
         self.logbook_name = "xfellog"
 
         path2root = os.path.abspath(os.path.join(__file__ , "../../../.."))
-        self.config_dir = os.path.join(path2root, "config_optim_new")
+        self.config_dir = os.path.join(path2root, "config_optim")
+
     def get_value(self, channel):
         """
         Getter function for XFEL.
@@ -65,6 +70,126 @@ class XFELMachineInterface(MachineInterface):
 
     def get_charge(self):
         return self.get_value("XFEL.DIAG/CHARGE.ML/TORA.25.I1/CHARGE.SA1")
+
+    def get_sases(self):
+        try:
+            sa1 = self.get_value("XFEL.FEL/XGM/XGM.2643.T9/INTENSITY.SA1.SLOW.TRAIN")
+        except:
+            sa1 = None
+        try:
+            sa2 = self.get_value("XFEL.FEL/XGM/XGM.2595.T6/INTENSITY.SLOW.TRAIN")
+        except:
+            sa2 = None
+        try:
+            sa3 = self.get_value("XFEL.FEL/XGM/XGM.3130.T10/INTENSITY.SA3.SLOW.TRAIN")
+        except:
+            sa3 = None
+        return [sa1, sa2, sa3]
+
+    def get_beam_energy(self):
+        try:
+            tld = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/TLD/ENERGY.DUD")
+        except:
+            tld = None
+        #t3 = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T3/ENERGY.SA2")
+        #t4 = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T4/ENERGY.SA1")
+        #t5 = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T5/ENERGY.SA2")
+        try:
+            t4d = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T4D/ENERGY.SA1")
+        except:
+            t4d = None
+        try:
+            t5d = self.get_value("XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/T5D/ENERGY.SA2")
+        except:
+            t5d = None
+        return [tld, t4d, t5d]
+
+    def get_wavelength(self):
+        try:
+            sa1 = self.get_value("XFEL.FEL/XGM.PHOTONFLUX/XGM.2643.T9/WAVELENGTH")
+        except:
+            sa1 = None
+        try:
+            sa2 = self.get_value("XFEL.FEL/XGM.PHOTONFLUX/XGM.2595.T6/WAVELENGTH")
+        except:
+            sa2 = None
+        try:
+            sa3 = self.get_value("XFEL.FEL/XGM.PHOTONFLUX/XGM.3130.T10/WAVELENGTH")
+        except:
+            sa3 = None
+        return [sa1, sa2, sa3]
+
+    def get_ref_sase_signal(self):
+        try:
+            sa1 = self.get_value("XFEL.FEL/XGM/XGM.2643.T9/INTENSITY.SA1.SLOW.TRAIN")
+        except:
+            sa1 = None
+        try:
+            sa2 = self.get_value("XFEL.FEL/XGM/XGM.2595.T6/INTENSITY.SLOW.TRAIN")
+        except:
+            sa2 = None
+        #try:
+        #    sa3 = self.get_value("XFEL.FEL/XGM.PHOTONFLUX/XGM.3130.T10/WAVELENGTH")
+        #except:
+        #    sa3 = None
+        return [sa1, sa2]
+
+    def write_data(self, method_name, objective_func, devices=[], maximization=False, max_iter=0):
+        """
+        Save optimization parameters to the Database
+
+        :param method_name: (str) The used method name.
+        :param objective_func: (Target) The Target class object.
+        :param devices: (list) The list of devices on this run.
+        :param maximization: (bool) Whether or not the data collection was a maximization. Default is False.
+        :param max_iter: (int) Maximum number of Iterations. Default is 0.
+
+        :return: status (bool), error_msg (str)
+        """
+
+        if objective_func is None:
+            return False, "Objective Function required to save data."
+
+
+        dump2json = {}
+
+        for dev in devices:
+            dump2json[dev.eid] = dev.values
+
+        dump2json["method"] = method_name
+        dump2json["dev_times"] = devices[0].times
+        dump2json["obj_times"] = objective_func.times
+        dump2json["maximization"] = maximization
+        dump2json["nreadings"] = [objective_func.nreadings]
+        dump2json["function"] = objective_func.eid
+        dump2json["beam_energy"] = self.get_beam_energy()
+        dump2json["wavelength"] = self.get_wavelength()
+        dump2json["obj_values"] = np.array(objective_func.values).tolist()
+        dump2json["std"] = np.array(objective_func.std_dev).tolist()
+        try:
+            dump2json["ref_sase"] = [objective_func.ref_sase[0], objective_func.ref_sase[-1]]
+        except Exception as e:
+            print("ERROR. Read ref sase: " + str(e))
+            dump2json["ref_sase"] = [None]
+
+
+        try:
+            dump2json["charge"] = [self.get_charge()]
+        except Exception as e:
+            print("ERROR. Read charge: " + str(e))
+            dump2json["charge"] = [None]
+
+        if not os.path.exists(self.path2jsondir):
+            os.makedirs(self.path2jsondir)
+
+        filename = os.path.join(self.path2jsondir, datetime.now().strftime("%Y-%m-%d %H-%M-%S") + ".json")
+        try:
+            with open(filename, 'w') as f:
+                json.dump(dump2json, f)
+        except Exception as e:
+            print("ERROR. Could not write data: " + str(e))
+        return True, ""
+
 
     def send_to_logbook(self, *args, **kwargs):
         """
@@ -143,15 +268,28 @@ class XFELMachineInterface(MachineInterface):
             {"display": "Text of the PushButton", "filename": "my_file.json"}
         """
         presets = {
-            "SASE Optimization": [
-                {"display": "1. Launch orbit SASE1", "filename": "sase1_1.json"},
-                {"display": "2. Match Quads SASE1", "filename": "sase1_2.json"},
+            "SASE1 opt 1": [
+                {"display": "1. Launch orbit", "filename": "sase1_1.json"},
+                {"display": "2. Match Quads", "filename": "sase1_2.json"},
+                 {"display": "3. SASE1 CAX CAY", "filename": "SASE1_CAX_CAY.json"}],
+        "SASE1 opt 2": [
+                  {"display": "4. SASE1 CAX CBX", "filename": "SASE1_CAX_CBX.json"},
+                {"display": "5. SASE1 phase-shifters", "filename": "SASE1_phase_shifter.json"},
+                {"display": "6. SASE1 inj elements", "filename": "SASE1_tuning_with_injector_elements.json"},
             ],
+            
+            "SASE2 Opt": [
+                 {"display": "1. Match Quads", "filename": "SASE2_matching_quads.json"},
+                  {"display": "2. AirCoils", "filename": "SASE2_CAX_CBX_CAY_CBY.json"},
+                  {"display": "3. Phase-shifters", "filename": "SASE2_BPS.json"},
+            ],
+            
             "Dispersion Minimization": [
                 {"display": "1. I1 Horizontal", "filename": "disp_1.json"},
                 {"display": "2. I1 Vertical", "filename": "disp_2.json"},
             ]
         }
+        
         return presets
 
     def get_quick_add_devices(self):
@@ -191,7 +329,7 @@ class XFELMachineInterface(MachineInterface):
                                 "XFEL.MAGNETS/MAGNET.ML/CIY.72.I1/KICK_MRAD.SP",
                                 "XFEL.MAGNETS/MAGNET.ML/CY.39.I1/KICK_MRAD.SP"])
         ])
-        return devs
+        return None
 # test interface
 
 
@@ -232,18 +370,7 @@ class TestMachineInterface(XFELMachineInterface):
         self.data += np.sqrt(val**2)
         return 0.0
 
-    def get_bpms_xy(self, bpms):
-        """
-        Testing method for getting bmps data
-
-        :param bpms: list of string. BPMs names
-        :return: X, Y - two arrays in [m]
-        """
-        X = np.zeros(len(bpms))
-        Y = np.zeros(len(bpms))
-        return X, Y
-
-    def get_charge(self):
+    def get_ref_sase_signal(self):
         return 0
 
     @staticmethod
@@ -274,4 +401,11 @@ class TestMachineInterface(XFELMachineInterface):
         from mint.xfel import xfel_obj_function
         return xfel_obj_function
 
+    def device_factory(self, pv):
+        """
+        Create a device for the given PV using the proper Device Class.
 
+        :param pv: (str) The process variable for which to create the device.
+        :return: (Device) The device instance for the given PV.
+        """
+        return TestDevice(eid=pv)
