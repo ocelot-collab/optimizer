@@ -20,6 +20,8 @@ from PyQt5.QtWidgets import QApplication, QPushButton, QTableWidget, QInputDialo
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui, QtCore, uic
 from PyQt5.QtGui import QClipboard
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QSound
+from PyQt5.QtCore import QUrl
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,7 @@ class customTW(QTableWidget):
         QTableWidget.__init__(self, parent)
         #self.setMinimumWidth(800)
         self.parent = parent
+        self.setAlternatingRowColors(True)
 
     def mouseReleaseEvent(self, evt):
         """
@@ -45,12 +48,9 @@ class customTW(QTableWidget):
                 evt (QEvent): Event object passed in from QT
         """
         button = evt.button()
-        #print("TW Release event: ", button, self.parent.enableMiddleClick)
         if (button == 4) and (self.parent.enableMiddleClick):
-
             pv = QtWidgets.QApplication.clipboard().text()
             self.parent.addPv(pv)
-            #print(QtGui.QApplication.clipboard().text())
         else:
             QTableWidget.mouseReleaseEvent(self, evt)
 
@@ -110,13 +110,269 @@ class customTW(QTableWidget):
         dlg = QInputDialog(self)
         dlg.setInputMode(QInputDialog.TextInput)
         dlg.setLabelText("Channel:")
-        dlg.resize(500,100)
+        dlg.resize(500, 100)
         ok = dlg.exec_()
         pv = dlg.textValue()
         #pv, ok = QInputDialog.getText(self, "Input", "Enter channel")
         if ok:
             print(pv)
             self.parent.addPv(pv)
+
+
+class DeviceTableClass:
+    def __init__(self, row, table, device):
+        self.row = row
+        self.table = table
+        self.device = device
+        self.pv = device.eid
+        self._start_value = self.get_start_value()  # Internal storage for start_value
+
+    @property
+    def start_value(self):
+        return self._start_value
+
+    @start_value.setter
+    def start_value(self, new_value):
+        self._start_value = new_value
+        mode_combo = self.table.cellWidget(self.row, 5)
+        if self.start_value == 0:
+            mode_combo.model().item(1).setEnabled(False)
+        else:
+            mode_combo.model().item(1).setEnabled(True)
+
+    def add_to_table(self):
+        eng = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates)
+        row = self.row
+        self.table.setRowCount(row + 1)
+
+        # Column 0: PV (Device Name)
+        self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(self.pv)))
+        self.table.item(row, 0).setForeground(QtGui.QColor(0, 255, 255))
+
+        # Column 1: Saved Value (Initial)
+        s_val = self.start_value
+        if s_val is not None:
+            s_val = np.around(s_val, 4)
+        self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(s_val)))
+
+        # Column 2: Current Value (You may update this elsewhere)
+
+        # Columns 3 and 4: Spinboxes for Min and Max
+        for i in range(2):
+            spin_box = QtWidgets.QDoubleSpinBox()
+            spin_box.setMaximumWidth(85)
+            spin_box.setLocale(eng)
+            spin_box.setDecimals(3)
+            spin_box.setMaximum(999999)
+            spin_box.setMinimum(-999999)
+            spin_box.setSingleStep(0.1)
+            spin_box.setAccelerated(True)
+
+            if i == 0:  # Min limit
+                spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
+                spin_box.valueChanged.connect(functools.partial(self.spinbox_changed, high_limit=False))
+            else:  # Max limit
+                spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
+                spin_box.valueChanged.connect(functools.partial(self.spinbox_changed, high_limit=True))
+
+            self.table.setCellWidget(row, 3 + i, spin_box)
+
+        # Column 5: Mode (Absolute / Relative)
+        mode_combo = QtWidgets.QComboBox()
+        mode_combo.addItems(["Absolute", "Relative"])
+        mode_combo.currentIndexChanged.connect(self.update_limits)  # Update spinboxes when mode changes
+        if self.start_value == 0:
+            mode_combo.model().item(1).setEnabled(False)
+        self.table.setCellWidget(row, 5, mode_combo)
+
+        # Column 6: Active Checkbox
+        checkBoxItem = QtWidgets.QTableWidgetItem()
+        checkBoxItem.setCheckState(QtCore.Qt.Checked)
+        checkBoxItem.setFlags(checkBoxItem.flags())
+        self.table.setItem(row, 6, checkBoxItem)
+
+    def spinbox_changed(self, val, high_limit):
+        """
+        Callback for when a spinbox is changed in the table.
+        """
+        mode_combo = self.table.cellWidget(self.row, 5)
+        mode = mode_combo.currentText()
+
+        if mode == "Relative":
+            if self.start_value is None:
+                return  # Prevent issues if saved_value is missing
+
+            if high_limit:
+                computed_val = self.max_rel2abs(val)  # High limit as percentage
+                self.device.set_high_limit(computed_val)
+            else:
+                computed_val = self.min_rel2abs(val)  # Low limit as percentage
+                self.device.set_low_limit(computed_val)
+        else:
+            if high_limit:
+                self.device.set_high_limit(val)
+            else:
+                self.device.set_low_limit(val)
+
+    def update_limits(self):
+        """
+        Update spinbox values when switching between Absolute and Relative mode.
+        """
+        mode_combo = self.table.cellWidget(self.row, 5)
+        mode = mode_combo.currentText()
+
+        min_spinbox = self.table.cellWidget(self.row, 3)
+        max_spinbox = self.table.cellWidget(self.row, 4)
+        low_limit, high_limit = self.get_lims()
+        self.switch_spinbox_mode(mode=mode)
+        if mode == "Relative":
+            if self.start_value is not None:
+                low_lim = self.min_abs2rel(low_limit)
+                min_spinbox.setValue(low_lim)
+                high_lim = self.max_abs2rel(high_limit)
+                max_spinbox.setValue(high_lim)
+        else:
+            # Convert relative percentages back to absolute values
+            if self.start_value is not None:
+                low = self.min_rel2abs(low_limit)
+                high = self.max_rel2abs(high_limit)
+                min_spinbox.setValue(low)
+                max_spinbox.setValue(high)
+
+    def switch_spinbox_mode(self, mode="Absolute"):
+        min_spinbox = self.table.cellWidget(self.row, 3)
+        max_spinbox = self.table.cellWidget(self.row, 4)
+        if mode == "Relative":
+            min_spinbox.setDecimals(1)
+            max_spinbox.setDecimals(1)
+            min_spinbox.setSingleStep(1)
+            max_spinbox.setSingleStep(1)
+            min_spinbox.setSuffix("%")
+            max_spinbox.setSuffix("%")
+        else:
+            min_spinbox.setDecimals(3)
+            max_spinbox.setDecimals(3)
+            min_spinbox.setSingleStep(0.1)
+            max_spinbox.setSingleStep(0.1)
+            min_spinbox.setSuffix("")
+            max_spinbox.setSuffix("")
+
+    def get_start_value(self):
+        try:
+            val = self.device.get_value()
+            start_value = val
+            logger.info(" getStartValues: startValues[{}] <-- {}".format(self.device.eid, val))
+        except Exception as ex:
+            start_value = None
+            logger.warning("Get Start Value: " + str(self.device.eid) + " not working. Exception was: " + str(ex))
+        return start_value
+
+    def get_mode(self):
+        mode_combo = self.table.cellWidget(self.row, 5)
+        return mode_combo.currentText()
+
+    def set_mode(self, mode):
+        mode_combo = self.table.cellWidget(self.row, 5)
+        index = mode_combo.findText(mode)
+        if index != -1:
+            mode_combo.setCurrentIndex(index)
+
+    def set_box(self, checked=True):
+        """
+        Method to check or uncheck box.
+        :param checked: (bool)
+        """
+        if checked:
+            val = QtCore.Qt.Checked
+        else:
+            val = QtCore.Qt.Unchecked
+
+        item = self.table.item(self.row, 6)
+        item.setCheckState(val)
+
+    def set_saved_val(self, val):
+        self.table.setItem(self.row, 1, QtWidgets.QTableWidgetItem(str(val)))
+
+
+    def get_name(self):
+        return str(self.table.item(self.row, 0).text())
+
+    def get_lims(self):
+        return [self.table.cellWidget(self.row, 3).value(), self.table.cellWidget(self.row, 4).value()]
+
+    def get_abs_lims(self):
+        mode = self.get_mode()
+        if mode == "Absolute":
+            return self.get_lims()
+        else:
+            lo, hi = self.get_lims()
+            low = self.min_rel2abs(lo)
+            high = self.max_rel2abs(hi)
+            return [low, high]
+
+    def set_lims_from_abs(self, lims, mode="Absolute"):
+        if mode == "Relative" and self.start_value != 0:
+            lo, hi = self.min_abs2rel(lims[0]), self.max_abs2rel(lims[1])
+        else:
+            lo, hi = lims
+            mode = "Absolute"
+
+        self.table.cellWidget(self.row, 3).setValue(lo)
+        self.table.cellWidget(self.row, 4).setValue(hi)
+        self.switch_spinbox_mode(mode=mode)
+
+    def set_low_lim_from_abs(self, low_limit):
+        """
+        set spin box value from device which uses only absolute limits
+        """
+        mode_combo = self.table.cellWidget(self.row, 5)
+        mode = mode_combo.currentText()
+        min_spinbox = self.table.cellWidget(self.row, 3)
+        if mode == "Relative":
+            if self.start_value is not None:
+                low_lim = self.min_abs2rel(low_limit)
+                min_spinbox.setValue(low_lim)
+        else:
+            min_spinbox.setValue(low_limit)
+
+    def set_high_lim_from_abs(self, high_limit):
+        """
+        set spin box value from device which uses only absolute limits
+        """
+        mode_combo = self.table.cellWidget(self.row, 5)
+        mode = mode_combo.currentText()
+        max_spinbox = self.table.cellWidget(self.row, 4)
+        if mode == "Relative":
+            if self.start_value is not None:
+                high_lim = self.max_abs2rel(high_limit)
+                max_spinbox.setValue(high_lim)
+        else:
+            max_spinbox.setValue(high_limit)
+
+    def get_check_state(self):
+        return self.table.item(self.row, 6).checkState()
+
+    def set_check_state(self, state):
+        self.table.item(self.row, 6).setCheckState(state)
+
+    def get_flags(self):
+        self.table.item(self.row, 6).flags()
+
+    def set_flags(self, flags):
+        self.table.item(self.row, 6).setFlags(flags)
+
+    def min_rel2abs(self, min_lim_rel):
+        return min_lim_rel / 100 * abs(self.start_value) + self.start_value
+
+    def max_rel2abs(self, max_lim_rel):
+        return max_lim_rel/100 * abs(self.start_value) + self.start_value
+
+    def min_abs2rel(self, min_lim_abs):
+        return -(self.start_value - min_lim_abs)/abs(self.start_value) * 100
+
+    def max_abs2rel(self, max_lim_abs):
+        return ( max_lim_abs - self.start_value)/abs(self.start_value) * 100
+
 
 class ResetpanelBoxWindow(ResetpanelWindow):
     """
@@ -134,15 +390,11 @@ class ResetpanelBoxWindow(ResetpanelWindow):
 
         ResetpanelWindow.__init__(self)
 
-        self.check = QPushButton(self)
-        self.check.setText('Check')
-        self.uncheck = QPushButton(self)
-        self.uncheck.setText('Uncheck')
-        self.ui.horizontalLayout.addWidget(self.check)
-        self.ui.horizontalLayout.addWidget(self.uncheck)
-        self.check.clicked.connect(lambda: self.getRows(2))
-        self.uncheck.clicked.connect(lambda: self.getRows(0))
+
+        self.ui.check.clicked.connect(lambda: self.getRows(2))
+        self.ui.uncheck.clicked.connect(lambda: self.getRows(0))
         self.mi = None
+        self.table_devices = []
 
         #make button text bigger
         #self.check.setStyleSheet('font-size: 18pt; font-family: Courier;')
@@ -153,9 +405,30 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         #make the custom table for middle click
         self.ui.tableWidget.setParent(None) #remove old table
         self.ui.tableWidget = customTW(self) # make new widget
-        self.ui.gridLayout.addWidget(self.ui.tableWidget,0,0)
-        #self.ui.tableWidget.itemClicked.connect(self.con)
+        self.ui.gridLayout.addWidget(self.ui.tableWidget, 0, 0)
+        self.ui.pb_extra.clicked.connect(self.test)
 
+        self.mode_on = True
+        #self.ui.pb_extra.setText("O")
+        self.ui.pb_extra.setCheckable(True)  # Enable toggle mode
+        self.ui.pb_extra.setFixedSize(40, 40)  # Small square button
+        # Connect button click event
+        self.ui.pb_extra.clicked.connect(self.toggle_mode)
+        self.toggle_mode()
+
+    def toggle_mode(self):
+        print("toggle_mode", self.mode_on)
+        """Toggle sound on/off and change the button icon."""
+        self.mode_on = not self.mode_on
+        icon_text = "X" if self.mode_on else "O"
+        self.ui.pb_extra.setText(icon_text)
+        if self.mode_on:
+            self.ui.tableWidget.setColumnHidden(5, False)
+        else:
+            self.ui.tableWidget.setColumnHidden(5, True)
+
+    def test(self):
+        self.ui.tableWidget.setColumnHidden(5, True)
 
     def mouseReleaseEvent(self, evt):
         """
@@ -164,7 +437,6 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         Button 4 is the middle click button.
         """
         button = evt.button()
-        #print("Release event: ", button, self.parent.enableMiddleClick)
         if (button == 4) and (self.enableMiddleClick):
             pv = QtWidgets.QApplication.clipboard().text(mode=QClipboard.Selection)
             self.addPv(pv)
@@ -203,11 +475,9 @@ class ResetpanelBoxWindow(ResetpanelWindow):
             if state:
                 self.pvs.append(pv)
                 self.devices.append(dev)
-                self.getStartValues()
 
         table = self.get_state()
-        self.initTable()
-        self.addCheckBoxes()
+        self.table_devices = self.init_table()
         if not force_active:
             self.uncheckBoxes()
         self.set_state(table, force_active=force_active)
@@ -228,13 +498,11 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         Copied from resetpanel.py
         """
         print ("LOADING:")
-        if pvs_in == None:
-            #print ('Exiting', pvs_in)
+        if pvs_in is None:
             return
 
         if type(pvs_in) != list:
             self.pvs = []
-            #print(pvs_in)
             for line in open(pvs_in):
                 l = line.rstrip('\n')
                 if l[0] == '#':
@@ -243,46 +511,46 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         else:
             self.pvs = pvs_in
 
-        #print ("PVS LOADED", self.pvs)
         self.devices = self.parent.create_devices(self.pvs)
-        self.getStartValues()
-        self.initTable()
-        self.addCheckBoxes()
+        self.table_devices = self.init_table()
 
     def get_state(self):
-        devs = {"id":[], "lims": [], "checked": []}
+        devs = {"id":[], "lims": [], "checked": [], "mode": []}
         for row in range(self.ui.tableWidget.rowCount()):
-            name = str(self.ui.tableWidget.item(row, 0).text())
-            devs["id"].append(name)
-            devs["lims"].append([self.ui.tableWidget.cellWidget(row, 3).value(), self.ui.tableWidget.cellWidget(row, 4).value()])
-            devs["checked"].append(self.ui.tableWidget.item(row, 5).checkState())
+            devs["id"].append(self.table_devices[row].get_name())
+            devs["lims"].append(self.table_devices[row].get_abs_lims())
+            devs["checked"].append(self.table_devices[row].get_check_state())
+            devs["mode"].append(self.table_devices[row].get_mode())
         return devs
 
     def get_limits(self, pv):
         for row in range(self.ui.tableWidget.rowCount()):
-            if pv == str(self.ui.tableWidget.item(row, 0).text()):
-                lims = [self.ui.tableWidget.cellWidget(row, 3).value(), self.ui.tableWidget.cellWidget(row, 4).value()]
+            if pv == self.table_devices[row].get_name():
+                lims = self.table_devices[row].get_lims()
                 return lims
         return None
 
     def set_state(self, table, force_active=False):
         for row in range(self.ui.tableWidget.rowCount()):
-            pv = str(self.ui.tableWidget.item(row, 0).text())
-            item = self.ui.tableWidget.item(row, 5)
+            pv = self.table_devices[row].get_name()
 
             if force_active:
-                item.setCheckState(QtCore.Qt.Checked)
+                self.table_devices[row].set_check_state(QtCore.Qt.Checked)
 
             if pv in table["id"]:
                 indx = table["id"].index(pv)
-                self.ui.tableWidget.cellWidget(row, 3).setValue(table["lims"][indx][0])
-                self.ui.tableWidget.cellWidget(row, 4).setValue(table["lims"][indx][1])
-                if item.flags() == QtCore.Qt.NoItemFlags:
+                if "mode" in table:
+                    mode = table["mode"][indx]
+                else:
+                    mode = "Absolute"
+
+                self.table_devices[row].set_lims_from_abs(table["lims"][indx], mode=mode)
+                if self.table_devices[row].get_flags() == QtCore.Qt.NoItemFlags:
                    continue
 
                 state = table.get("checked", None)
                 if state is not None:
-                    item.setCheckState(state[indx])
+                    self.table_devices[row].set_check_state(state[indx])
 
     def getRows(self, state):
         """
@@ -297,22 +565,16 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         rows=[]
         for idx in self.ui.tableWidget.selectedIndexes():
             rows.append(idx.row())
-            #item = self.ui.tableWidget.cellWidget(idx.row(), 5)
-            item = self.ui.tableWidget.item(idx.row(), 5)
-            if item.flags() == QtCore.Qt.NoItemFlags:
+            row = idx.row()
+            if self.table_devices[row].get_flags() == QtCore.Qt.NoItemFlags:
                 print("item disabled")
                 continue
-            item.setCheckState(state)
-            #print item.text()
-        #print rows
+            self.table_devices[row].set_check_state(state)
 
-    def addCheckBoxes(self):
-        """
-        Creates additional column in UI table for check box.
 
-        Must be called again if the user adds another PV with middle click function.
-        """
-        headers = ["PVs", "Saved Val.", "Current Val.", "Min", "Max", "Active"]
+    def init_table(self):
+        table_devices = []
+        headers = ["PVs", "Saved Val.", "Current Val.", "Min", "Max", "Mode", "Active"]
         self.ui.tableWidget.setColumnCount(len(headers))
         self.ui.tableWidget.setHorizontalHeaderLabels(headers)
         header = self.ui.tableWidget.horizontalHeader()
@@ -321,63 +583,24 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(5, QtWidgets.QHeaderView.Fixed)
-        for row in range(len(self.pvs)):
-            eng = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates)
-            for i in range(2):
-                spin_box = QtWidgets.QDoubleSpinBox()
-                spin_box.setMaximumWidth(85)
-                if i == 0:
-                    spin_box.setStyleSheet("color: rgb(153,204,255); font-size: 16px; background-color:#595959;")
-                else:
-                    spin_box.setStyleSheet("color: rgb(255,0,255); font-size: 16px; background-color:#595959;")
-                spin_box.setLocale(eng)
-                spin_box.setDecimals(3)
-                spin_box.setMaximum(999999)
-                spin_box.setMinimum(-999999)
-                spin_box.setSingleStep(0.1)
-                spin_box.setAccelerated(True)
-                if i == 0:  # Running for low limit spin box
-                    spin_box.valueChanged.connect(functools.partial(self.spinbox_changed, high_limit=False, row=row))
-                else: # Running for the high limit spin box
-                    spin_box.valueChanged.connect(functools.partial(self.spinbox_changed, high_limit=True, row=row))
-                self.ui.tableWidget.setCellWidget(row, 3+i, spin_box)
-                self.ui.tableWidget.resizeColumnsToContents()
+        header.setSectionResizeMode(5, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(6, QtWidgets.QHeaderView.Fixed)
+        for row in range(len(self.devices)):
+            pv = self.devices[row].eid
+            table_dev = DeviceTableClass(row=row, table=self.ui.tableWidget, device=self.devices[row])
+            table_dev.add_to_table()
+            table_devices.append(table_dev)
+        self.toggle_mode()
+        return table_devices
 
-            #spin_box
-            checkBoxItem = QtWidgets.QTableWidgetItem()
-            checkBoxItem.setCheckState(QtCore.Qt.Checked)
-            flags = checkBoxItem.flags()
-            checkBoxItem.setFlags(flags)
-            self.ui.tableWidget.setItem(row, 5, checkBoxItem)
-
-    def spinbox_changed(self, val, high_limit, row):
-        """
-        Callback for when a spinbox is changed on the table so we can hook it up with the device limits.
-
-        :param val: (float) The new limit value
-        :param high_limit: (bool) Wether or not this is the high limit value
-        :param row: (int) The row number
-        """
-        device = self.devices[row]
-        if high_limit:
-            device.set_high_limit(val)
-        else:
-            device.set_low_limit(val)
 
     def setBoxes(self, checked=True):
         """
         Method to check or uncheck all the boxes.
         :param checked: (bool)
         """
-        if checked:
-            val = QtCore.Qt.Checked
-        else:
-            val = QtCore.Qt.Unchecked
-
-        for row in range(len(self.pvs)):
-            item = self.ui.tableWidget.item(row, 5)
-            item.setCheckState(val)
+        for td in self.table_devices:
+            td.set_box(checked)
 
     def uncheckBoxes(self):
         """ Method to unchecked all active boxes """
@@ -393,12 +616,12 @@ class ResetpanelBoxWindow(ResetpanelWindow):
 
         Rewrote this function to only change selected rows, not all rows.
         """
-        for row, dev in enumerate(self.devices):
-            val = self.startValues[dev.eid]
-            state = self.ui.tableWidget.item(row, 5).checkState()
+        for row, td in enumerate(self.table_devices):
+            val = td.start_value
+            state = td.get_check_state() #self.ui.tableWidget.item(row, 5).checkState()
             if state == 2:
-                logger.info(" resetAll: {} <-- {}".format(dev.eid, val))
-                dev.set_value(val)
+                logger.info(" resetAll: {} <-- {}".format(td.device.eid, val))
+                td.device.set_value(val)
                 #epics.caput(pv, val)
 
     def updateReference(self):
@@ -408,15 +631,15 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         Rewrote this function to only update selected rows, not all.
         """
         self.ui.updateReference.setText("Getting vals...")
-        for row, dev in enumerate(self.devices):
+        for row, td in enumerate(self.table_devices):
             pv = self.pvs[row]
-            state = self.ui.tableWidget.item(row, 5).checkState()
+            state = self.table_devices[row].get_check_state() # self.ui.tableWidget.item(row, 5).checkState()
             if state == 2:
-                val = dev.get_value()
+                val = td.device.get_value()
                 if val is not None:
-                    self.startValues[pv] = val
-                    logger.info(" updateReference: startValues[{}] <-- {}".format(dev.eid, val))
-                    self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
+                    td.start_value = val
+                    logger.info(" updateReference: startValues[{}] <-- {}".format(td.device.eid, val))
+                    td.set_saved_val(val=np.around(val, 4))
         self.ui.updateReference.setText("Update Reference")
 
     def getPvsFromCbState(self):
@@ -428,9 +651,9 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         """
         pvs = []
         for row in range(len(self.pvs)):
-            state = self.ui.tableWidget.item(row, 5).checkState()
+            state = self.table_devices[row].get_check_state()# ui.tableWidget.item(row, 5).checkState()
             if state == 2:
-                pvs.append(str(self.ui.tableWidget.item(row, 0).text()))
+                pvs.append(self.table_devices[row].get_name())
         return pvs
 
     #switch string from to SELECTED
@@ -441,7 +664,6 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         Rewrote to change the warning string to say "checkbox selected" instead of "all" to avoid confusion with number
         of devices being reset.
         """
-        #self.ui_check = uic.loadUi("/home/physics/tcope/python/tools/resetpanel/UIareyousure.ui")
         path = os.path.dirname(os.path.realpath(__file__))
         self.ui_check = uic.loadUi(os.path.join(path, "UIareyousure.ui"))
         self.ui_check.exit.clicked.connect(self.ui_check.close)
@@ -453,6 +675,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         frame_gm.moveCenter(center_point)
         self.ui_check.move(frame_gm.topLeft())
         self.ui_check.show()
+
 
 def main():
     """

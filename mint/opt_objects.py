@@ -336,7 +336,6 @@ class Device(object):
         if np.abs(limits[0]) < 1e-15 and np.abs(limits[1]) < 1e-15:
             return False
         if value < limits[0] or value > limits[1]:
-            print('limits exceeded for ', self.id, " - ", value, limits[0], value, limits[1])
             return True
         return False
 

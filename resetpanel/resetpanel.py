@@ -8,7 +8,7 @@ S. Tomin, 2017
 
 from __future__ import absolute_import, print_function
 import sys
-
+import numpy as np
 from PyQt5.QtWidgets import QApplication, QFrame
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui, QtCore, uic
@@ -66,52 +66,16 @@ class ResetpanelWindow(QFrame):
 
     def getStartValues(self):
         """ Initializes start values for the PV list. """
-        for dev in self.devices:
-            try:
-                val = dev.get_value()
-                self.startValues[dev.eid] = val
-                logger.info(" getStartValues: startValues[{}] <-- {}".format(dev.eid, val))
-            except Exception as ex:
-                self.startValues[dev.eid] = None
-                logger.warning("Get Start Value: " + str(dev.eid) + " not working. Exception was: " + str(ex))
-                # print(self.startValues[dev.eid])
-                # self.pv_objects[pv].add_callback(callback=self.PvGetCallBack)
+        for dev in self.table_devices:
+            dev.get_start_val()
 
     def updateReference(self):
         """Updates reference values for all PVs on button click."""
         self.ui.updateReference.setText("Getting vals...")
         self.getStartValues()
-        for row in range(len(self.pvs)):
-            pv = self.pvs[row]
-            self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(np.around(self.startValues[pv], 4))))
+        for dev in self.table_devices:
+            dev.set_saved_val(dev.start_value)
         self.ui.updateReference.setText("Update Reference")
-
-    def initTable(self):
-        """ Initialize the UI table object """
-        headers = ["PVs", "Reference Value", "Current Value"]
-        self.ui.tableWidget.setAlternatingRowColors(True)
-        self.ui.tableWidget.setColumnCount(len(headers))
-        self.ui.tableWidget.setHorizontalHeaderLabels(headers)
-        self.ui.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)  # No user edits on talbe
-        self.ui.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        for row in range(len(self.pvs)):
-
-            self.ui.tableWidget.setRowCount(row + 1)
-            pv = self.pvs[row]
-            # put PV in the table
-            self.ui.tableWidget.setItem(row, 0, QtWidgets.QTableWidgetItem(str(pv)))
-            #self.ui.tableWidget.item(row, 0).setTextColor(QtGui.QColor(0, 255, 255))
-            self.ui.tableWidget.item(row, 0).setForeground(QtGui.QColor(0, 255, 255))
-            #self.ui.tableWidget.item(row, 0).setBackground(QtGui.QColor(255, 255, 255))
-            tip = "/".join(str(pv).split("/")[-2:])
-            self.ui.tableWidget.item(row, 0).setToolTip(tip)
-            # self.ui.tableWidget.item(row, 0).setFont(font)
-            # put start val in
-            s_val = self.startValues[pv]
-            if s_val != None:
-                s_val = np.around(s_val, 4)
-            self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(s_val)))
-        
 
     def updateCurrentValues(self):
         """
@@ -122,7 +86,8 @@ class ResetpanelWindow(QFrame):
         """
         percent = 0.001
         self.currentValues = {}
-        for row, dev in enumerate(self.devices):
+        for row, td in enumerate(self.table_devices):
+            dev = td.device
             try:
                 value = dev.get_value()
             except:
@@ -132,12 +97,12 @@ class ResetpanelWindow(QFrame):
             if "prev_lim_status" not in dev.__dict__:
                 dev.prev_lim_status = not dev.check_limits(value)
 
-            if self.startValues[dev.eid] is None and value is not None:
-                self.startValues[dev.eid] = value
+            if td.start_value is None and value is not None:
+                td.saved_value = value
                 logger.info(" updateCurrentValues: startValues[{}}] = {}}".format(dev.eid, value))
 
-            if self.startValues[dev.eid] is None or value is None:
-                item = self.ui.tableWidget.item(row, 5)
+            if td.start_value is None or value is None:
+                item = self.ui.tableWidget.item(row, 6)
 
                 if item is None:
                     continue
@@ -146,7 +111,7 @@ class ResetpanelWindow(QFrame):
                 for col in [0, 5]:
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(255, 0, 0))  # red
 
-                if self.startValues[dev.eid] is None:
+                if td.start_value is None:
                     self.ui.tableWidget.setItem(row, 1, QtWidgets.QTableWidgetItem(str("None")))
                     self.ui.tableWidget.item(row, 1).setBackground(QtGui.QColor(255, 0, 0))  # red
                 else:
@@ -186,15 +151,15 @@ class ResetpanelWindow(QFrame):
             lim_low, lim_high = dev.get_limits()
             
             # stop update min spinbox if it has focus
-            if not self.ui.tableWidget.cellWidget(row, 3).hasFocus():
+            if not (self.ui.tableWidget.cellWidget(row, 3).hasFocus() or self.ui.tableWidget.cellWidget(row, 5).hasFocus()):
                 spin_box = self.ui.tableWidget.cellWidget(row, 3)
-                spin_box.setValue(lim_low)
+                td.set_low_lim_from_abs(lim_low)
                 spin_box.setEnabled(dev._can_edit_limits)
 
             # stop update max spinbox if it has focus
-            if not self.ui.tableWidget.cellWidget(row, 4).hasFocus():
+            if not (self.ui.tableWidget.cellWidget(row, 4).hasFocus() or self.ui.tableWidget.cellWidget(row, 5).hasFocus()):
                 spin_box = self.ui.tableWidget.cellWidget(row, 4)
-                spin_box.setValue(lim_high)
+                td.set_high_lim_from_abs(lim_high)
                 spin_box.setEnabled(dev._can_edit_limits)
 
             pv = dev.eid
@@ -204,26 +169,21 @@ class ResetpanelWindow(QFrame):
                 self.ui.tableWidget.setItem(row, 2, QtWidgets.QTableWidgetItem(str(np.around(self.currentValues[pv], 4))))
             else:
                 self.ui.tableWidget.item(row, 2).setText(str(np.around(self.currentValues[pv], 4)))
-            # print(self.currentValues[pv])
-            #print(self.ui.tableWidget.item(row, 2) is None)
-            tol = abs(self.startValues[pv] * percent)
-            diff = abs(abs(self.startValues[pv]) - abs(self.currentValues[pv]))
+
+            tol = abs(td.start_value * percent)
+            diff = abs(abs(td.start_value) - abs(self.currentValues[pv]))
             if diff > tol:
                 self.ui.tableWidget.item(row, 2).setForeground(QtGui.QColor(255, 101, 101))  # red
             else:
                 self.ui.tableWidget.item(row, 2).setForeground(QtGui.QColor(255, 255, 255))  # white
 
-            self.ui.tableWidget.item(row, 5).setFlags(
-                QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+            self.table_devices[row].set_flags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
-            for col in [0, 1, 2, 5]:
-                # self.ui.tableWidget.item(row, col).setFlags(
-                #    QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                if row%2 == 0:
+            for col in [0, 1, 2, 6]:
+                if row % 2 == 0:
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(89, 89, 89))
                 else:
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(100, 100, 100))
-            #print("check rest = ", time.time() - start)
 
         QApplication.processEvents()
 

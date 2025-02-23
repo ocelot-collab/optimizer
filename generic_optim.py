@@ -111,6 +111,7 @@ class OcelotInterfaceWindow(QFrame):
         self.path2preset = os.path.join(self.config_dir, "standard")
         self.set_file = os.path.join(self.config_dir, "default.json")  # ./parameters/default.json"
         self.obj_save_path = os.path.join(self.config_dir, "obj_funcs")
+        print(self.set_file)
 
         # initialize
         QFrame.__init__(self)
