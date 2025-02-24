@@ -197,7 +197,6 @@ class DeviceTableClass:
         """
         mode_combo = self.table.cellWidget(self.row, 5)
         mode = mode_combo.currentText()
-
         if mode == "Relative":
             if self.start_value is None:
                 return  # Prevent issues if saved_value is missing
@@ -242,6 +241,7 @@ class DeviceTableClass:
     def switch_spinbox_mode(self, mode="Absolute"):
         min_spinbox = self.table.cellWidget(self.row, 3)
         max_spinbox = self.table.cellWidget(self.row, 4)
+        self.set_mode(mode, send_signal=False)
         if mode == "Relative":
             min_spinbox.setDecimals(1)
             max_spinbox.setDecimals(1)
@@ -249,6 +249,7 @@ class DeviceTableClass:
             max_spinbox.setSingleStep(1)
             min_spinbox.setSuffix("%")
             max_spinbox.setSuffix("%")
+
         else:
             min_spinbox.setDecimals(3)
             max_spinbox.setDecimals(3)
@@ -271,11 +272,13 @@ class DeviceTableClass:
         mode_combo = self.table.cellWidget(self.row, 5)
         return mode_combo.currentText()
 
-    def set_mode(self, mode):
+    def set_mode(self, mode, send_signal=False):
         mode_combo = self.table.cellWidget(self.row, 5)
         index = mode_combo.findText(mode)
         if index != -1:
+            if not send_signal: mode_combo.blockSignals(True)
             mode_combo.setCurrentIndex(index)
+            if not send_signal: mode_combo.blockSignals(False)
 
     def set_box(self, checked=True):
         """
@@ -316,10 +319,9 @@ class DeviceTableClass:
         else:
             lo, hi = lims
             mode = "Absolute"
-
+        self.switch_spinbox_mode(mode=mode)
         self.table.cellWidget(self.row, 3).setValue(lo)
         self.table.cellWidget(self.row, 4).setValue(hi)
-        self.switch_spinbox_mode(mode=mode)
 
     def set_low_lim_from_abs(self, low_limit):
         """
@@ -406,7 +408,6 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.ui.tableWidget.setParent(None) #remove old table
         self.ui.tableWidget = customTW(self) # make new widget
         self.ui.gridLayout.addWidget(self.ui.tableWidget, 0, 0)
-        self.ui.pb_extra.clicked.connect(self.test)
 
         self.mode_on = True
         #self.ui.pb_extra.setText("O")
@@ -414,10 +415,8 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.ui.pb_extra.setFixedSize(40, 40)  # Small square button
         # Connect button click event
         self.ui.pb_extra.clicked.connect(self.toggle_mode)
-        self.toggle_mode()
 
     def toggle_mode(self):
-        print("toggle_mode", self.mode_on)
         """Toggle sound on/off and change the button icon."""
         self.mode_on = not self.mode_on
         icon_text = "X" if self.mode_on else "O"
@@ -427,8 +426,6 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         else:
             self.ui.tableWidget.setColumnHidden(5, True)
 
-    def test(self):
-        self.ui.tableWidget.setColumnHidden(5, True)
 
     def mouseReleaseEvent(self, evt):
         """
@@ -481,6 +478,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         if not force_active:
             self.uncheckBoxes()
         self.set_state(table, force_active=force_active)
+        self.toggle_mode()
 
     def get_devices(self, pvs):
         d_pvs = [dev.eid for dev in self.devices]
@@ -531,9 +529,9 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         return None
 
     def set_state(self, table, force_active=False):
+        print(table)
         for row in range(self.ui.tableWidget.rowCount()):
             pv = self.table_devices[row].get_name()
-
             if force_active:
                 self.table_devices[row].set_check_state(QtCore.Qt.Checked)
 
@@ -551,6 +549,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 state = table.get("checked", None)
                 if state is not None:
                     self.table_devices[row].set_check_state(state[indx])
+        self.toggle_mode()
 
     def getRows(self, state):
         """
@@ -571,7 +570,6 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 continue
             self.table_devices[row].set_check_state(state)
 
-
     def init_table(self):
         table_devices = []
         headers = ["PVs", "Saved Val.", "Current Val.", "Min", "Max", "Mode", "Active"]
@@ -590,9 +588,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
             table_dev = DeviceTableClass(row=row, table=self.ui.tableWidget, device=self.devices[row])
             table_dev.add_to_table()
             table_devices.append(table_dev)
-        self.toggle_mode()
         return table_devices
-
 
     def setBoxes(self, checked=True):
         """

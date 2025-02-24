@@ -84,10 +84,13 @@ class ResetpanelWindow(QFrame):
         Hard coded to turn Current Value column red at 0.1% differenct from Ref Value.
         It would be better to update the table on a callback, but PyEpics crashes with cb funcitons.
         """
+
         percent = 0.001
         self.currentValues = {}
         for row, td in enumerate(self.table_devices):
             dev = td.device
+            lim_low, lim_high = dev.get_limits()
+
             try:
                 value = dev.get_value()
             except:
@@ -149,7 +152,6 @@ class ResetpanelWindow(QFrame):
             dev.prev_lim_status = dev.check_limits(value)
 
             lim_low, lim_high = dev.get_limits()
-            
             # stop update min spinbox if it has focus
             if not (self.ui.tableWidget.cellWidget(row, 3).hasFocus() or self.ui.tableWidget.cellWidget(row, 5).hasFocus()):
                 spin_box = self.ui.tableWidget.cellWidget(row, 3)
@@ -161,7 +163,6 @@ class ResetpanelWindow(QFrame):
                 spin_box = self.ui.tableWidget.cellWidget(row, 4)
                 td.set_high_lim_from_abs(lim_high)
                 spin_box.setEnabled(dev._can_edit_limits)
-
             pv = dev.eid
 
             self.currentValues[pv] = value  # dev.get_value()

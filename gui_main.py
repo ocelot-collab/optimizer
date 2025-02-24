@@ -127,6 +127,7 @@ class MainWindow(Ui_Form):
     def save_state(self, filename):
         # pvs = self.ui.widget.pvs
         table = self.widget.get_state()
+        print("save_state ", table)
 
         table["use_predef"] = self.cb_use_predef.checkState()
         table["statistics"] = self.cb_statistics.currentIndex()
