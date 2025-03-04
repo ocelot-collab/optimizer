@@ -409,7 +409,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.ui.tableWidget = customTW(self) # make new widget
         self.ui.gridLayout.addWidget(self.ui.tableWidget, 0, 0)
 
-        self.mode_on = True
+        self.mode_on = False
         #self.ui.pb_extra.setText("O")
         self.ui.pb_extra.setCheckable(True)  # Enable toggle mode
         self.ui.pb_extra.setFixedSize(40, 40)  # Small square button
@@ -419,7 +419,10 @@ class ResetpanelBoxWindow(ResetpanelWindow):
     def toggle_mode(self):
         """Toggle sound on/off and change the button icon."""
         self.mode_on = not self.mode_on
-        icon_text = "X" if self.mode_on else "O"
+        self.show_mode_column(mode_on=self.mode_on)
+
+    def show_mode_column(self, mode_on=True):
+        icon_text = "X" if mode_on else "O"
         self.ui.pb_extra.setText(icon_text)
         if self.mode_on:
             self.ui.tableWidget.setColumnHidden(5, False)
@@ -478,7 +481,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         if not force_active:
             self.uncheckBoxes()
         self.set_state(table, force_active=force_active)
-        self.toggle_mode()
+        self.show_mode_column(mode_on=self.mode_on)
 
     def get_devices(self, pvs):
         d_pvs = [dev.eid for dev in self.devices]
@@ -549,7 +552,7 @@ class ResetpanelBoxWindow(ResetpanelWindow):
                 state = table.get("checked", None)
                 if state is not None:
                     self.table_devices[row].set_check_state(state[indx])
-        self.toggle_mode()
+        self.show_mode_column(mode_on=self.mode_on)
 
     def getRows(self, state):
         """
