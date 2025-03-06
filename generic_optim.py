@@ -59,6 +59,7 @@ from mint.demo.demo_interface import *
 from mint.petra.petra_interface import *
 from sint.multinormal.multinormal_interface import *
 from mint.flash.flash_interface import *
+from mint.swissfel.sf_interface import *
 from op_methods.simplex import *
 from op_methods.gp_slac import *
 from op_methods.es import *
@@ -77,7 +78,7 @@ logger = logging.getLogger(__name__)
 
 AVAILABLE_MACHINE_INTERFACES = [XFELMachineInterface, LCLSMachineInterface,
                                 TestMachineInterface, BESSYMachineInterface, MultinormalInterface, PETRAMachineInterface,
-                                DemoInterface, SPEARMachineInterface, FLASHMachineInterface]
+                                DemoInterface, SPEARMachineInterface, FLASHMachineInterface, SwissFELInterface]
 
 
 class OcelotInterfaceWindow(QFrame):
@@ -749,22 +750,29 @@ class OcelotInterfaceWindow(QFrame):
         :return: None
         """
         self.m_status = mint.MachineStatus()
-        alarm_dev = str(self.ui.le_alarm.text()).replace(" ", "")
+        a_dev_1 = self.get_alarm_device(line_edit=self.ui.le_alarm_1, spinbox_min=self.ui.sb_alarm_1_min,
+                                        spinbox_max=self.ui.sb_alarm_1_max)
+        a_dev_2 = self.get_alarm_device(line_edit=self.ui.le_alarm_2, spinbox_min=self.ui.sb_alarm_2_min,
+                                        spinbox_max=self.ui.sb_alarm_2_max)
+
+        self.m_status.alarm_devices = [a_dev_1, a_dev_2]
+
+    def get_alarm_device(self, line_edit, spinbox_min, spinbox_max):
+        alarm_dev = str(line_edit.text()).replace(" ", "")
         logger.debug("set_m_status: alarm_dev" + str(alarm_dev))
         if alarm_dev == "":
             return
 
-        state = self.ui.is_le_addr_ok(self.ui.le_alarm)
+        state = self.ui.is_le_addr_ok(line_edit)
 
         a_dev = AlarmDevice(alarm_dev)
         a_dev.mi = self.mi
         if not state:
-            self.m_status.alarm_device = None
+            a_dev = None
         else:
-
-            self.m_status.alarm_device = a_dev
-            self.m_status.alarm_min = self.ui.sb_alarm_min.value()
-            self.m_status.alarm_max = self.ui.sb_alarm_max.value()
+            a_dev.min = spinbox_min.value()
+            a_dev.max = spinbox_max.value()
+        return a_dev
 
     def update_plots(self):
         """

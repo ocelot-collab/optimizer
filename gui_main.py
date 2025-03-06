@@ -40,7 +40,8 @@ class MainWindow(Ui_Form):
         self.le_c.editingFinished.connect(self.check_address)
         self.le_d.editingFinished.connect(self.check_address)
         self.le_e.editingFinished.connect(self.check_address)
-        self.le_alarm.editingFinished.connect(self.check_address)
+        self.le_alarm_1.editingFinished.connect(self.check_address)
+        self.le_alarm_2.editingFinished.connect(self.check_address)
 
         self.sb_tdelay.valueChanged.connect(self.set_cycle)
         self.sb_ddelay.valueChanged.connect(self.set_cycle)
@@ -71,18 +72,22 @@ class MainWindow(Ui_Form):
         reading alarm value
         :return:
         """
-        if self.le_alarm.hasFocus():
+        self.get_alarm_current_value(line_edit=self.le_alarm_1, label_alarm=self.label_alarm_1)
+        self.get_alarm_current_value(line_edit=self.le_alarm_2, label_alarm=self.label_alarm_2)
+
+    def get_alarm_current_value(self, line_edit, label_alarm):
+        if line_edit.hasFocus():
             return
-        dev_name = str(self.le_alarm.text())
+        dev_name = str(line_edit.text())
 
         # check if device name (str) is not empty
         if not dev_name:
             return
         try:
             value = self.Form.mi.get_value(dev_name)
-            self.label_alarm.setText(str(np.round(value, 2)))
+            label_alarm.setText(str(np.round(value, 2)))
         except:
-            self.label_alarm.setText(str("None"))
+            label_alarm.setText(str("None"))
 
     def set_cycle(self):
         """
@@ -100,7 +105,8 @@ class MainWindow(Ui_Form):
         self.is_le_addr_ok(self.le_c)
         self.is_le_addr_ok(self.le_d)
         self.is_le_addr_ok(self.le_e)
-        self.is_le_addr_ok(self.le_alarm)
+        self.is_le_addr_ok(self.le_alarm_1)
+        self.is_le_addr_ok(self.le_alarm_2)
 
     def is_le_addr_ok(self, line_edit):
         if not line_edit.isEnabled():
@@ -144,9 +150,13 @@ class MainWindow(Ui_Form):
         fun_c = str(self.le_c.text())
         obj_fun = str(self.le_obf.text())
         # alarm
-        alarm_dev = str(self.le_alarm.text())
-        alarm_min = self.sb_alarm_min.value()
-        alarm_max = self.sb_alarm_max.value()
+        alarm_dev = str(self.le_alarm_1.text())
+        alarm_min = self.sb_alarm_1_min.value()
+        alarm_max = self.sb_alarm_1_max.value()
+
+        alarm_dev_2 = str(self.le_alarm_2.text())
+        alarm_min_2 = self.sb_alarm_2_min.value()
+        alarm_max_2 = self.sb_alarm_2_max.value()
 
         table["max_pen"] = max_pen
         table["timeout"] = timeout
@@ -164,6 +174,9 @@ class MainWindow(Ui_Form):
         table["alarm_dev"] = alarm_dev
         table["alarm_min"] = alarm_min
         table["alarm_max"] = alarm_max
+        table["alarm_dev_2"] = alarm_dev_2
+        table["alarm_min_2"] = alarm_min_2
+        table["alarm_max_2"] = alarm_max_2
         table["alarm_timeout"] = self.sb_alarm_timeout.value()
 
         table["seed_iter"] = self.sb_seed_iter.value()
@@ -178,7 +191,9 @@ class MainWindow(Ui_Form):
 
         table["algorithm"] = str(self.cb_select_alg.currentText())
         table["maximization"] = self.rb_maximize.isChecked()
-        table["sound_on"] = self.sound_on
+        table["group_lim_ref_value"] = self.Form.ui.widget.ui.sb_ref_value.value()
+        table["group_lim_ref_state"] = self.Form.ui.widget.ui.cb_ref_value.checkState()
+        table["group_lim_delta"] = self.Form.ui.widget.ui.sb_delta.value()
 
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
@@ -222,6 +237,12 @@ class MainWindow(Ui_Form):
             if "use_predef" in table.keys(): self.cb_use_predef.setCheckState(table["use_predef"])
             if "statistics" in table.keys(): self.cb_statistics.setCurrentIndex(table["statistics"])
             if "data_points" in table.keys(): self.sb_datapoints.setValue(table["data_points"])
+
+
+            if "group_lim_ref_value" in table.keys(): self.Form.ui.widget.ui.sb_ref_value.setValue(table["group_lim_ref_value"])
+            if "group_lim_delta" in table.keys(): self.Form.ui.widget.ui.sb_delta.setValue(table["group_lim_delta"])
+            if "group_lim_ref_state" in table.keys(): self.Form.ui.widget.ui.sb_ref_value.setCheckState(table["group_lim_ref_state"])
+
             self.sb_max_pen.setValue(max_pen)
             self.sb_tdelay.setValue(timeout)
             self.sb_nreadings.setValue(table["nreadings"])
@@ -235,9 +256,14 @@ class MainWindow(Ui_Form):
             self.le_e.setText(table["fun_e"])
             self.le_obf.setText(obj_fun)
 
-            self.le_alarm.setText(table["alarm_dev"])
-            self.sb_alarm_min.setValue(table["alarm_min"])
-            self.sb_alarm_max.setValue(table["alarm_max"])
+            self.le_alarm_1.setText(table["alarm_dev"])
+            self.sb_alarm_1_min.setValue(table["alarm_min"])
+            self.sb_alarm_1_max.setValue(table["alarm_max"])
+
+            if "alarm_dev_2" in table.keys(): self.le_alarm_2.setText(table["alarm_dev_2"])
+            if "alarm_min_2" in table.keys(): self.sb_alarm_2_min.setValue(table["alarm_min_2"])
+            if "alarm_max_2" in table.keys(): self.sb_alarm_2_max.setValue(table["alarm_max_2"])
+
             self.sb_alarm_timeout.setValue(table["alarm_timeout"])
 
             self.sb_seed_iter.setValue(table["seed_iter"])

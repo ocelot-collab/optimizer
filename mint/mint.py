@@ -68,18 +68,19 @@ class Minimizer(object):
 
 class MachineStatus:
     def __init__(self):
-        self.alarm_device = None
-        self.alarm_min = -1
-        self.alarm_max = 1
+        self.alarm_devices = []
 
     def is_ok(self):
-        if self.alarm_device is None:
-            return True
-        alarm_value = self.alarm_device.get_value()
-        if self.alarm_min <= alarm_value <= self.alarm_max:
-            return True
-        logger.info(" ALARM: Machine is DOWN. alarm value: " + str(alarm_value) + ". min/max = " + str(self.alarm_min) + "/" + str(self.alarm_max))
-        return False
+        for adev in self.alarm_devices:
+            if adev is not None:
+                alarm_value = adev.get_value()
+                if not (adev.min <= alarm_value <= adev.max):
+                    logger.info(
+                        "ALARM: Machine is DOWN. alarm value: %s. min/max = %s/%s",
+                        alarm_value, adev.min, adev.max
+                    )
+                    return False
+        return True
 
 
 class OptControl:

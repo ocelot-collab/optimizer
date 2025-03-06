@@ -105,7 +105,7 @@ class ResetpanelWindow(QFrame):
                 logger.info(" updateCurrentValues: startValues[{}}] = {}}".format(dev.eid, value))
 
             if td.start_value is None or value is None:
-                item = self.ui.tableWidget.item(row, 6)
+                item = self.ui.tableWidget.item(row, 5)
 
                 if item is None:
                     continue
@@ -153,15 +153,15 @@ class ResetpanelWindow(QFrame):
 
             lim_low, lim_high = dev.get_limits()
             # stop update min spinbox if it has focus
-            if not (self.ui.tableWidget.cellWidget(row, 3).hasFocus() or self.ui.tableWidget.cellWidget(row, 5).hasFocus()):
+            if not (self.ui.tableWidget.cellWidget(row, 3).hasFocus()):
                 spin_box = self.ui.tableWidget.cellWidget(row, 3)
-                td.set_low_lim_from_abs(lim_low)
+                td.set_low_lim(lim_low)
                 spin_box.setEnabled(dev._can_edit_limits)
 
             # stop update max spinbox if it has focus
-            if not (self.ui.tableWidget.cellWidget(row, 4).hasFocus() or self.ui.tableWidget.cellWidget(row, 5).hasFocus()):
+            if not (self.ui.tableWidget.cellWidget(row, 4).hasFocus()):
                 spin_box = self.ui.tableWidget.cellWidget(row, 4)
-                td.set_high_lim_from_abs(lim_high)
+                td.set_high_lim(lim_high)
                 spin_box.setEnabled(dev._can_edit_limits)
             pv = dev.eid
 
@@ -180,14 +180,13 @@ class ResetpanelWindow(QFrame):
 
             self.table_devices[row].set_flags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
-            for col in [0, 1, 2, 6]:
+            for col in [0, 1, 2, 5]:
                 if row % 2 == 0:
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(89, 89, 89))
                 else:
                     self.ui.tableWidget.item(row, col).setBackground(QtGui.QColor(100, 100, 100))
 
         QApplication.processEvents()
-
 
     def resetAll(self):
         """Set all PVs back to their reference values."""

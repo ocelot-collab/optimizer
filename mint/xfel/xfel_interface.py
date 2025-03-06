@@ -23,12 +23,15 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
+
 class AlarmDevice(Device):
     """
     Devices for getting information about Machine status
     """
     def __init__(self, eid=None):
         super(AlarmDevice, self).__init__(eid=eid)
+        self.min = 0
+        self.max = 0
 
 
 class XFELMachineInterface(MachineInterface):
