@@ -284,6 +284,12 @@ class ResetpanelBoxWindow(ResetpanelWindow):
         self.ui.tableWidget = customTW(self) # make new widget
         self.ui.gridLayout.addWidget(self.ui.tableWidget, 0, 0)
         self.ui.pb_set_group_lims.clicked.connect(self.set_limits_to_selected_rows)
+        self.ui.sb_ref_value.setEnabled(self.ui.cb_ref_value.isChecked())
+        self.ui.cb_ref_value.stateChanged.connect(self.toggle_ref_value)
+
+
+    def toggle_ref_value(self, state):
+        self.ui.sb_ref_value.setEnabled(state == 2)
 
 
     def set_limits_to_selected_rows(self):
