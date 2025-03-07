@@ -92,7 +92,7 @@
      <item>
       <widget class="QGroupBox" name="groupBox">
        <property name="title">
-        <string>Group Control</string>
+        <string>Limit Group Control</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="1" column="3">

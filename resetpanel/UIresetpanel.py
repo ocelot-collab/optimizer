@@ -115,7 +115,7 @@ class Ui_Form(object):
         self.resetAll.setText(_translate("Form", "Reset All"))
         self.check.setText(_translate("Form", "Check"))
         self.uncheck.setText(_translate("Form", "Uncheck"))
-        self.groupBox.setTitle(_translate("Form", "Group Control"))
+        self.groupBox.setTitle(_translate("Form", "Limit Group Control"))
         self.cb_ref_value.setText(_translate("Form", "Ref. Val"))
         self.pb_set_group_lims.setText(_translate("Form", "Set"))
         self.label_2.setText(_translate("Form", "Delta"))
