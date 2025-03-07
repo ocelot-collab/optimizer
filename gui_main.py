@@ -223,9 +223,7 @@ class MainWindow(Ui_Form):
         # set checkbot status
         self.widget.uncheckBoxes()
         self.widget.set_state(table)
-
         try:
-
             max_pen = table["max_pen"]
             timeout = table["timeout"]
             max_iter = table["max_iter"]
@@ -241,7 +239,7 @@ class MainWindow(Ui_Form):
 
             if "group_lim_ref_value" in table.keys(): self.Form.ui.widget.ui.sb_ref_value.setValue(table["group_lim_ref_value"])
             if "group_lim_delta" in table.keys(): self.Form.ui.widget.ui.sb_delta.setValue(table["group_lim_delta"])
-            if "group_lim_ref_state" in table.keys(): self.Form.ui.widget.ui.sb_ref_value.setCheckState(table["group_lim_ref_state"])
+            if "group_lim_ref_state" in table.keys(): self.Form.ui.widget.ui.cb_ref_value.setCheckState(table["group_lim_ref_state"])
 
             self.sb_max_pen.setValue(max_pen)
             self.sb_tdelay.setValue(timeout)
